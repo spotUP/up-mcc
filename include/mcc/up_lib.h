@@ -21,7 +21,8 @@ LONG UP_ThemeDetach(void* key);
 ULONG UP_ThemeObjects(void);
 /* UP_IconFind(name): index of the baked Lucide icon ("play"), usable with UPA_Button_Icon; -1 when unknown. */
 LONG UP_IconFind(STRPTR name);
-/* UP_SetFontFile(path): append a TrueType file to the font search list (up to 4, duplicates ignored). Returns 0, or -1. */
+/* UP_SetFontFile(path): append a TrueType file to the font search list (up to 4, duplicates ignored), then reset the font probe
+ * and recolour every UP- object. UP_ThemeSetTokens resets the probe too. Returns 0, or -1. */
 LONG UP_SetFontFile(STRPTR path);
 
 /* I1491a: the calls the class libraries make instead of linking stdio, the theme parser and the icon data (about 51 KB base each).

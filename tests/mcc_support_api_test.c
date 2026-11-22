@@ -1,6 +1,7 @@
 /* vendored from Selecta tests/ui/mcc_support_api_test.c at 679ff5fc; Selecta will consume this repo, not the reverse */
 /* I685h: the up-mcc.library API (design 2026-11-06-mui-mcc-package.md section 8.4) through the static build, which compiles the same
  * lib/support_lib.c as the library. One entry point per row: tokens round trip, icon lookup, font file list, theme load error. */
+#include "map/mui_fontprobe.h"
 #include "map/mui_icons.h"
 #include "map/mui_theme.h"
 
@@ -20,6 +21,11 @@
             return 1;                                  \
         }                                              \
     } while (0)
+
+static int g_opens;
+static void* probe_q(void* c) { (void)c; return NULL; }
+static void probe_e(void* c, void* s) { (void)c; (void)s; }
+static void* probe_o(void* c, const char* n) { (void)c; (void)n; g_opens++; return NULL; }
 
 int main(void) {
     uint32_t known[SEL_GUI_TOKEN_COUNT];
@@ -53,6 +59,23 @@ int main(void) {
         found += strcmp(fl[i], "FONTS:Test-I685h.ttf") == 0;
     }
     CHECK(found == 1, "font file not in the list");
+    /* U4: both setters reset the font probe (a miss is remembered until then) */
+    {
+        mui_fontprobe_ops ops = {NULL, probe_q, probe_e, probe_o};
+        const char* const names[] = {"a.ttf", NULL};
+        mui_fontprobe_reset();
+        (void)mui_fontprobe_open(&ops, names);
+        (void)mui_fontprobe_open(&ops, names);
+        CHECK(g_opens == 1, "miss not remembered (%d)", g_opens);
+        CHECK(UP_SetFontFile((STRPTR) "FONTS:Test-U4.ttf") == 0, "font add refused");
+        (void)mui_fontprobe_open(&ops, names);
+        CHECK(g_opens == 2, "UP_SetFontFile did not reset the probe (%d)", g_opens);
+        (void)mui_fontprobe_open(&ops, names);
+        CHECK(g_opens == 2, "miss not remembered again (%d)", g_opens);
+        CHECK(UP_ThemeSetTokens(two, 2) == 0, "set tokens refused");
+        (void)mui_fontprobe_open(&ops, names);
+        CHECK(g_opens == 3, "UP_ThemeSetTokens did not reset the probe (%d)", g_opens);
+    }
     /* theme load: a missing file returns the store's -1 and leaves the tokens */
     uint32_t before[SEL_GUI_TOKEN_COUNT];
     memcpy(before, UP_ThemeTokens(), sizeof before);
