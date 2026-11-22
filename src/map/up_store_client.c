@@ -55,16 +55,11 @@ int up_store_detach(void* key) {
 
 /* Before the library is open (never in a loaded .mcc) there is no store: the built-in tokens, so a stray call cannot crash. */
 const uint32_t* mui_theme_tokens(void) {
-    static txt_theme fallback;
-    static int ready;
+    static const uint32_t fallback[SEL_GUI_TOKEN_COUNT]; /* I1491a: all black; the default theme lives in the library, not in every .mcc */
     if (g_lib_client.ops != NULL) {
         return up_store_client_tokens(&g_lib_client);
     }
-    if (!ready) {
-        txt_theme_default(&fallback);
-        ready = 1;
-    }
-    return fallback.token;
+    return fallback;
 }
 
 void mui_theme_tokens_set(const uint32_t* tokens) {

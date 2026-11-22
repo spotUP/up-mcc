@@ -99,3 +99,19 @@ uint32_t mui_button_width(const char* label, int icon_only, int aspect_q8) {
     }
     return w;
 }
+
+const uint8_t* mui_icon_pick(int icon, int w, int h, int* bp, int* bh) {
+    const uint8_t* body = icon >= 0 ? mui_icon_body_wh(icon, w, h) : NULL;
+    *bp = w;
+    *bh = h;
+    if (body == NULL && icon >= 0) {
+        *bh = w;
+        body = mui_icon_body(icon, w);
+    }
+    if (body == NULL && icon >= 0 && mui_icon_size_count > 0) {
+        *bp = (int)mui_icon_sizes[mui_icon_size_count - 1];
+        *bh = *bp;
+        body = mui_icon_body_wh(icon, *bp, (int)mui_icon_heights[mui_icon_size_count - 1]);
+    }
+    return body;
+}

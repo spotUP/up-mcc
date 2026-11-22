@@ -20,7 +20,10 @@ struct aa_class_desc {
 #ifdef UP_MCC_LIBRARY
 /* .mcc build: the library init created the class with the library base as first argument and stored it in *slot. */
 #define AA_CLASS_CREATE(desc) (*(desc)->slot)
+/* A sibling class object: by name through MUI (the class lives in its own .mcc, so this library never links its dispatcher). */
+#define AA_SIBLING(ctor, name, tags) MUI_NewObject((char*)(name), TAG_MORE, (ULONG)(uintptr_t)(tags), TAG_DONE)
 #else
+#define AA_SIBLING(ctor, name, tags) ctor(tags)
 /* Static build: the class is created on first use with a NULL base. */
 #define AA_CLASS_CREATE(desc) MUI_CreateCustomClass(NULL, (char*)(desc)->super, NULL, (desc)->size, (APTR)(uintptr_t)(desc)->dispatcher)
 #endif

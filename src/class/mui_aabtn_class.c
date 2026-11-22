@@ -133,25 +133,17 @@ static ULONG aabtn_askminmax(struct IClass* cl, Object* obj, struct MUIP_AskMinM
  * as horizontal runs of one ramp pen from the face colour to the caption colour. */
 static void aabtn_icon(aabtn_data* d, struct RastPort* rp, int icon, int x, int y, int px, int ph, uint32_t face, uint32_t ink) {
     int bp = px, bh = ph;
-    const uint8_t* body = icon >= 0 ? mui_icon_body_wh(icon, px, ph) : NULL; /* I949e2: the exact px x ph set (the 16x8 body on tall pixels) first */
+    /* I949e2: the exact px x ph set (the 16x8 body on tall pixels) first; I1491a: the fallbacks live in mui_icon_pick (the library) */
+    const uint8_t* body = icon >= 0 ? mui_icon_pick(icon, px, ph, &bp, &bh) : NULL;
     const UP_IconData* data = icon == AABTN_DATA_ICON ? d->data : NULL;
     if (data != NULL && (data->alpha == NULL || data->w <= 0 || data->h <= 0)) {
         return;
-    }
-    if (body == NULL && data == NULL && icon >= 0) {
-        bh = px;
-        body = mui_icon_body(icon, px);
     }
     int rb, dy, dx;
     uint32_t col[4];
     uint32_t slot_rgb[4];
     unsigned char slots[256];
     int i;
-    if (body == NULL && data == NULL && icon >= 0 && mui_icon_size_count > 0) {
-        bp = (int)mui_icon_sizes[mui_icon_size_count - 1];
-        bh = bp;
-        body = mui_icon_body_wh(icon, bp, (int)mui_icon_heights[mui_icon_size_count - 1]);
-    }
     if ((body == NULL && data == NULL) || px <= 0 || ph <= 0) {
         return;
     }
@@ -359,8 +351,13 @@ static ULONG __attribute__((used)) aabtn_dispatch_c(struct IClass* cl, Object* o
     switch (msg->MethodID) {
     case OM_NEW:
         return aabtn_new(cl, obj, (struct opSet*)msg);
-    case OM_SET:
+    case OM_SET: {
+        struct TagItem* on = FindTagItem(UPA_Button_On, ((struct opSet*)msg)->ops_AttrList);
+        if (on != NULL) {
+            mui_aabtn_set_on(obj, (int)on->ti_Data);
+        }
         return aatip_super_set(cl, obj, (struct opSet*)msg, offsetof(aabtn_data, tip));
+    }
     case OM_GET:
         if (aatip_get((struct opGet*)msg, &((aabtn_data*)INST_DATA(cl, obj))->tip)) {
             return TRUE;

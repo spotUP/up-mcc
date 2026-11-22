@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "map/mui_icons.h"
+#include "map/mui_log.h"
 #include "map/mui_theme.h"
 #include "map/up_store.h"
 #if defined(__amigaos__) || defined(AMIGA)
@@ -161,4 +162,23 @@ LONG UP_ThemeDetach(void* key) {
 
 ULONG UP_ThemeObjects(void) {
     return (ULONG)up_registry_count();
+}
+
+/* I1491a: log, font list and icon body for the class libraries (lib/classlib_shims.c is their side). */
+void UP_Log(STRPTR fmt, void* args) {
+    aa_vlog((const char*)fmt, args);
+}
+
+void* UP_FontFiles(void) {
+    return (void*)(uintptr_t)mui_font_files();
+}
+
+void* UP_IconBody(LONG icon, LONG w, LONG h, LONG* bwh) {
+    int bp, bh;
+    const uint8_t* body = mui_icon_pick((int)icon, (int)w, (int)h, &bp, &bh);
+    if (bwh != NULL) {
+        bwh[0] = bp;
+        bwh[1] = bh;
+    }
+    return (void*)(uintptr_t)body;
 }

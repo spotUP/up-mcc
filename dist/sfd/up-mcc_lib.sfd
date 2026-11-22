@@ -1,4 +1,4 @@
-==id $Id: up-mcc_lib.sfd 1.0 (07.11.2026) $
+==id $Id: up-mcc_lib.sfd 2.0 (22.11.2026) $
 * UP- MUI class package support library (design 2026-11-06-mui-mcc-package.md section 8.4). Table order = the ADDTABL order in lib/support_libheader.c.
 ==base _UPMCCBase
 ==basetype struct Library *
@@ -15,4 +15,21 @@ LONG UP_SetFontFile(STRPTR path) (a0)
 LONG UP_ThemeAttach(APTR key, APTR obj, APTR app, APTR hook) (a0,a1,a2,a3)
 LONG UP_ThemeDetach(APTR key) (a0)
 ULONG UP_ThemeObjects() ()
+VOID UP_Log(STRPTR fmt, APTR args) (a0,a1)
+APTR UP_FontFiles() ()
+APTR UP_IconBody(LONG icon, LONG w, LONG h, LONG * bwh) (d0,d1,d2,a0)
+* I1491a2: the draw layer (aa_*, aatip_*) behind the library, version 2.
+LONG UP_DrawSetup(APTR ctx, APTR obj, const ULONG * rgb, ULONG nsize) (a0,a1,a2,d0)
+VOID UP_DrawCleanup(APTR ctx) (a0)
+VOID UP_DrawFont(APTR ctx, APTR obj, LONG px, LONG flags) (a0,a1,d0,d1)
+LONG UP_DrawPen(APTR ctx, ULONG rgb, LONG hold) (a0,d0,d1)
+VOID UP_DrawShape(APTR ctx, APTR rp, APTR obj, const void * shape) (a0,a1,a2,a3)
+LONG UP_DrawTextSize(APTR ctx, APTR obj, STRPTR str) (a0,a1,a2)
+VOID UP_DrawText(APTR ctx, APTR obj, APTR rp, const void * text) (a0,a1,a2,a3)
+LONG UP_DrawLive(APTR obj) (a0)
+ULONG UP_TipFire(APTR obj, APTR ctx, APTR slot) (a0,a1,a2)
+ULONG UP_TipSuperSet(APTR cl, APTR obj, APTR msg, ULONG slotoff) (a0,a1,a2,d0)
+LONG UP_TipGet(APTR msg, APTR slot) (a0,a1)
+VOID UP_TipEvent(APTR obj, APTR slot, APTR imsg, LONG in) (a0,a1,a2,d0)
+VOID UP_TipDrop(APTR obj) (a0)
 ==end

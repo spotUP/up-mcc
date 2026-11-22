@@ -13,11 +13,12 @@
 
 #include "libinit.h"
 #include "map/up_store.h"
+void up_draw_init(void); /* src/mui_aa_draw.c, library copy (I1491a2) */
 
 #define LIB_NAME "up-mcc.library"
 #define LIB_VER UP_LIB_VERSION
 #define LIB_REV 0
-#define LIB_ID "$VER: up-mcc.library 1.0 (07.11.2026) UP- MUI class package support library"
+#define LIB_ID "$VER: up-mcc.library 2.0 (22.11.2026) UP- MUI class package support library"
 
 const UWORD LibVersion = LIB_VER;
 const UWORD LibRevision = LIB_REV;
@@ -77,13 +78,17 @@ LONG __stdargs __UserLibInit(struct Library* lib, REG(a4, APTR a4)) {
         close_libs();
         return 1;
     }
+    up_draw_init(); /* the draw layer list semaphore (I1491a2) */
     up_lib_init(NULL); /* registry lock and the ENV:UP-MCC/theme tokens, before any class draws (I685t) */
     return 0;
 }
 
+extern void aa_free(void); /* src/mui_aa_draw.c (library copy): closes ttengine and the RTG libraries */
+
 VOID __stdargs __UserLibCleanup(REG(a4, APTR a4)) {
     (void)a4;
     up_registry_free();
+    aa_free();
     close_libs();
 }
 
@@ -100,4 +105,20 @@ ADDTABL_1(UP_SetFontFile, a0)
 ADDTABL_4(UP_ThemeAttach, a0, a1, a2, a3)
 ADDTABL_1(UP_ThemeDetach, a0)
 ADDTABL_0(UP_ThemeObjects)
+ADDTABL_2(UP_Log, a0, a1)
+ADDTABL_0(UP_FontFiles)
+ADDTABL_4(UP_IconBody, d0, d1, d2, a0)
+ADDTABL_4(UP_DrawSetup, a0, a1, a2, d0)
+ADDTABL_1(UP_DrawCleanup, a0)
+ADDTABL_4(UP_DrawFont, a0, a1, d0, d1)
+ADDTABL_3(UP_DrawPen, a0, d0, d1)
+ADDTABL_4(UP_DrawShape, a0, a1, a2, a3)
+ADDTABL_3(UP_DrawTextSize, a0, a1, a2)
+ADDTABL_4(UP_DrawText, a0, a1, a2, a3)
+ADDTABL_1(UP_DrawLive, a0)
+ADDTABL_3(UP_TipFire, a0, a1, a2)
+ADDTABL_4(UP_TipSuperSet, a0, a1, a2, d0)
+ADDTABL_2(UP_TipGet, a0, a1)
+ADDTABL_4(UP_TipEvent, a0, a1, a2, d0)
+ADDTABL_1(UP_TipDrop, a0)
 ADDTABL_END()

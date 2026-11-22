@@ -48,7 +48,7 @@ struct Library* sel_mui_GfxBase; /* the package rename of the graphics base (src
 struct Library* IntuitionBase;
 struct Library* DOSBase;
 struct Library* MUIMasterBase;
-struct Library* UPMCCBase; /* up-mcc.library, version 1 */
+struct Library* UPMCCBase; /* up-mcc.library, version 2 (draw layer, I1491a2) */
 
 /* libnix's stdio start-up (pulled in by the theme store's fopen / snprintf) names exit(); a library never exits a process. */
 void exit(int code) {
@@ -140,7 +140,7 @@ LONG __stdargs __UserLibInit(struct Library* lib, REG(a4, APTR a4)) {
     sel_mui_GfxBase = OpenLibrary((CONST_STRPTR) "graphics.library", 36);
     IntuitionBase = OpenLibrary((CONST_STRPTR) "intuition.library", 36);
     MUIMasterBase = OpenLibrary((CONST_STRPTR) "muimaster.library", 19);
-    UPMCCBase = OpenLibrary((CONST_STRPTR) "up-mcc.library", 1);
+    UPMCCBase = OpenLibrary((CONST_STRPTR) "up-mcc.library", 2);
     if (UPMCCBase == NULL || MUIMasterBase == NULL || DOSBase == NULL || UtilityBase == NULL || sel_mui_GfxBase == NULL || IntuitionBase == NULL) {
         close_libs();
         return 1;
