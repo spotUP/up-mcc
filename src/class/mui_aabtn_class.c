@@ -32,7 +32,7 @@ typedef struct aabtn_data {
     char caption[48], widest[48];
     const UP_IconData* data; /* UPA_Button_IconData, caller owned */
     int icon[2], alt, icon_only, role, hover, backend, minw, minh, align, on, fit, fixed_w, fixed_h;
-    mui_aa_metrics_t m;
+    up_metrics_t m;
     aa_ctx aa;
     struct MUI_EventHandlerNode ehn;
     aatip_slot tip; /* I731: flat tooltip text, side and hover edge */
@@ -66,7 +66,7 @@ static ULONG aabtn_setup(struct IClass* cl, Object* obj, Msg msg) {
         return FALSE;
     }
     aa_setup(obj, &d->aa, NULL, 0);
-    mui_aa_metrics_aspect(d->aa.font_px, d->aa.aspect_q8, &d->m);
+    up_metrics_aspect(d->aa.font_px, d->aa.aspect_q8, &d->m);
     for (st = MUI_AA_NORMAL; st <= MUI_AA_SELECTED; st++) {
         mui_aa_button_rgb(d->aa.tok, d->role, st, &face, &text);
         aa_hold(&d->aa, face);
@@ -218,11 +218,11 @@ static ULONG aabtn_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
         mui_aa_check_op_t ops[MUI_AA_CHECK_OPS];
         int n = mui_aa_check_plan(d->aa.tok, &d->m, state, ops), k;
         for (k = 0; k < n; k++) {
-            int iv = ops[k].inset > 0 ? mui_aa_rows(ops[k].inset, asp) : 0; /* I949e: the inset is a physical length, fewer rows on tall pixels */
+            int iv = ops[k].inset > 0 ? up_rows(ops[k].inset, asp) : 0; /* I949e: the inset is a physical length, fewer rows on tall pixels */
             aa_round_fill(&d->aa, rp, bx + ops[k].inset, by + iv, cp - 2 * ops[k].inset, ch - 2 * iv, ops[k].radius, ops[k].rgb);
         }
         if (state == MUI_AA_SELECTED) {
-            aabtn_icon(d, rp, icon, bx + 2, by + mui_aa_rows(2, asp), cp - 4, ch - 2 * mui_aa_rows(2, asp), face, text);
+            aabtn_icon(d, rp, icon, bx + 2, by + up_rows(2, asp), cp - 4, ch - 2 * up_rows(2, asp), face, text);
         }
         if (aa_live(obj)) {
             GetAttr(MUIA_Window_ActiveObject, _win(obj), &active);

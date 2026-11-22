@@ -59,19 +59,19 @@ uint32_t mui_icon_body_lookups(int px) {
 
 /* Font the width and height models assume: tier M (the laced 640x512 screen) on square pixels; on tall pixels the screen is
  * 256 rows (640x256 PAL), so the model takes the small font and with it the tight tier (I949e2). */
-static void model_metrics(int aspect_q8, mui_aa_metrics_t* m) {
+static void model_metrics(int aspect_q8, up_metrics_t* m) {
     int asp = aspect_q8;
-    mui_aa_metrics_aspect(mui_aa_font_px(asp > 256 ? 256 : 512, 0), asp, m);
+    up_metrics_aspect(up_font_px(asp > 256 ? 256 : 512, 0), asp, m);
 }
 
 int mui_model_icon_px(int aspect_q8) {
-    mui_aa_metrics_t m;
+    up_metrics_t m;
     model_metrics(aspect_q8, &m);
     return m.icon_px;
 }
 
 int mui_model_icon_h(int aspect_q8) {
-    mui_aa_metrics_t m;
+    up_metrics_t m;
     model_metrics(aspect_q8, &m);
     return m.icon_h;
 }

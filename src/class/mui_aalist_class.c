@@ -35,7 +35,7 @@ typedef struct aalist_data {
     long last_row;
     int max_rows;
     Object* scroller;
-    mui_aa_list_t m;
+    up_list_t m;
     aa_ctx aa;
     struct MUI_EventHandlerNode ehn;
 } aalist_data;
@@ -105,7 +105,7 @@ static ULONG aalist_setup(struct IClass* cl, Object* obj, Msg msg) {
         return FALSE;
     }
     aa_setup(obj, &d->aa, NULL, 0);
-    mui_aa_list_metrics(d->aa.font_px, d->aa.aspect_q8, &d->m);
+    up_list_metrics(d->aa.font_px, d->aa.aspect_q8, &d->m);
     for (st = MUI_AA_NORMAL; st <= MUI_AA_SELECTED; st++) {
         if (st == MUI_AA_PRESSED || st == MUI_AA_DISABLED) {
             continue;

@@ -20,7 +20,7 @@
 typedef struct aascroller_data {
     long first, visible, entries;
     int hover, drag, grab;
-    mui_aa_scroller_t m;
+    up_scroller_t m;
     aa_ctx aa;
     struct MUI_EventHandlerNode ehn;
 } aascroller_data;
@@ -40,7 +40,7 @@ static ULONG aascroller_setup(struct IClass* cl, Object* obj, Msg msg) {
         return FALSE;
     }
     aa_setup(obj, &d->aa, NULL, 0);
-    mui_aa_scroller_metrics(d->aa.font_px, d->aa.aspect_q8, &d->m);
+    up_scroller_metrics(d->aa.font_px, d->aa.aspect_q8, &d->m);
     for (st = MUI_AA_NORMAL; st <= MUI_AA_PRESSED; st++) {
         mui_aa_scroller_rgb(d->aa.tok, st, &track, &thumb);
         aa_hold(&d->aa, track);
