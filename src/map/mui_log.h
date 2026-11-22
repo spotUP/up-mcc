@@ -14,6 +14,9 @@ void aa_log(const char* fmt, ...)
 #endif
     ;
 
+/* I1491a: aa_log for a caller that only has its va_list as a pointer (the Amiga class libraries, through UP_Log). */
+void aa_vlog(const char* fmt, void* args);
+
 /* I625a6: the host's trace sink (a "t_ms phase" line in its --log). Null by default, so the package traces nothing on its own. */
 void aa_trace_set(void (*fn)(const char* phase));
 void aa_trace(const char* phase);

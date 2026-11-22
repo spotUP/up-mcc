@@ -27,6 +27,43 @@
 #include "mui_aa_rtg.h"
 #include "mcc/up.h"
 
+/* I1491a: "mcc: Inter font probe N begin|done (PX px[, how])" without libnix snprintf (it costs the class libraries 10 KB of stdio). */
+static char* probe_put(char* o, char* end, const char* s) {
+    while (*s != '\0' && o < end) {
+        *o++ = *s++;
+    }
+    return o;
+}
+
+static char* probe_num(char* o, char* end, unsigned long v) {
+    char t[12];
+    int n = 0;
+    do {
+        t[n++] = (char)('0' + v % 10);
+        v /= 10;
+    } while (v != 0 && n < 11);
+    while (n > 0 && o < end) {
+        *o++ = t[--n];
+    }
+    return o;
+}
+
+static void probe_line(char* buf, size_t cap, unsigned long n, int px, const char* phase, const char* how) {
+    char* end = buf + cap - 1;
+    char* o = probe_put(buf, end, "mcc: Inter font probe ");
+    o = probe_num(o, end, n);
+    o = probe_put(o, end, " ");
+    o = probe_put(o, end, phase);
+    o = probe_put(o, end, " (");
+    o = probe_num(o, end, (unsigned long)(px < 0 ? 0 : px));
+    o = probe_put(o, end, how != NULL ? " px, " : " px");
+    if (how != NULL) {
+        o = probe_put(o, end, how);
+    }
+    o = probe_put(o, end, ")");
+    *o = '\0';
+}
+
 #define TTE_FontFile 0x6EDA0000UL
 #define TTE_FontSize 0x6EDA0003UL
 #define TTE_Screen 0x6EDA0006UL
@@ -142,12 +179,12 @@ static APTR font_get(struct Screen* scr, int px) {
         /* Every probe is one DOS Open per name; tracing each one cost about 8 ms a line on the rig, so only the first probe and every
          * 32nd are traced (the count in the line carries the rest). */
         if (n_probe == 1 || n_probe % 32 == 0) {
-            snprintf(tl_, sizeof tl_, "mcc: Inter font probe %lu begin (%d px)", n_probe, px);
+            probe_line(tl_, sizeof tl_, n_probe, px, "begin", NULL);
             aa_trace(tl_);
         }
         f = mui_fontprobe_open(&ops, mui_font_files());
         if (n_probe == 1 || n_probe % 32 == 0) {
-            snprintf(tl_, sizeof tl_, "mcc: Inter font probe %lu done (%d px, %s)", n_probe, px, f != NULL ? "opened" : "not found");
+            probe_line(tl_, sizeof tl_, n_probe, px, "done", f != NULL ? "opened" : "not found");
             aa_trace(tl_);
         }
         if (f != NULL) {

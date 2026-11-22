@@ -24,4 +24,13 @@ LONG UP_IconFind(STRPTR name);
 /* UP_SetFontFile(path): append a TrueType file to the font search list (up to 4, duplicates ignored). Returns 0, or -1. */
 LONG UP_SetFontFile(STRPTR path);
 
+/* I1491a: the calls the class libraries make instead of linking stdio, the theme parser and the icon data (about 51 KB base each).
+ * UP_Log(fmt, args): aa_log through the library's one stderr writer; args is the caller's va_list (a stack pointer on m68k).
+ * UP_FontFiles(): the NULL terminated TrueType search list (const char* const*). UP_IconBody(icon, w, h, bwh): the baked body of icon
+ * at w x h with the fallbacks of the button (exact w x h, then size w, then the largest set); bwh[0], bwh[1] get the body's width
+ * and height; NULL when the icon has no body. */
+void UP_Log(STRPTR fmt, void* args);
+void* UP_FontFiles(void);
+void* UP_IconBody(LONG icon, LONG w, LONG h, LONG* bwh);
+
 #endif

@@ -1266,3 +1266,60 @@
 *       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
 *
 ******/
+
+/****** up-mcc.library/UP_Log ******
+*
+*   NAME
+*       UP_Log -- up-mcc.library function
+*
+*   FUNCTION
+*       Write a formatted line to the library's one stderr writer (aa_log of the class libraries).
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       None.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_FontFiles ******
+*
+*   NAME
+*       UP_FontFiles -- up-mcc.library function
+*
+*   FUNCTION
+*       Return the NULL terminated TrueType search list.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       Pointer to const char* const*.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_IconBody ******
+*
+*   NAME
+*       UP_IconBody -- up-mcc.library function
+*
+*   FUNCTION
+*       Pick the baked icon body at w x h with the button fallbacks.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       Body pointer, or NULL; bwh[0], bwh[1] get its size.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/

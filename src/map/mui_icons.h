@@ -60,6 +60,11 @@ uint32_t mui_icon_body_lookups(int px);
  * are one third and two thirds of the way. tokens is the SEL_GUI_TOKEN_COUNT array of a txt_theme. */
 void mui_icon_palette(const uint32_t* tokens, int themed, uint32_t out[12]);
 
+/* I1491a: the body the button draws for icon at w x h: exact w x h, else size w (height w), else the largest set. *bp, *bh get the
+ * body's width and height (the button's raster step); NULL when the icon has no body. One copy for the class libraries (through
+ * UP_IconBody) and the static build. */
+const uint8_t* mui_icon_pick(int icon, int w, int h, int* bp, int* bh);
+
 #ifdef __cplusplus
 }
 #endif

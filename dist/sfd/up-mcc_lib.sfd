@@ -15,4 +15,7 @@ LONG UP_SetFontFile(STRPTR path) (a0)
 LONG UP_ThemeAttach(APTR key, APTR obj, APTR app, APTR hook) (a0,a1,a2,a3)
 LONG UP_ThemeDetach(APTR key) (a0)
 ULONG UP_ThemeObjects() ()
+VOID UP_Log(STRPTR fmt, APTR args) (a0,a1)
+APTR UP_FontFiles() ()
+APTR UP_IconBody(LONG icon, LONG w, LONG h, LONG * bwh) (d0,d1,d2,a0)
 ==end

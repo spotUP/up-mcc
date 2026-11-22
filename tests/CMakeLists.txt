@@ -30,6 +30,15 @@ string(REPLACE ";" "\\;" _static_src "${MCC_STATIC_SOURCES}")
 mcc_test(mcc-classlibs-source COMMAND "${CMAKE_COMMAND}" "-DLIB_SOURCES=${_lib_src}" "-DSTATIC_SOURCES=${_static_src}"
   -P "${PROJECT_SOURCE_DIR}/cmake/mcc_check_classlibs.cmake")
 
+# I1491a: the slim gate script (cmake/mcc_check_slim.cmake) on fixture nm and size output: one pass, three expected failures.
+set(_slim "${PROJECT_SOURCE_DIR}/cmake/mcc_check_slim.cmake")
+set(_slimdir "${CMAKE_CURRENT_SOURCE_DIR}/slim")
+mcc_test(mcc-slim-ok COMMAND "${CMAKE_COMMAND}" "-DNM_TEXT=${_slimdir}/ok.nm" "-DSIZE_TEXT=${_slimdir}/ok.size" -P "${_slim}")
+mcc_test(mcc-slim-bans-theme-parser COMMAND "${CMAKE_COMMAND}" "-DNM_TEXT=${_slimdir}/bad_parse.nm" "-DSIZE_TEXT=${_slimdir}/ok.size" -P "${_slim}")
+mcc_test(mcc-slim-bans-stdio COMMAND "${CMAKE_COMMAND}" "-DNM_TEXT=${_slimdir}/bad_stdio.nm" "-DSIZE_TEXT=${_slimdir}/ok.size" -P "${_slim}")
+mcc_test(mcc-slim-size-limit COMMAND "${CMAKE_COMMAND}" "-DNM_TEXT=${_slimdir}/ok.nm" "-DSIZE_TEXT=${_slimdir}/big.size" -P "${_slim}")
+set_tests_properties(mcc-slim-bans-theme-parser mcc-slim-bans-stdio mcc-slim-size-limit PROPERTIES WILL_FAIL TRUE)
+
 mcc_test_exe(mcc_log_test)
 foreach(t gate-off gate-on source)
   mcc_test(mcc-log-${t} COMMAND mcc_log_test ${t} "${CMAKE_CURRENT_BINARY_DIR}/mcc_log_${t}.txt")

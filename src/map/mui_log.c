@@ -27,6 +27,16 @@ static int debug_enabled(void) {
     return g_debug;
 }
 
+/* I1491a: the class libraries pass their va_list (a stack pointer on m68k) to up-mcc.library, which writes it here. */
+void aa_vlog(const char* fmt, void* args) {
+    if (!debug_enabled()) return;
+#if defined(__amigaos__) || defined(AMIGA)
+    vfprintf(stderr, fmt, (va_list)args);
+#else
+    (void)fmt; /* a host va_list is not a pointer; only the Amiga class libraries call this */
+#endif
+}
+
 void aa_log(const char* fmt, ...) {
     va_list ap;
     if (!debug_enabled()) return;

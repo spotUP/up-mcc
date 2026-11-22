@@ -16,7 +16,7 @@ add_library(mui INTERFACE)
 if(SEL_AMIGA)
   target_link_libraries(mui INTERFACE -lmui)
 endif()
-set(MCC_MAP_SOURCES src/map/mui_aa.c src/map/mui_aa_paint.c src/map/mui_aatip.c src/map/mui_theme.c src/map/mui_icons.c src/map/mui_fontprobe.c src/map/mui_log.c src/map/up_prefs_map.c src/map/up_origin.c src/map/up_store.c)
+set(MCC_MAP_SOURCES src/map/mui_aa.c src/map/mui_aa_paint.c src/map/mui_aatip.c src/map/mui_theme_pure.c src/map/mui_theme.c src/map/mui_icons.c src/map/mui_fontprobe.c src/map/mui_log.c src/map/up_prefs_map.c src/map/up_origin.c src/map/up_store.c)
 set(MCC_AMIGA_SOURCES src/mui_aa_draw.c src/mui_aatip.c
   src/class/mui_aabtn_class.c src/class/mui_aatext_class.c src/class/mui_aapanel_class.c src/class/mui_aatabs_class.c
   src/class/mui_aabalance_class.c src/class/mui_aaslider_class.c src/class/mui_aacycle_class.c src/class/mui_aalist_class.c
@@ -72,6 +72,9 @@ add_library(sel_mcc_static STATIC ${MCC_SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/mu
 # src/map: "mui_aa.h" etc. for every consumer; src: "map/mui_theme.h" and "mui_aa_draw.h" spellings the sources already use.
 target_include_directories(sel_mcc_static PUBLIC "${MCC_DIR}/include" "${MCC_DIR}/src" "${MCC_DIR}/src/map" "${MCC_DIR}/src/class")
 target_link_libraries(sel_mcc_static PUBLIC up_mcc_vendor)
+if(SEL_AMIGA)
+  target_compile_options(sel_mcc_static PRIVATE -ffunction-sections -fdata-sections) # I1491a: with --gc-sections in the class libraries
+endif()
 if(SEL_AMIGA)
   target_link_libraries(sel_mcc_static PUBLIC mui)
 endif()
@@ -163,7 +166,7 @@ target_include_directories(up_mcc_header_check PRIVATE "${MCC_SFD_INC}" "${MCC_D
 # instead of linking the static support code is a later row). The check at the end compares each target's SOURCES with the list.
 # I685n: what every .mcc/.mcp compiles itself, ahead of the archive, so the linker never pulls the archive's token store and registry
 # (src/map/up_store.c) or its draw context list: the client of the store (UP_CLASS_LIBRARY) and the draw code that registers with it.
-set(MCC_CLIENT_SOURCES src/map/up_store_client.c src/mui_aa_draw.c)
+set(MCC_CLIENT_SOURCES src/map/up_store_client.c src/mui_aa_draw.c lib/classlib_shims.c)
 function(up_add_class_library name class_source desc)
   set(tgt "up_mcc_${name}")
   add_executable(${tgt} ${MCC_LIBINIT_SRC} lib/classheader.c "${class_source}" ${MCC_CLIENT_SOURCES} ${MCC_SFD_HEADERS})
@@ -171,7 +174,8 @@ function(up_add_class_library name class_source desc)
   target_include_directories(${tgt} PRIVATE "${AMIGA_GCC_ROOT}/m68k-amigaos/libnix/include" "${MCC_SFD_INC}")
   target_compile_definitions(${tgt} PRIVATE "UP_CLASS_NAME=\"${name}\"" "UP_CLASS_DESC=${desc}" UP_MCC_LIBRARY UP_CLASS_LIBRARY)
   target_link_libraries(${tgt} PRIVATE sel_mcc_static)
-  target_link_options(${tgt} PRIVATE -nostartfiles)
+  target_link_options(${tgt} PRIVATE -nostartfiles -Wl,--gc-sections)
+  target_compile_options(${tgt} PRIVATE -ffunction-sections -fdata-sections)
   up_mcc_lib_skeleton(${tgt})
   set_source_files_properties(lib/classheader.c PROPERTIES COMPILE_OPTIONS "-fasm")
   get_target_property(srcs ${tgt} SOURCES)
@@ -187,6 +191,18 @@ function(up_check_no_store tgt)
       -P "${PROJECT_SOURCE_DIR}/cmake/mcc_check_classlibs.cmake"
     VERBATIM COMMENT "${tgt}: no theme store symbols")
 endfunction()
+find_program(MCC_SIZE NAMES m68k-amigaos-size HINTS "${AMIGA_GCC_ROOT}/bin" "$ENV{HOME}/opt/amiga/bin" REQUIRED)
+# I1491a: post-build slim gates on every class library (not the prefs library, which writes theme files itself): no theme parser or
+# writer, no libnix stdio, text section under 8 KB (cmake/mcc_check_slim.cmake).
+# Target is 8192 (design I1491a); the draw/AA code (mui_aa*.c) is still linked into each library, so the enforced ratchet is 26624
+# (worst measured 25588, Cycle). Lower it as that code moves behind up-mcc.library.
+set(UP_MCC_SLIM_MAX_TEXT 26624 CACHE STRING "max text bytes per class library")
+function(up_check_slim tgt)
+  add_custom_command(TARGET ${tgt} POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" "-DNM=${MCC_NM}" "-DSIZE=${MCC_SIZE}" "-DBINARY=$<TARGET_FILE:${tgt}>" "-DMAX_TEXT=${UP_MCC_SLIM_MAX_TEXT}"
+      -P "${PROJECT_SOURCE_DIR}/cmake/mcc_check_slim.cmake"
+    VERBATIM COMMENT "${tgt}: slim (size and banned symbols)")
+endfunction()
 foreach(row ${MCC_CLASS_LIBS})
   string(REPLACE "|" ";" cols "${row}")
   list(GET cols 0 n)
@@ -194,9 +210,10 @@ foreach(row ${MCC_CLASS_LIBS})
   list(GET cols 2 d)
   up_add_class_library(${n} "${s}" ${d})
   up_check_no_store(up_mcc_${n})
+  up_check_slim(up_mcc_${n})
 endforeach()
 # I685j: UP-MCC.mcp from the same skeleton (UP_PREFS_LIBRARY: MCC_Query(1) returns the class).
-add_executable(up_mcc_prefs ${MCC_LIBINIT_SRC} lib/classheader.c prefs/up_prefs.c ${MCC_CLIENT_SOURCES} ${MCC_SFD_HEADERS})
+add_executable(up_mcc_prefs ${MCC_LIBINIT_SRC} lib/classheader.c prefs/up_prefs.c src/map/up_store_client.c src/mui_aa_draw.c ${MCC_SFD_HEADERS})
 set_target_properties(up_mcc_prefs PROPERTIES OUTPUT_NAME "${MCC_PREFS_NAME}")
 target_include_directories(up_mcc_prefs PRIVATE "${AMIGA_GCC_ROOT}/m68k-amigaos/libnix/include" "${MCC_SFD_INC}")
 target_compile_definitions(up_mcc_prefs PRIVATE "UP_CLASS_NAME=\"MCC\"" UP_CLASS_DESC=up_prefs_class_desc UP_MCC_LIBRARY UP_PREFS_LIBRARY UP_CLASS_LIBRARY)
