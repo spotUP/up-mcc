@@ -192,19 +192,73 @@ enum { UPV_Panel_Role_Panel, UPV_Panel_Role_Surface, UPV_Panel_Role_Raised, UPV_
  *                       (gate item 1, section 10). Not settable, not notified. */
 #define UPA_Shared_Origin UP_TAG(UP_CLS_SHARED, 0x33)
 
-/* ---- Constructors: the tag list is the whole interface. Defaults a caller does not give (no frame, cycle chain) are the class's. ---- */
+/* ---- Class names (U1): the by-name MUI_NewObject() / MUI_NewObjectA() spelling of each class library in MUI:Libs/mui. ---- */
+#define MUIC_UP_Button "UP-Button.mcc"
+#define MUIC_UP_Text "UP-Text.mcc"
+#define MUIC_UP_Slider "UP-Slider.mcc"
+#define MUIC_UP_Progress "UP-Progress.mcc"
+#define MUIC_UP_Cycle "UP-Cycle.mcc"
+#define MUIC_UP_Tabs "UP-Tabs.mcc"
+#define MUIC_UP_Scroller "UP-Scroller.mcc"
+#define MUIC_UP_List "UP-List.mcc"
+#define MUIC_UP_Field "UP-Field.mcc"
+#define MUIC_UP_Panel "UP-Panel.mcc"
+#define MUIC_UP_Balance "UP-Balance.mcc"
+
+/* ---- Constructors: the tag list is the whole interface. Defaults a caller does not give (no frame, cycle chain) are the class's. ----
+ * A client gets inlines over MUI_NewObjectA: the class library loads from MUI:Libs/mui, no class code is linked in. The class build
+ * itself (UP_MCC_LIBRARY, or UP_MCC_STATIC_CTORS for the static archive) keeps the real constructors. */
 #if defined(__amigaos__) || defined(AMIGA)
+#if defined(UP_MCC_LIBRARY) || defined(UP_MCC_STATIC_CTORS)
 Object* UP_NewButton(const struct TagItem* tags);
 Object* UP_NewText(const struct TagItem* tags);
-Object* UP_NewSlider(const struct TagItem* tags);   /* MUIA_Numeric_Min/Max/Value, MUIA_FixWidth */
+Object* UP_NewSlider(const struct TagItem* tags);
 Object* UP_NewProgress(const struct TagItem* tags);
 Object* UP_NewCycle(const struct TagItem* tags);
 Object* UP_NewTabs(const struct TagItem* tags);
 Object* UP_NewScroller(const struct TagItem* tags);
-Object* UP_NewList(const struct TagItem* tags, Object** list_out); /* returns the list+scroller group; *list_out the list */
 Object* UP_NewField(const struct TagItem* tags);
 Object* UP_NewPanel(const struct TagItem* tags);
 Object* UP_NewBalance(const struct TagItem* tags);
+Object* UP_NewList(const struct TagItem* tags, Object** list_out); /* returns the list+scroller group; *list_out the list */
+#else
+#include <libraries/mui.h>
+#include <proto/muimaster.h>
+#include <clib/alib_protos.h> /* DoMethod for UP_NewList, declared before any other header can imply it */
+#define UP_CLIENT_CTOR(fn, cls) static inline Object* fn(const struct TagItem* tags) { return MUI_NewObjectA((char*)(cls), (struct TagItem*)tags); }
+UP_CLIENT_CTOR(UP_NewButton, MUIC_UP_Button)
+UP_CLIENT_CTOR(UP_NewText, MUIC_UP_Text)
+UP_CLIENT_CTOR(UP_NewSlider, MUIC_UP_Slider)
+UP_CLIENT_CTOR(UP_NewProgress, MUIC_UP_Progress)
+UP_CLIENT_CTOR(UP_NewCycle, MUIC_UP_Cycle)
+UP_CLIENT_CTOR(UP_NewTabs, MUIC_UP_Tabs)
+UP_CLIENT_CTOR(UP_NewScroller, MUIC_UP_Scroller)
+UP_CLIENT_CTOR(UP_NewField, MUIC_UP_Field)
+UP_CLIENT_CTOR(UP_NewPanel, MUIC_UP_Panel)
+UP_CLIENT_CTOR(UP_NewBalance, MUIC_UP_Balance)
+#undef UP_CLIENT_CTOR
+/* The list is a UP-List and a UP-Scroller in a horizontal group; the scroller follows the list through UPA_List_First. Returns the group; *list_out the list. */
+static inline Object* UP_NewList(const struct TagItem* tags, Object** list_out) {
+    struct TagItem sc[] = {{MUIA_Frame, (UP_Data)MUIV_Frame_None}, {TAG_DONE, 0}};
+    Object* scroller = MUI_NewObjectA((char*)MUIC_UP_Scroller, sc);
+    struct TagItem lt[] = {{UPA_List_Scroller, UP_D(scroller)}, {TAG_MORE, UP_D(tags)}};
+    Object* list = MUI_NewObjectA((char*)MUIC_UP_List, lt);
+    Object* group = MUI_NewObject((char*)MUIC_Group, MUIA_Group_Horiz, TRUE, MUIA_Group_Spacing, 0, MUIA_Group_HorizSpacing, 0, Child, (ULONG)list, Child,
+                                  (ULONG)scroller, TAG_DONE);
+    if (list == NULL || scroller == NULL || group == NULL) {
+        if (group != NULL) {
+            MUI_DisposeObject(group);
+        } else {
+            if (list != NULL) MUI_DisposeObject(list);
+            if (scroller != NULL) MUI_DisposeObject(scroller);
+        }
+        return NULL;
+    }
+    DoMethod(scroller, MUIM_Notify, UPA_Scroller_First, MUIV_EveryTime, list, 3, MUIM_Set, UPA_List_First, MUIV_TriggerValue);
+    if (list_out != NULL) *list_out = list;
+    return group;
+}
+#endif
 #endif
 
 /* Theme token names (I685d2): UPTOK_<id> equals SEL_GUI_TOKEN_<id> for every token of the SEL_GUI_TOKENS list in
