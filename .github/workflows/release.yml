@@ -1,0 +1,47 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+
+# Same liv2/amiga-gcc image digest Selecta pins (.github/workflows/ci.yml, job amiga-68020).
+# Bump both together.
+jobs:
+  amiga-package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    container:
+      image: liv2/amiga-gcc:main@sha256:570461426e8eabdde4f7507da62ed985a9c07147ecb12d0754d85678255eb34d
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cmake, ninja, lha
+        run: |
+          apt-get update && apt-get install -y cmake ninja-build zlib1g-dev gh
+          (apt-get install -y lha || apt-get install -y jlha-utils) >/dev/null 2>&1 || true
+          command -v lha
+      # iconbake is compiled with the host compiler by cmake/host_bake_tools.cmake.
+      - name: Configure (68020)
+        run: |
+          SFDC=$(command -v sfdc || ls /opt/amiga/bin/sfdc "$HOME/opt/amiga/bin/sfdc" 2>/dev/null | head -n1)
+          cmake -S . -B build/amiga -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/amiga-68020.cmake \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG" \
+            -DAMIGA_GCC_ROOT=/opt/amiga -DMCC_SFDC="$SFDC"
+      - name: Build and stage package
+        run: cmake --build build/amiga --target up_mcc_dist -j2
+      - name: Pack UP-MCC-${{ github.ref_name }}.lha
+        run: |
+          VER=${GITHUB_REF_NAME#v}
+          echo "$VER $GITHUB_SHA" > build/amiga/dist/UP-MCC/VERSION
+          cd build/amiga/dist
+          lha ao5 "UP-MCC-$VER.lha" UP-MCC
+          sha256sum "UP-MCC-$VER.lha" > "UP-MCC-$VER.lha.sha256"
+          ls -l
+      - name: Upload to the release
+        run: |
+          VER=${GITHUB_REF_NAME#v}
+          cd build/amiga/dist
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+          gh release upload "$GITHUB_REF_NAME" "UP-MCC-$VER.lha" "UP-MCC-$VER.lha.sha256" --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
