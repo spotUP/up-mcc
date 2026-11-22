@@ -140,6 +140,7 @@ add_executable(up_mcc_library ${MCC_LIBINIT_SRC} lib/support_libheader.c lib/sup
 set_target_properties(up_mcc_library PROPERTIES OUTPUT_NAME "up-mcc.library")
 target_include_directories(up_mcc_library PRIVATE "${AMIGA_GCC_ROOT}/m68k-amigaos/libnix/include")
 target_link_libraries(up_mcc_library PRIVATE sel_mcc_static)
+target_compile_definitions(up_mcc_library PRIVATE UP_MCC_STATIC_CTORS) # U1: it compiles the draw copy that includes up.h; takes the class-side declarations, not the client inlines
 target_link_options(up_mcc_library PRIVATE -nostartfiles)
 up_mcc_lib_skeleton(up_mcc_library)
 set_source_files_properties(lib/support_libheader.c PROPERTIES COMPILE_OPTIONS "-fasm")
