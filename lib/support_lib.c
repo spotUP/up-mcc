@@ -169,7 +169,7 @@ void UP_Log(STRPTR fmt, void* args) {
     aa_vlog((const char*)fmt, args);
 }
 
-void UP_SetLogHook(struct Hook* hook) {
+void UP_SetLogHook(APTR hook) {
     aa_log_hook_set(hook);
 }
 
