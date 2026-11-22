@@ -4,7 +4,18 @@
 #   src/*.c   draw helpers and tooltip, Amiga only (they include MUI/Intuition headers)
 #   src/class/ the ten shipped Selecta_AA* classes, Amiga only
 # File names are unchanged in this row; the UP- rename is row I685d.
+cmake_minimum_required(VERSION 3.20)
+project(up_mcc C)
+set(CMAKE_C_STANDARD 99)
+option(SEL_AMIGA "Amiga cross build (needs -DCMAKE_TOOLCHAIN_FILE=cmake/amiga-68020.cmake)" OFF)
 set(MCC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+# Selecta's token/theme model and icon packer, vendored (src/vendor, include/selecta); see README.md.
+add_library(up_mcc_vendor STATIC src/vendor/theme.c src/vendor/tokens.c src/vendor/cols.c src/vendor/style.c src/vendor/gui_icon_pack.c)
+target_include_directories(up_mcc_vendor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+add_library(mui INTERFACE)
+if(SEL_AMIGA)
+  target_link_libraries(mui INTERFACE -lmui)
+endif()
 set(MCC_MAP_SOURCES src/map/mui_aa.c src/map/mui_aa_paint.c src/map/mui_aatip.c src/map/mui_theme.c src/map/mui_icons.c src/map/mui_fontprobe.c src/map/mui_log.c src/map/up_prefs_map.c src/map/up_origin.c src/map/up_store.c)
 set(MCC_AMIGA_SOURCES src/mui_aa_draw.c src/mui_aatip.c
   src/class/mui_aabtn_class.c src/class/mui_aatext_class.c src/class/mui_aapanel_class.c src/class/mui_aatabs_class.c
@@ -60,8 +71,7 @@ add_custom_command(
 add_library(sel_mcc_static STATIC ${MCC_SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/mui_icons_baked.c")
 # src/map: "mui_aa.h" etc. for every consumer; src: "map/mui_theme.h" and "mui_aa_draw.h" spellings the sources already use.
 target_include_directories(sel_mcc_static PUBLIC "${MCC_DIR}/include" "${MCC_DIR}/src" "${MCC_DIR}/src/map" "${MCC_DIR}/src/class")
-target_include_directories(sel_mcc_static PRIVATE "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/plugins/ui/mui")
-target_link_libraries(sel_mcc_static PUBLIC selecta_uimodel selecta_gui)
+target_link_libraries(sel_mcc_static PUBLIC up_mcc_vendor)
 if(SEL_AMIGA)
   target_link_libraries(sel_mcc_static PUBLIC mui)
 endif()
@@ -70,12 +80,11 @@ endif()
 set(MCC_CHECK_ROOTS "$<JOIN:$<TARGET_PROPERTY:sel_mcc_static,INCLUDE_DIRECTORIES>,|>" CACHE INTERNAL "")
 # Include check: no package file resolves a quoted include outside plugins/shared/mcc.
 add_custom_target(mcc-include-check
-  COMMAND "${CMAKE_COMMAND}" "-DMCC_DIR=${MCC_DIR}" "-DUI_DIR=${PROJECT_SOURCE_DIR}/plugins/ui/mui"
-    "-DSDK_DIR=${PROJECT_SOURCE_DIR}/include/selecta"
+  COMMAND "${CMAKE_COMMAND}" "-DMCC_DIR=${MCC_DIR}" "-DSDK_DIR=${PROJECT_SOURCE_DIR}/include/selecta"
     "-DROOTS=${MCC_CHECK_ROOTS}"
     -P "${PROJECT_SOURCE_DIR}/cmake/mcc_check_includes.cmake"
   VERBATIM COMMENT "Include check of the MUI class package")
-add_dependencies(sdk-isolation mcc-include-check)
+add_custom_target(check ALL DEPENDS mcc-include-check)
 
 # I685j: file name of the MUI prefs class library; tests/ui/mcc_prefs_test.c checks it against the target below.
 set(MCC_PREFS_NAME "UP-MCC.mcp" CACHE STRING "file name of the MUI prefs class library")
@@ -86,6 +95,8 @@ set(MCC_RELEASE_INC "${CMAKE_CURRENT_BINARY_DIR}/release_include" CACHE INTERNAL
 set(MCC_DEMO_INCLUDES "${MCC_RELEASE_INC}" "${CMAKE_CURRENT_BINARY_DIR}/sfd_include" CACHE INTERNAL "include directories of up_demo")
 set(MCC_DEMO_LIBS "mui" CACHE INTERNAL "link libraries of up_demo")
 
+enable_testing()
+add_subdirectory(tests)
 if(NOT SEL_AMIGA)
   return()
 endif()
