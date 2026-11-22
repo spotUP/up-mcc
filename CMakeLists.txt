@@ -110,7 +110,7 @@ endif()
 # sys-include/stabs.h, no startup code. Not libinit.o itself: its Resident has rt_Version 0, and ramlib refuses
 # OpenLibrary(name, n) for a disk library whose Resident version is below n (I685p). MCC_LIB_VERSION is the one version
 # source: the Resident (UP_LIB_VERSION in up_libinit.c) and LibVersion in each header file. Post-build check: cmake/mcc_check_romtag.cmake.
-set(MCC_LIB_VERSION 1)
+set(MCC_LIB_VERSION 2)
 set(MCC_LIBINIT_SRC lib/up_libinit.c)
 set_source_files_properties(${MCC_LIBINIT_SRC} PROPERTIES COMPILE_OPTIONS "-fasm")
 function(up_mcc_lib_skeleton tgt)
@@ -135,7 +135,7 @@ set_source_files_properties(lib/libheader.c PROPERTIES COMPILE_OPTIONS "-fasm")
 
 # I685h: up-mcc.library, the support library (theme, icons, font list; design section 8.4). Same skeleton as the spike; the
 # functions are lib/support_lib.c from sel_mcc_static (also linked by the Selecta plugin), the table is in lib/support_libheader.c.
-add_executable(up_mcc_library ${MCC_LIBINIT_SRC} lib/support_libheader.c)
+add_executable(up_mcc_library ${MCC_LIBINIT_SRC} lib/support_libheader.c lib/support_draw.c lib/support_draw_copy.c)
 set_target_properties(up_mcc_library PROPERTIES OUTPUT_NAME "up-mcc.library")
 target_include_directories(up_mcc_library PRIVATE "${AMIGA_GCC_ROOT}/m68k-amigaos/libnix/include")
 target_link_libraries(up_mcc_library PRIVATE sel_mcc_static)
@@ -166,7 +166,7 @@ target_include_directories(up_mcc_header_check PRIVATE "${MCC_SFD_INC}" "${MCC_D
 # instead of linking the static support code is a later row). The check at the end compares each target's SOURCES with the list.
 # I685n: what every .mcc/.mcp compiles itself, ahead of the archive, so the linker never pulls the archive's token store and registry
 # (src/map/up_store.c) or its draw context list: the client of the store (UP_CLASS_LIBRARY) and the draw code that registers with it.
-set(MCC_CLIENT_SOURCES src/map/up_store_client.c src/mui_aa_draw.c lib/classlib_shims.c)
+set(MCC_CLIENT_SOURCES src/map/up_store_client.c lib/classlib_draw_shims.c lib/classlib_shims.c)
 function(up_add_class_library name class_source desc)
   set(tgt "up_mcc_${name}")
   add_executable(${tgt} ${MCC_LIBINIT_SRC} lib/classheader.c "${class_source}" ${MCC_CLIENT_SOURCES} ${MCC_SFD_HEADERS})
@@ -196,10 +196,11 @@ find_program(MCC_SIZE NAMES m68k-amigaos-size HINTS "${AMIGA_GCC_ROOT}/bin" "$EN
 # writer, no libnix stdio, text section under 8 KB (cmake/mcc_check_slim.cmake).
 # Target is 8192 (design I1491a); the draw/AA code (mui_aa*.c) is still linked into each library, so the enforced ratchet is 26624
 # (worst measured 25588, Cycle). Lower it as that code moves behind up-mcc.library.
-set(UP_MCC_SLIM_MAX_TEXT 26624 CACHE STRING "max text bytes per class library")
-function(up_check_slim tgt)
+set(UP_MCC_SLIM_MAX_TEXT 11468 CACHE STRING "max text bytes per class library")
+function(up_check_slim tgt desc)
+  string(REGEX REPLACE "_class_desc$" "" _own "${desc}")
   add_custom_command(TARGET ${tgt} POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" "-DNM=${MCC_NM}" "-DSIZE=${MCC_SIZE}" "-DBINARY=$<TARGET_FILE:${tgt}>" "-DMAX_TEXT=${UP_MCC_SLIM_MAX_TEXT}"
+    COMMAND "${CMAKE_COMMAND}" "-DNM=${MCC_NM}" "-DSIZE=${MCC_SIZE}" "-DBINARY=$<TARGET_FILE:${tgt}>" "-DMAX_TEXT=${UP_MCC_SLIM_MAX_TEXT}" "-DOWN=_${_own}_dispatch"
       -P "${PROJECT_SOURCE_DIR}/cmake/mcc_check_slim.cmake"
     VERBATIM COMMENT "${tgt}: slim (size and banned symbols)")
 endfunction()
@@ -210,7 +211,7 @@ foreach(row ${MCC_CLASS_LIBS})
   list(GET cols 2 d)
   up_add_class_library(${n} "${s}" ${d})
   up_check_no_store(up_mcc_${n})
-  up_check_slim(up_mcc_${n})
+  up_check_slim(up_mcc_${n} ${d})
 endforeach()
 # I685j: UP-MCC.mcp from the same skeleton (UP_PREFS_LIBRARY: MCC_Query(1) returns the class).
 add_executable(up_mcc_prefs ${MCC_LIBINIT_SRC} lib/classheader.c prefs/up_prefs.c src/map/up_store_client.c src/mui_aa_draw.c ${MCC_SFD_HEADERS})

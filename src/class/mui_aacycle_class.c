@@ -162,9 +162,37 @@ static const char* aacycle_row(struct Hook* hook, Object* obj, UP_ListCell* cell
     return cell->row >= 0 && cell->row < d->n ? d->entries[cell->row] : "";
 }
 
+#ifdef UP_MCC_LIBRARY
+/* UP_NewList's list+scroller group, built from the sibling classes by name (UP-List.mcc, UP-Scroller.mcc): this library links neither. */
+static Object* aacycle_new_list(struct TagItem* tl, Object** list_out) {
+    struct TagItem sc[] = {{MUIA_Frame, (ULONG)MUIV_Frame_None}, {TAG_DONE, 0}};
+    Object* scroller = AA_SIBLING(UP_NewScroller, "UP-Scroller.mcc", sc);
+    Object *list, *group;
+    if (scroller == NULL) {
+        return NULL;
+    }
+    tl[6].ti_Tag = UPA_List_Scroller, tl[6].ti_Data = (ULONG)(uintptr_t)scroller;
+    tl[7].ti_Tag = TAG_DONE, tl[7].ti_Data = 0;
+    list = AA_SIBLING(UP_NewList, "UP-List.mcc", tl);
+    if (list == NULL) {
+        MUI_DisposeObject(scroller);
+        return NULL;
+    }
+    group = MUI_NewObject((char*)MUIC_Group, MUIA_Group_Horiz, TRUE, MUIA_Group_Spacing, 0, MUIA_Group_HorizSpacing, 0, Child, (ULONG)list, Child, (ULONG)scroller, TAG_DONE);
+    if (group == NULL) {
+        MUI_DisposeObject(list);
+        MUI_DisposeObject(scroller);
+        return NULL;
+    }
+    DoMethod(scroller, MUIM_Notify, UPA_Scroller_First, MUIV_EveryTime, list, 3, MUIM_Set, UPA_List_First, MUIV_TriggerValue);
+    *list_out = list;
+    return group;
+}
+#endif
+
 static void aacycle_open_popup(Object* obj, aacycle_data* d) {
     Object *app = NULL, *list = NULL, *group;
-    struct TagItem tl[7];
+    struct TagItem tl[8];
     struct Window* win = _window(obj);
     if (win == NULL || d->n <= 0 || d->popup != NULL) {
         return;
@@ -183,7 +211,12 @@ static void aacycle_open_popup(Object* obj, aacycle_data* d) {
     tl[4].ti_Tag = UPA_List_KeysUnfocused, tl[4].ti_Data = (ULONG)TRUE; /* I1349: keys work with no active object, so MUI draws no white active frame */
     tl[5].ti_Tag = UPA_List_Raised, tl[5].ti_Data = (ULONG)TRUE; /* I1349: rows rest on the Raised popup body */
     tl[6].ti_Tag = TAG_DONE, tl[6].ti_Data = 0;
-    group = UP_NewList(tl, &list); /* I667i: the AAList look (padding, row spacing, flat scroller) instead of the stock List */
+#ifdef UP_MCC_LIBRARY
+    group = aacycle_new_list(tl, &list);
+#else
+    group = UP_NewList(tl, &list);
+#endif
+    /* I667i: the AAList look (padding, row spacing, flat scroller) instead of the stock List */
     if (group == NULL) {
         return;
     }

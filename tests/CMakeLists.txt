@@ -36,8 +36,11 @@ set(_slimdir "${CMAKE_CURRENT_SOURCE_DIR}/slim")
 mcc_test(mcc-slim-ok COMMAND "${CMAKE_COMMAND}" "-DNM_TEXT=${_slimdir}/ok.nm" "-DSIZE_TEXT=${_slimdir}/ok.size" -P "${_slim}")
 mcc_test(mcc-slim-bans-theme-parser COMMAND "${CMAKE_COMMAND}" "-DNM_TEXT=${_slimdir}/bad_parse.nm" "-DSIZE_TEXT=${_slimdir}/ok.size" -P "${_slim}")
 mcc_test(mcc-slim-bans-stdio COMMAND "${CMAKE_COMMAND}" "-DNM_TEXT=${_slimdir}/bad_stdio.nm" "-DSIZE_TEXT=${_slimdir}/ok.size" -P "${_slim}")
+mcc_test(mcc-slim-bans-draw COMMAND "${CMAKE_COMMAND}" "-DNM_TEXT=${_slimdir}/bad_draw.nm" "-DSIZE_TEXT=${_slimdir}/ok.size" -P "${_slim}")
+mcc_test(mcc-slim-bans-sibling COMMAND "${CMAKE_COMMAND}" "-DNM_TEXT=${_slimdir}/bad_sibling.nm" "-DSIZE_TEXT=${_slimdir}/ok.size" "-DOWN=_aatabs_dispatch" -P "${_slim}")
+mcc_test(mcc-slim-own-dispatch-ok COMMAND "${CMAKE_COMMAND}" "-DNM_TEXT=${_slimdir}/bad_sibling.nm" "-DSIZE_TEXT=${_slimdir}/ok.size" "-DOWN=_aabtn_dispatch" -P "${_slim}")
 mcc_test(mcc-slim-size-limit COMMAND "${CMAKE_COMMAND}" "-DNM_TEXT=${_slimdir}/ok.nm" "-DSIZE_TEXT=${_slimdir}/big.size" -P "${_slim}")
-set_tests_properties(mcc-slim-bans-theme-parser mcc-slim-bans-stdio mcc-slim-size-limit PROPERTIES WILL_FAIL TRUE)
+set_tests_properties(mcc-slim-bans-theme-parser mcc-slim-bans-stdio mcc-slim-bans-draw mcc-slim-bans-sibling mcc-slim-size-limit PROPERTIES WILL_FAIL TRUE)
 
 mcc_test_exe(mcc_log_test)
 foreach(t gate-off gate-on source)
@@ -70,3 +73,19 @@ mcc_test(mcc-dist-layout COMMAND "${CMAKE_COMMAND}" -DMODE=selftest "-DWORK=${CM
 mcc_test(mcc-demo-headers-only COMMAND "${CMAKE_COMMAND}" "-DINCLUDES=${MCC_DEMO_INCLUDES}" "-DLIBS=${MCC_DEMO_LIBS}"
   "-DSOURCE=${MCC_DIR}/demo/updemo.c" "-DRELEASE_INC=${MCC_RELEASE_INC}" "-DSOURCE_ROOT=${PROJECT_SOURCE_DIR}"
   "-DBINARY_ROOT=${PROJECT_BINARY_DIR}" -P "${PROJECT_SOURCE_DIR}/cmake/mcc_check_demo.cmake")
+
+if(NOT CMAKE_CROSSCOMPILING) # the fake system headers are host-only
+# I1491a2: the library side of the draw layer on host, against the real draw headers with stand-in system headers (tests/fake) and a
+# recording aa_* layer (design 2026-11-22-i1491a2-draw-behind-library.md section 6).
+add_executable(mcc_draw_entry_test mcc_draw_entry_test.c "${MCC_DIR}/lib/support_draw.c")
+target_include_directories(mcc_draw_entry_test BEFORE PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/fake")
+target_include_directories(mcc_draw_entry_test PRIVATE "${MCC_DIR}/include" "${MCC_DIR}/src" "${MCC_DIR}/src/map")
+mcc_test(mcc-draw-entry COMMAND mcc_draw_entry_test entry)
+mcc_test(mcc-draw-ctx-size COMMAND mcc_draw_entry_test size)
+
+# I1491a2 row R2: the class-library shims over the same fake headers.
+add_executable(mcc_draw_shims_test mcc_draw_shims_test.c "${MCC_DIR}/lib/classlib_draw_shims.c")
+target_include_directories(mcc_draw_shims_test BEFORE PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/fake")
+target_include_directories(mcc_draw_shims_test PRIVATE "${MCC_DIR}/include" "${MCC_DIR}/src" "${MCC_DIR}/src/map")
+mcc_test(mcc-draw-shims COMMAND mcc_draw_shims_test)
+endif()

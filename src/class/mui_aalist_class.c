@@ -451,6 +451,7 @@ static ULONG aalist_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     d->no_select = no_select;
     d->keys_unfocused = (int)GetTagData(UPA_List_KeysUnfocused, FALSE, t);
     d->raised = (int)GetTagData(UPA_List_Raised, FALSE, t);
+    d->scroller = (Object*)(uintptr_t)GetTagData(UPA_List_Scroller, 0, t);
     return (ULONG)obj;
 }
 
@@ -495,7 +496,10 @@ Object* UP_NewList(const struct TagItem* tags, Object** list_out) {
         return NULL;
     }
     list = NewObjectA(g_list_class->mcc_Class, NULL, (struct TagItem*)tags);
-    scroller = UP_NewScroller(NULL);
+    {
+        struct TagItem sc[] = {{MUIA_Frame, (ULONG)MUIV_Frame_None}, {TAG_DONE, 0}};
+        scroller = AA_SIBLING(UP_NewScroller, "UP-Scroller.mcc", sc);
+    }
     group = MUI_NewObject((char*)MUIC_Group, MUIA_Group_Horiz, TRUE, MUIA_Group_Spacing, 0, MUIA_Group_HorizSpacing, 0, Child, (ULONG)list, Child, (ULONG)scroller,
                           TAG_DONE);
     if (list == NULL || scroller == NULL || group == NULL) {

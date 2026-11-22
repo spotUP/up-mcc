@@ -351,8 +351,13 @@ static ULONG __attribute__((used)) aabtn_dispatch_c(struct IClass* cl, Object* o
     switch (msg->MethodID) {
     case OM_NEW:
         return aabtn_new(cl, obj, (struct opSet*)msg);
-    case OM_SET:
+    case OM_SET: {
+        struct TagItem* on = FindTagItem(UPA_Button_On, ((struct opSet*)msg)->ops_AttrList);
+        if (on != NULL) {
+            mui_aabtn_set_on(obj, (int)on->ti_Data);
+        }
         return aatip_super_set(cl, obj, (struct opSet*)msg, offsetof(aabtn_data, tip));
+    }
     case OM_GET:
         if (aatip_get((struct opGet*)msg, &((aabtn_data*)INST_DATA(cl, obj))->tip)) {
             return TRUE;

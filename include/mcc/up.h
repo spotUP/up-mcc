@@ -17,6 +17,9 @@ typedef ULONG UP_Data; /* ti_Data */
 typedef uint32_t ULONG;
 typedef int32_t LONG;
 typedef char* STRPTR;
+typedef void* APTR;
+typedef uint16_t UWORD;
+typedef int16_t WORD;
 typedef uintptr_t UP_Data; /* ti_Data: wide enough for a pointer on the host */
 typedef ULONG Object;
 #define TAG_DONE 0UL
@@ -114,6 +117,7 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_List_NoSelect UP_TAG(UP_CLS_LIST, 0x0C) /* I BOOL: no hover, no selection, wheel only */
 #define UPA_List_KeysUnfocused UP_TAG(UP_CLS_LIST, 0x0D) /* I BOOL: Up/Down/Return act while no object is active (popup list; MUI draws a white frame round an active object) */
 #define UPA_List_Raised UP_TAG(UP_CLS_LIST, 0x0F)    /* I BOOL: resting rows use the Raised token, for a list in a Raised popup panel (I1349) */
+#define UPA_List_Scroller UP_TAG(UP_CLS_LIST, 0x10)  /* I Object*: the UP-Scroller the list keeps in step (UP_NewList sets it itself; a by-name builder passes it) */
 #define UPA_List_Cancelled UP_TAG(UP_CLS_LIST, 0x0E) /* S BOOL: set TRUE by Esc when UPA_List_KeysUnfocused is on (popup list; notify to close the popup) */
 /* UPM_List_GetRow (I713): the read-back method for tools that drive the window from outside. The caller fills row and text/cap;
  * the method returns TRUE when the row exists and sets: text = the cell texts joined by two spaces (truncated to cap), x/y/w/h =
@@ -148,6 +152,7 @@ typedef struct UP_ListGetRow {
 #define UPA_Button_FixedHeight UP_TAG(UP_CLS_BUTTON, 0x08) /* I LONG exact height in px, 0 = from the contents */
 #define UPA_Button_Align UP_TAG(UP_CLS_BUTTON, 0x09)       /* I UPV_Button_Align_* */
 #define UPA_Button_IconData UP_TAG(UP_CLS_BUTTON, 0x0A)    /* I struct UP_IconData*: caller icon for a glyph not in the set; used when UPA_Button_Icon names none. The struct and its mask are NOT copied: they must stay valid until the object is disposed */
+#define UPA_Button_On UP_TAG(UP_CLS_BUTTON, 0x0B)          /* IS BOOL: lit state (a tab strip lights its active tab); redraws when live */
 typedef struct UP_IconData { /* an alpha mask, w x h bytes row by row (0 clear .. 255 full); drawn like a baked icon, scaled to the icon box */
     const unsigned char* alpha;
     LONG w, h;

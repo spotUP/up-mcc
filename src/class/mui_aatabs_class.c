@@ -37,7 +37,7 @@ static uint32_t g_made;
 static void aatabs_sync(aatabs_data* d) {
     int i;
     for (i = 0; i < d->n; i++) {
-        mui_aabtn_set_on(d->btn[i], i == d->active);
+        SetAttrs(d->btn[i], UPA_Button_On, (ULONG)(i == d->active), TAG_DONE);
     }
 }
 
@@ -167,7 +167,7 @@ static ULONG aatabs_new(struct IClass* cl, Object* obj, struct opSet* msg) {
                                {MUIA_Weight, 0},
                                {MUIA_ShortHelp, (ULONG)(uintptr_t)captions[i]},
                                {TAG_DONE, 0}};
-        d->btn[i] = UP_NewButton(bt);
+        d->btn[i] = AA_SIBLING(UP_NewButton, "UP-Button.mcc", bt);
         if (d->btn[i] == NULL) {
             CoerceMethod(cl, obj, OM_DISPOSE);
             return 0;
@@ -175,7 +175,7 @@ static ULONG aatabs_new(struct IClass* cl, Object* obj, struct opSet* msg) {
         if (i > 0) {
             /* I685w run 6: a one-space UP-Text keeps the chips apart; a group spacing would fill the gap with MUI's snapped pen */
             struct TagItem gt[] = {{UPA_Text_Contents, (ULONG)(uintptr_t)" "}, {MUIA_Weight, 0}, {TAG_DONE, 0}};
-            DoMethod(obj, OM_ADDMEMBER, UP_NewText(gt));
+            DoMethod(obj, OM_ADDMEMBER, AA_SIBLING(UP_NewText, "UP-Text.mcc", gt));
         }
         DoMethod(obj, OM_ADDMEMBER, d->btn[i]);
         DoMethod(d->btn[i], MUIM_Notify, MUIA_Pressed, FALSE, obj, 3, MUIM_Set, UPA_Tabs_Active, (ULONG)i);
@@ -183,7 +183,7 @@ static ULONG aatabs_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     {
         /* an UP-Text spacer erases in the panel token; a stock Rectangle would fill with MUI's snapped background pen */
         struct TagItem st[] = {{UPA_Text_Contents, (ULONG)(uintptr_t)" "}, {TAG_DONE, 0}};
-        DoMethod(obj, OM_ADDMEMBER, UP_NewText(st));
+        DoMethod(obj, OM_ADDMEMBER, AA_SIBLING(UP_NewText, "UP-Text.mcc", st));
     }
     aatabs_sync(d);
     return (ULONG)obj;
