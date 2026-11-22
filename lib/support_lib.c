@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "map/mui_fontprobe.h"
 #include "map/mui_icons.h"
 #include "map/mui_log.h"
 #include "map/mui_theme.h"
@@ -42,6 +43,7 @@ static void push_one(void* user, void* key, void* obj, void* app, void* hook) {
 #endif
 
 static void retheme(void) {
+    mui_fontprobe_reset(); /* a font installed since the last probe must be found again */
 #if defined(__amigaos__) || defined(AMIGA)
     (void)aa_retheme_all(); /* contexts of this process (the static build: Selecta's own objects) */
     up_registry_each(push_one, NULL);
@@ -147,7 +149,11 @@ LONG UP_IconFind(STRPTR name) {
 }
 
 LONG UP_SetFontFile(STRPTR path) {
-    return mui_font_file_add((const char*)path);
+    LONG r = mui_font_file_add((const char*)path);
+    if (r == 0) {
+        retheme(); /* new font list: reset the probe and redraw every attached object */
+    }
+    return r;
 }
 
 /* I685n: the registry of the one store (src/map/up_store.c). key: the object's draw context; hook: a struct Hook* whose entry runs
