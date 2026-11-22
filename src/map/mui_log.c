@@ -6,7 +6,12 @@
 #include <stdlib.h>
 
 #if defined(__amigaos__) || defined(AMIGA)
+#include <clib/utility_protos.h>
 #include <proto/dos.h>
+#include <proto/utility.h>
+#include <utility/hooks.h>
+#else
+#include <mcc/up.h> /* the host's three-field struct Hook */
 #endif
 
 /* -1 not read yet, 0 off, 1 on. Read once on the first call; the answer is cached for the life of the process. */
@@ -27,10 +32,33 @@ static int debug_enabled(void) {
     return g_debug;
 }
 
+/* U3: the host-set log hook (struct Hook*). Amiga: CallHookPkt runs the register entry; host: h_Entry is a plain C function (hook, obj, msg). */
+static void* g_hook;
+void aa_log_hook_set(void* h) {
+    g_hook = h;
+}
+
+static void hook_emit(const char* line) {
+    if (g_hook == NULL) return;
+#if defined(__amigaos__) || defined(AMIGA)
+    CallHookPkt((struct Hook*)g_hook, NULL, (APTR)line);
+#else
+    ((unsigned long (*)(void*, void*, const void*))((struct Hook*)g_hook)->h_Entry)(g_hook, NULL, line);
+#endif
+}
+
 /* I1491a: the class libraries pass their va_list (a stack pointer on m68k) to up-mcc.library, which writes it here. */
 void aa_vlog(const char* fmt, void* args) {
-    if (!debug_enabled()) return;
 #if defined(__amigaos__) || defined(AMIGA)
+    if (g_hook != NULL) {
+        char line[256];
+        va_list cp;
+        va_copy(cp, (va_list)args);
+        vsnprintf(line, sizeof line, fmt, cp);
+        va_end(cp);
+        hook_emit(line);
+    }
+    if (!debug_enabled()) return;
     vfprintf(stderr, fmt, (va_list)args);
 #else
     (void)fmt; /* a host va_list is not a pointer; only the Amiga class libraries call this */
@@ -39,6 +67,13 @@ void aa_vlog(const char* fmt, void* args) {
 
 void aa_log(const char* fmt, ...) {
     va_list ap;
+    if (g_hook != NULL) {
+        char line[256];
+        va_start(ap, fmt);
+        vsnprintf(line, sizeof line, fmt, ap);
+        va_end(ap);
+        hook_emit(line);
+    }
     if (!debug_enabled()) return;
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);

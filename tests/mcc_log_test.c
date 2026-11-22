@@ -4,6 +4,7 @@
  * gate-on:   UP_MCC_DEBUG=1 (set before the first call; the gate is read once) -> the line appears with the "up-mcc: " prefix.
  * source:    no fprintf(stderr outside mui_log.c in the package, no "selecta text inside an aa_log call. */
 #include "map/mui_log.h"
+#include <mcc/up.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,6 +36,25 @@ static void test_gate(int on, const char* path) {
     n = capture(path, out, sizeof out);
     if (on) CHECK(n != (size_t)-1 && strcmp(out, "up-mcc: probe 42\n") == 0, "gate on: got '%s'", out);
     else CHECK(n == 0, "gate off: wrote %lu bytes", (unsigned long)n);
+}
+
+/* U3: the hook gets the formatted line with the debug gate off; removing it stops delivery. */
+static char g_hooked[256];
+static unsigned long hook_fn(struct Hook* h, void* obj, const char* line) {
+    (void)h, (void)obj;
+    snprintf(g_hooked, sizeof g_hooked, "%s", line);
+    return 0;
+}
+static void test_hook(void) {
+    struct Hook h = {(void*)hook_fn, NULL, NULL};
+    unsetenv("UP_MCC_DEBUG");
+    aa_log_hook_set(&h);
+    aa_log("up-mcc: hooked %d\n", 7);
+    CHECK(strcmp(g_hooked, "up-mcc: hooked 7\n") == 0, "hook got '%s'", g_hooked);
+    g_hooked[0] = '\0';
+    aa_log_hook_set(NULL);
+    aa_log("up-mcc: after %d\n", 8);
+    CHECK(g_hooked[0] == '\0', "hook called after removal");
 }
 
 static int read_file(const char* path, char* buf, size_t cap) {
@@ -78,6 +98,7 @@ int main(int argc, char** argv) {
     const char* path = argc > 2 ? argv[2] : "mcc_log_capture.txt";
     if (!strcmp(t, "gate-off")) test_gate(0, path);
     else if (!strcmp(t, "gate-on")) test_gate(1, path);
+    else if (!strcmp(t, "hook")) test_hook();
     else if (!strcmp(t, "source")) test_source();
     else { fprintf(stdout, "unknown test '%s'\n", t); return 2; }
     if (g_fail) return 1;

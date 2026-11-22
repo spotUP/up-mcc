@@ -169,6 +169,10 @@ void UP_Log(STRPTR fmt, void* args) {
     aa_vlog((const char*)fmt, args);
 }
 
+void UP_SetLogHook(APTR hook) {
+    aa_log_hook_set(hook);
+}
+
 void* UP_FontFiles(void) {
     return (void*)(uintptr_t)mui_font_files();
 }

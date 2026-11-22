@@ -142,7 +142,7 @@ typedef struct UP_ListGetRow {
 } UP_ListGetRow;
 
 /* UP-Button */
-#define UPA_Button_Caption UP_TAG(UP_CLS_BUTTON, 0x01)     /* I STRPTR shown text */
+#define UPA_Button_Caption UP_TAG(UP_CLS_BUTTON, 0x01)     /* ISG STRPTR shown text; a set relayouts the parent (a fit button grows) and updates the tooltip; copied, up to 47 bytes */
 #define UPA_Button_Widest UP_TAG(UP_CLS_BUTTON, 0x02)      /* I STRPTR longest caption (sets the minimum width); absent = fit the caption */
 #define UPA_Button_Icon UP_TAG(UP_CLS_BUTTON, 0x03)        /* I STRPTR Lucide icon name of the baked set ("play", "skip-forward"); NULL, absent or unknown = none */
 #define UPA_Button_AltIcon UP_TAG(UP_CLS_BUTTON, 0x04)     /* I STRPTR icon name swapped in by mui_aabtn_set_alt; NULL, absent or unknown = none */
@@ -152,6 +152,7 @@ typedef struct UP_ListGetRow {
 #define UPA_Button_FixedHeight UP_TAG(UP_CLS_BUTTON, 0x08) /* I LONG exact height in px, 0 = from the contents */
 #define UPA_Button_Align UP_TAG(UP_CLS_BUTTON, 0x09)       /* I UPV_Button_Align_* */
 #define UPA_Button_IconData UP_TAG(UP_CLS_BUTTON, 0x0A)    /* I struct UP_IconData*: caller icon for a glyph not in the set; used when UPA_Button_Icon names none. The struct and its mask are NOT copied: they must stay valid until the object is disposed */
+#define UPA_Button_Alt UP_TAG(UP_CLS_BUTTON, 0x0C)         /* IS BOOL: show UPA_Button_AltIcon instead of UPA_Button_Icon (play/pause); redraws and relayouts when live */
 #define UPA_Button_On UP_TAG(UP_CLS_BUTTON, 0x0B)          /* IS BOOL: lit state (a tab strip lights its active tab); redraws when live */
 typedef struct UP_IconData { /* an alpha mask, w x h bytes row by row (0 clear .. 255 full); drawn like a baked icon, scaled to the icon box */
     const unsigned char* alpha;
