@@ -223,6 +223,7 @@ Object* UP_NewList(const struct TagItem* tags, Object** list_out); /* returns th
 #else
 #include <libraries/mui.h>
 #include <proto/muimaster.h>
+#include <clib/alib_protos.h> /* DoMethod for UP_NewList, declared before any other header can imply it */
 #define UP_CLIENT_CTOR(fn, cls) static inline Object* fn(const struct TagItem* tags) { return MUI_NewObjectA((char*)(cls), (struct TagItem*)tags); }
 UP_CLIENT_CTOR(UP_NewButton, MUIC_UP_Button)
 UP_CLIENT_CTOR(UP_NewText, MUIC_UP_Text)
