@@ -14,6 +14,10 @@ void aa_log(const char* fmt, ...)
 #endif
     ;
 
+/* U3: a hook that receives every aa_log line (formatted, NUL terminated, up to 255 bytes; the hook's message is that string, obj NULL),
+ * whether or not the debug variable is set. NULL removes it. One hook for the process. h is a struct Hook*. */
+void aa_log_hook_set(void* h);
+
 /* I1491a: aa_log for a caller that only has its va_list as a pointer (the Amiga class libraries, through UP_Log). */
 void aa_vlog(const char* fmt, void* args);
 
