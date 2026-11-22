@@ -237,9 +237,30 @@ static LONG aa_pen(aa_ctx* c, uint32_t rgb) {
 }
 
 static aa_ctx* g_ctx_list;
-#ifdef UP_CLASS_LIBRARY
+#if defined(UP_CLASS_LIBRARY) || defined(UP_DRAW_LIBRARY)
 #include <clib/alib_protos.h>
 #include "map/up_store.h"
+#endif
+#ifdef UP_DRAW_LIBRARY
+/* I1491a2: the copy inside up-mcc.library. Every class library's contexts live in this one list, so the list and the font cache are
+ * one per system. Several application tasks call in, so the list is guarded by one semaphore; the registry is attached directly. */
+#include <exec/semaphores.h>
+#include <proto/exec.h>
+static struct SignalSemaphore g_list_sem;
+#define LIST_LOCK() ObtainSemaphore(&g_list_sem)
+#define LIST_UNLOCK() ReleaseSemaphore(&g_list_sem)
+#define REG_ATTACH(key, obj, app, hook) up_registry_attach((key), (obj), (app), (hook))
+#define REG_DETACH(key) up_registry_detach((key))
+void up_draw_init(void) {
+    InitSemaphore(&g_list_sem);
+}
+#else
+#define LIST_LOCK() ((void)0)
+#define LIST_UNLOCK() ((void)0)
+#define REG_ATTACH(key, obj, app, hook) up_store_attach((key), (obj), (app), (hook))
+#define REG_DETACH(key) up_store_detach((key))
+#endif
+#if defined(UP_CLASS_LIBRARY) || defined(UP_DRAW_LIBRARY)
 static ULONG retheme_hook_fn(struct Hook* hook, APTR app, ULONG* msg);
 static struct Hook g_retheme_hook;
 static void retheme_hook_init(void) {
@@ -252,6 +273,7 @@ static void retheme_hook_init(void) {
 
 static void ctx_unlink(aa_ctx* c) {
     aa_ctx** p;
+    LIST_LOCK();
     for (p = &g_ctx_list; *p != NULL; p = &(*p)->next) {
         if (*p == c) {
             *p = c->next;
@@ -260,8 +282,9 @@ static void ctx_unlink(aa_ctx* c) {
     }
     c->next = NULL;
     c->linked = 0;
-#ifdef UP_CLASS_LIBRARY
-    (void)up_store_detach(c);
+    LIST_UNLOCK();
+#if defined(UP_CLASS_LIBRARY) || defined(UP_DRAW_LIBRARY)
+    (void)REG_DETACH(c);
 #endif
 }
 
@@ -291,14 +314,16 @@ void aa_setup(Object* obj, aa_ctx* c, const uint32_t* rgb, int n) {
     }
     memset(c, 0, sizeof *c);
     c->obj = obj;
+    LIST_LOCK();
     c->next = g_ctx_list;
     g_ctx_list = c;
     c->linked = 1;
+    LIST_UNLOCK();
     memcpy(c->tok, mui_theme_tokens(), sizeof c->tok);
-#ifdef UP_CLASS_LIBRARY
+#if defined(UP_CLASS_LIBRARY) || defined(UP_DRAW_LIBRARY)
     /* I685n: a recolour started in another process (the prefs Save) reaches this object through the registry of up-mcc.library. */
     retheme_hook_init();
-    (void)up_store_attach(c, obj, (void*)_app(obj), &g_retheme_hook);
+    (void)REG_ATTACH(c, obj, (void*)_app(obj), &g_retheme_hook);
 #endif
     c->scr = _screen(obj);
     c->cm = c->scr->ViewPort.ColorMap;
@@ -700,14 +725,18 @@ uint32_t aa_retheme_all(void) {
     aa_ctx* c;
     uint32_t n = 0;
     aatip_drop(NULL); /* I731: an open tip holds pens of the old palette */
+#ifdef UP_DRAW_LIBRARY
+    (void)c; /* every context here belongs to an object of some application: the registry push redraws it on its own task */
+#else
     for (c = g_ctx_list; c != NULL; c = c->next) {
         ctx_retheme(c);
         n++;
     }
+#endif
     return n;
 }
 
-#ifdef UP_CLASS_LIBRARY
+#if defined(UP_CLASS_LIBRARY) || defined(UP_DRAW_LIBRARY)
 /* I685n: runs on the application's task (MUIM_Application_PushMethod + MUIM_CallHook from up-mcc.library). msg[0] is the key given to
  * UP_ThemeAttach, the context. The method may arrive after the object left the window, so the context is looked up in this
  * library's own list first; a gone context is ignored. */
@@ -716,12 +745,14 @@ static ULONG retheme_hook_fn(struct Hook* hook, APTR app, ULONG* msg) {
     (void)hook;
     (void)app;
     aatip_drop(NULL);
+    LIST_LOCK();
     for (c = g_ctx_list; c != NULL; c = c->next) {
         if ((ULONG)(uintptr_t)c == msg[0]) {
             ctx_retheme(c);
             break;
         }
     }
+    LIST_UNLOCK();
     return 0;
 }
 

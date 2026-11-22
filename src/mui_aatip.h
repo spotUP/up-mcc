@@ -13,6 +13,7 @@
 
 #include "mui_aa_draw.h"
 
+/* Layout frozen, ABI 2 (up-mcc.library checks sizeof): append only. */
 typedef struct aatip_slot {
     const char* text;
     int side; /* MUI_AA_TIP_* preferred side */

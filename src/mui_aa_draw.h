@@ -17,6 +17,7 @@
 enum { AA_PLAIN, AA_TC, AA_PAL };
 #define AA_MAX_PENS 40
 
+/* Layout frozen, ABI 2 (up-mcc.library UP_DrawSetup checks sizeof): append only. */
 typedef struct aa_ctx {
     struct ColorMap* cm;
     struct Screen* scr;

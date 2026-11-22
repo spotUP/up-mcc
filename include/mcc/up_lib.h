@@ -33,4 +33,58 @@ void UP_Log(STRPTR fmt, void* args);
 void* UP_FontFiles(void);
 void* UP_IconBody(LONG icon, LONG w, LONG h, LONG* bwh);
 
+/* I1491a2 (library version 2): the draw layer. The class libraries keep their aa_ctx and aatip_slot in the instance data and hand the
+ * pointer in; the code behind them (src/mui_aa_draw.c, mui_aatip.c, the paint shapes) is one copy in this library. aa_ctx and
+ * aatip_slot layouts are frozen (ABI 2, append only): UP_DrawSetup(ctx, obj, rgb, nsize) takes nsize = n | sizeof(aatip_slot) << 8 |
+ * sizeof(aa_ctx) << 16 and returns 0 without touching ctx on a mismatch, then every other call ignores that ctx (drawing nothing).
+ * Returns 1 on success. Every call takes the context and RastPort of the calling class and runs on the calling task. */
+#define UP_DRAW_NSIZE(n, ctx_size, slot_size) ((ULONG)(n) | ((ULONG)(slot_size) << 8) | ((ULONG)(ctx_size) << 16))
+/* UP_DrawShape(ctx, rp, obj, shape): one entry for every fill; shape->kind selects the aa_* function (enum below), the fields are its
+ * arguments. UP_SHAPE_RECT: x, y = (x0, y0) and w, h = (x1, y1), the inclusive corner. UP_SHAPE_ROUND_FILL_HOLE: p0 = int[4]
+ * {hx, hy, hw, hh}. UP_SHAPE_ROUND_FILL_HOLES: p0 = const int* holes, n = count. UP_SHAPE_RUNS: x, y, p0 = slot bytes, p1 = slot
+ * rgb, n = count. UP_SHAPE_ERASE uses obj. */
+enum {
+    UP_SHAPE_RECT = 0,
+    UP_SHAPE_ROUND_FILL,
+    UP_SHAPE_ROUND_FRAME,
+    UP_SHAPE_ROUND_CORNERS,
+    UP_SHAPE_ROUND_FILL_HOLE,
+    UP_SHAPE_ROUND_FILL_HOLES,
+    UP_SHAPE_LOW_OUTLINE,
+    UP_SHAPE_RUNS,
+    UP_SHAPE_ERASE,
+    UP_SHAPE_COUNT
+};
+struct up_shape {
+    UWORD kind;
+    WORD x, y, w, h, radius;
+    ULONG rgb;
+    const void* p0;
+    const void* p1;
+    WORD n;
+};
+struct up_text {
+    WORD x, y;
+    STRPTR str;
+    ULONG fg, bg;
+};
+/* UP_DrawFont flags: 0 = aa_set_font_px(px); UP_FONT_PLAIN (+ UP_FONT_BOLD) = aa_plain_font(px, bold). */
+#define UP_FONT_PLAIN 1
+#define UP_FONT_BOLD 2
+LONG UP_DrawSetup(void* ctx, void* obj, const ULONG* rgb, ULONG nsize);
+void UP_DrawCleanup(void* ctx);
+void UP_DrawFont(void* ctx, void* obj, LONG px, LONG flags);
+/* hold 1: aa_hold (returns 0); hold 0: aa_nearest_pen. */
+LONG UP_DrawPen(void* ctx, ULONG rgb, LONG hold);
+void UP_DrawShape(void* ctx, void* rp, void* obj, const void* shape);
+/* str NULL: aa_text_height; else aa_text_width. */
+LONG UP_DrawTextSize(void* ctx, void* obj, STRPTR str);
+void UP_DrawText(void* ctx, void* obj, void* rp, const void* text);
+LONG UP_DrawLive(void* obj);
+ULONG UP_TipFire(void* obj, void* ctx, void* slot);
+ULONG UP_TipSuperSet(void* cl, void* obj, void* msg, ULONG slotoff);
+LONG UP_TipGet(void* msg, void* slot);
+void UP_TipEvent(void* obj, void* slot, void* imsg, LONG in);
+void UP_TipDrop(void* obj);
+
 #endif

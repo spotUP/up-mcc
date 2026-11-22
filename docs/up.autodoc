@@ -1323,3 +1323,288 @@
 *       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
 *
 ******/
+
+/****** up-mcc.library/UP_DrawSetup ******
+*
+*   NAME
+*       UP_DrawSetup -- up-mcc.library function
+*
+*   FUNCTION
+*       Start the draw context of one object: pens, theme tokens and font. Refuses a class built with another aa_ctx or aatip_slot size (nsize) and logs one line.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       Non-zero when the context is ready, 0 when refused.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_DrawCleanup ******
+*
+*   NAME
+*       UP_DrawCleanup -- up-mcc.library function
+*
+*   FUNCTION
+*       Release the pens and font a draw context holds.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       None.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_DrawFont ******
+*
+*   NAME
+*       UP_DrawFont -- up-mcc.library function
+*
+*   FUNCTION
+*       Select the font of a draw context: a pixel size, or the plain face (flags UP_FONT_PLAIN, UP_FONT_BOLD).
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       None.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_DrawPen ******
+*
+*   NAME
+*       UP_DrawPen -- up-mcc.library function
+*
+*   FUNCTION
+*       Find the pen nearest to an RGB value, optionally held for the life of the context.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       The pen number.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_DrawShape ******
+*
+*   NAME
+*       UP_DrawShape -- up-mcc.library function
+*
+*   FUNCTION
+*       Paint one shape (rectangle, rounded fill or frame, runs, erase and the others of UP_SHAPE_*) with the anti-aliased draw layer.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       None.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_DrawTextSize ******
+*
+*   NAME
+*       UP_DrawTextSize -- up-mcc.library function
+*
+*   FUNCTION
+*       Width of a string in the context font, in pixels.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       The width.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_DrawText ******
+*
+*   NAME
+*       UP_DrawText -- up-mcc.library function
+*
+*   FUNCTION
+*       Draw a string with the anti-aliased text path.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       None.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_DrawLive ******
+*
+*   NAME
+*       UP_DrawLive -- up-mcc.library function
+*
+*   FUNCTION
+*       Tell whether the object has a window and a rastport to draw in.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       Non-zero when live.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_TipFire ******
+*
+*   NAME
+*       UP_TipFire -- up-mcc.library function
+*
+*   FUNCTION
+*       Run the tooltip machinery of an object after a UPM_Shared_Fire message.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       The method result.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_TipSuperSet ******
+*
+*   NAME
+*       UP_TipSuperSet -- up-mcc.library function
+*
+*   FUNCTION
+*       OM_NEW and OM_SET front end of a class with a tooltip slot: pass the tags to the super class and read MUIA_ShortHelp.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       The super class result.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_TipGet ******
+*
+*   NAME
+*       UP_TipGet -- up-mcc.library function
+*
+*   FUNCTION
+*       OM_GET front end of a class with a tooltip slot.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       Non-zero when the attribute was answered.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_TipEvent ******
+*
+*   NAME
+*       UP_TipEvent -- up-mcc.library function
+*
+*   FUNCTION
+*       Feed a window message to the tooltip slot of an object (hover, leave, click).
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       None.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_TipDrop ******
+*
+*   NAME
+*       UP_TipDrop -- up-mcc.library function
+*
+*   FUNCTION
+*       Close the tooltip window of an object, or of every object when obj is NULL.
+*
+*   INPUTS
+*       See the prototype in <mcc/up_lib.h>.
+*
+*   RESULT
+*       None.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** UP-Button.mcc/UPA_Button_On ******
+*
+*   NAME
+*       UPA_Button_On -- attribute of UP-Button.mcc
+*
+*   FUNCTION
+*       BOOL: the lit state; a tab strip lights its active tab with it. Redraws when the button is on screen.
+*
+*   INPUTS
+*       UPA_Button_On - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Button.mcc
+*
+******/
+
+/****** UP-List.mcc/UPA_List_Scroller ******
+*
+*   NAME
+*       UPA_List_Scroller -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       Object: the UP-Scroller.mcc the list keeps in step with its window of rows. UP_NewList passes it itself; a builder that makes the list by name passes it.
+*
+*   INPUTS
+*       UPA_List_Scroller - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
