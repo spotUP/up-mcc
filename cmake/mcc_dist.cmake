@@ -10,13 +10,13 @@ set(SFD_HEADER_FILES proto/up_mcc.h inline/up_mcc.h clib/up_mcc_protos.h pragmas
 
 function(mcc_expected out)
   set(l Libs/mui/UP-MCC.mcp Libs/up-mcc.library Fonts/Inter-Regular.ttf Themes/Dark.theme Themes/Light.theme
-    Include/mcc/up.h Include/mcc/up_lib.h Include/selecta/uimodel/tokens.h
-    Docs/LICENSE Docs/LICENSE.Lucide Docs/LICENSE.Inter Docs/up-mcc.library.doc Demo/UP-Demo Demo/updemo.c Install-UP-MCC README)
+    Developer/include/mcc/up.h Developer/include/mcc/up_lib.h Developer/include/selecta/uimodel/tokens.h
+    Developer/sfd/up-mcc_lib.sfd Docs/LICENSE Docs/LICENSE.Lucide Docs/LICENSE.Inter Docs/up-mcc.library.doc Demo/UP-Demo Demo/updemo.c Install-UP-MCC README)
   foreach(c ${CLASS_NAMES})
     list(APPEND l "Libs/mui/UP-${c}.mcc" "Docs/UP-${c}.mcc.doc")
   endforeach()
   foreach(h ${SFD_HEADER_FILES})
-    list(APPEND l "Include/${h}")
+    list(APPEND l "Developer/include/${h}")
   endforeach()
   set(${out} "${l}" PARENT_SCOPE)
 endfunction()
@@ -39,7 +39,7 @@ endfunction()
 
 function(mcc_stage)
   file(REMOVE_RECURSE "${DEST}")
-  file(MAKE_DIRECTORY "${DEST}/Libs/mui" "${DEST}/Fonts" "${DEST}/Themes" "${DEST}/Include/mcc" "${DEST}/Include/selecta/uimodel"
+  file(MAKE_DIRECTORY "${DEST}/Libs/mui" "${DEST}/Fonts" "${DEST}/Themes" "${DEST}/Developer/include/mcc" "${DEST}/Developer/include/selecta/uimodel" "${DEST}/Developer/sfd"
     "${DEST}/Docs" "${DEST}/Demo")
   foreach(c ${CLASS_NAMES})
     file(COPY "${BIN_DIR}/UP-${c}.mcc" DESTINATION "${DEST}/Libs/mui")
@@ -51,12 +51,13 @@ function(mcc_stage)
   file(COPY "${ROOT}/third_party/fonts/Inter-Regular.ttf" DESTINATION "${DEST}/Fonts")
   file(GLOB themes "${MCC_ROOT}/dist/themes/*.theme")
   file(COPY ${themes} DESTINATION "${DEST}/Themes")
-  file(COPY "${MCC_ROOT}/include/mcc/up.h" "${MCC_ROOT}/include/mcc/up_lib.h" DESTINATION "${DEST}/Include/mcc")
-  file(COPY "${ROOT}/include/selecta/uimodel/tokens.h" DESTINATION "${DEST}/Include/selecta/uimodel")
+  file(COPY "${MCC_ROOT}/include/mcc/up.h" "${MCC_ROOT}/include/mcc/up_lib.h" DESTINATION "${DEST}/Developer/include/mcc")
+  file(COPY "${ROOT}/include/selecta/uimodel/tokens.h" DESTINATION "${DEST}/Developer/include/selecta/uimodel")
   foreach(h ${SFD_HEADER_FILES})
     get_filename_component(d "${h}" DIRECTORY)
-    file(COPY "${SFD_INC}/${h}" DESTINATION "${DEST}/Include/${d}")
+    file(COPY "${SFD_INC}/${h}" DESTINATION "${DEST}/Developer/include/${d}")
   endforeach()
+  file(COPY "${MCC_ROOT}/dist/sfd/up-mcc_lib.sfd" DESTINATION "${DEST}/Developer/sfd")
   file(COPY "${MCC_ROOT}/dist/Install-UP-MCC" "${MCC_ROOT}/dist/README" DESTINATION "${DEST}")
   file(COPY_FILE "${ROOT}/LICENSE" "${DEST}/Docs/LICENSE")
   file(COPY_FILE "${ROOT}/third_party/lucide/LICENSE" "${DEST}/Docs/LICENSE.Lucide")

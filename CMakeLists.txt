@@ -226,7 +226,7 @@ add_custom_target(up_mcc_classes DEPENDS up_mcc_Button up_mcc_Text up_mcc_Panel 
   up_mcc_Cycle up_mcc_Field up_mcc_Scroller up_mcc_List up_mcc_prefs)
 
 # I685k: UP-Demo (demo/updemo.c). Headers: the release set staged here (include/mcc/*.h plus the one header up.h needs,
-# selecta/uimodel/tokens.h, which the release archive carries as Include/selecta/uimodel/tokens.h) and the sfdc headers. No Selecta
+# selecta/uimodel/tokens.h, which the release archive carries as Developer/include/selecta/uimodel/tokens.h) and the sfdc headers. No Selecta
 # include path and no link against sel_mcc_static.
 configure_file("${MCC_DIR}/include/mcc/up.h" "${MCC_RELEASE_INC}/mcc/up.h" COPYONLY)
 configure_file("${MCC_DIR}/include/mcc/up_lib.h" "${MCC_RELEASE_INC}/mcc/up_lib.h" COPYONLY)

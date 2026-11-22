@@ -95,8 +95,8 @@
 
 (copyfiles
   (prompt "Copying the programmer headers")
-  (help "Include/ holds mcc/up.h, mcc/up_lib.h and the proto, inline, clib and pragmas headers of up-mcc.library. Use MUI_NewObject with the class name and the UPA_ tags of mcc/up.h.")
-  (source (tackon #src "Include"))
+  (help "Developer/include/ holds mcc/up.h, mcc/up_lib.h and the proto, inline, clib and pragmas headers of up-mcc.library. Use MUI_NewObject with the class name and the UPA_ tags of mcc/up.h.")
+  (source (tackon #src "Developer/include"))
   (dest (askdir (prompt "Where do the programmer headers go?") (help "Usually your compiler include drawer.") (default "Work:Include") (newpath)))
   (all)
   (optional "force" "askuser")
