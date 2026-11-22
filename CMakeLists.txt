@@ -72,6 +72,7 @@ add_library(sel_mcc_static STATIC ${MCC_SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/mu
 # src/map: "mui_aa.h" etc. for every consumer; src: "map/mui_theme.h" and "mui_aa_draw.h" spellings the sources already use.
 target_include_directories(sel_mcc_static PUBLIC "${MCC_DIR}/include" "${MCC_DIR}/src" "${MCC_DIR}/src/map" "${MCC_DIR}/src/class")
 target_link_libraries(sel_mcc_static PUBLIC up_mcc_vendor)
+target_compile_definitions(sel_mcc_static PRIVATE UP_MCC_STATIC_CTORS) # U1: class sources define UP_New*; clients get the up.h inlines
 if(SEL_AMIGA)
   target_compile_options(sel_mcc_static PRIVATE -ffunction-sections -fdata-sections) # I1491a: with --gc-sections in the class libraries
 endif()
@@ -139,6 +140,7 @@ add_executable(up_mcc_library ${MCC_LIBINIT_SRC} lib/support_libheader.c lib/sup
 set_target_properties(up_mcc_library PROPERTIES OUTPUT_NAME "up-mcc.library")
 target_include_directories(up_mcc_library PRIVATE "${AMIGA_GCC_ROOT}/m68k-amigaos/libnix/include")
 target_link_libraries(up_mcc_library PRIVATE sel_mcc_static)
+target_compile_definitions(up_mcc_library PRIVATE UP_MCC_STATIC_CTORS) # U1: it compiles the draw copy that includes up.h; takes the class-side declarations, not the client inlines
 target_link_options(up_mcc_library PRIVATE -nostartfiles)
 up_mcc_lib_skeleton(up_mcc_library)
 set_source_files_properties(lib/support_libheader.c PROPERTIES COMPILE_OPTIONS "-fasm")

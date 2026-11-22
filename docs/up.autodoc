@@ -626,10 +626,30 @@
 *       STRPTR shown text
 *
 *   INPUTS
-*       UPA_Button_Caption - access I. Tag value from <mcc/up.h>.
+*       UPA_Button_Caption - access ISG. Tag value from <mcc/up.h>. A set copies the text (up to 47 bytes), updates the tooltip,
+*       and asks the parent group to lay out again so a fit button grows or shrinks. A get returns the button's own copy.
 *
 *   RESULT
 *       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Button.mcc
+*
+******/
+
+/****** UP-Button.mcc/UPA_Button_Alt ******
+*
+*   NAME
+*       UPA_Button_Alt -- attribute of UP-Button.mcc
+*
+*   FUNCTION
+*       BOOL: show UPA_Button_AltIcon instead of UPA_Button_Icon (play/pause). Redraws and lays out again when live.
+*
+*   INPUTS
+*       UPA_Button_Alt - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Set with SetAttrs/set() or in the MUI_NewObject tag list.
 *
 *   SEE ALSO
 *       <mcc/up.h>, UP-Button.mcc
@@ -1261,6 +1281,26 @@
 *
 *   RESULT
 *       0, or -1.
+*
+*   SEE ALSO
+*       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
+/****** up-mcc.library/UP_SetLogHook ******
+*
+*   NAME
+*       UP_SetLogHook -- up-mcc.library function
+*
+*   FUNCTION
+*       Send every log line of the library and the classes to a struct Hook*. The hook message is the formatted NUL terminated line
+*       (up to 255 bytes), the object is NULL. The hook runs whether or not ENV:UP-MCC/Debug is set. NULL removes it. One hook per process.
+*
+*   INPUTS
+*       hook - struct Hook*, or NULL.
+*
+*   RESULT
+*       None.
 *
 *   SEE ALSO
 *       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
