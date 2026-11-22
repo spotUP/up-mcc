@@ -1,0 +1,20 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cmake and ninja
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build zlib1g-dev
+      - name: Configure
+        run: cmake -S . -B build/host -G Ninja
+      - name: Build
+        run: cmake --build build/host
+      # 22 tests expected (agent-reports/I1490a: 22/22 on the dev machine).
+      - name: Test
+        run: ctest --test-dir build/host --output-on-failure
