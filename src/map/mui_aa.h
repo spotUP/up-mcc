@@ -8,6 +8,7 @@
 
 #include <selecta/uimodel/tokens.h>
 #include <mcc/up.h>
+#include <mcc/up_metrics.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,12 +41,6 @@ enum { MUI_AA_TIER_S, MUI_AA_TIER_M, MUI_AA_TIER_L, MUI_AA_TIER_XL };
 enum { MUI_AA_RAMP_AGA, MUI_AA_RAMP_RTG, MUI_AA_RAMP_TC };
 #define MUI_AA_RAMP_MAX 8
 
-typedef struct mui_aa_metrics_t {
-    int font_px, pad_x, pad_y, icon_px, icon_gap, height, radius, check_px; /* check_px: AACheck box edge (16, tier S 12) */
-    int aspect_q8; /* I949a: pixel height over width x 256; 256 square, 512 tall */
-    int icon_h, check_h; /* I949e: icon and AACheck box height in ROWS: icon_px / check_px as a physical square, so half on a tall-pixel screen */
-} mui_aa_metrics_t;
-
 /* Face colour of a control in a state: normal = face, hover = SURFACE_HOVER, pressed and selected = SURFACE_PRESSED,
  * disabled = the normal face. */
 uint32_t mui_aa_state_rgb(const uint32_t* token, uint32_t face, int state);
@@ -61,7 +56,7 @@ typedef struct mui_aa_check_op_t {
     uint32_t rgb;
 } mui_aa_check_op_t;
 #define MUI_AA_CHECK_OPS 3
-int mui_aa_check_plan(const uint32_t* token, const mui_aa_metrics_t* m, int state, mui_aa_check_op_t* out);
+int mui_aa_check_plan(const uint32_t* token, const up_metrics_t* m, int state, mui_aa_check_op_t* out);
 /* Number of times the three functions above ran: the sentinel that the classes (and not a copy) pick the colours. */
 uint32_t mui_aa_state_calls(void);
 /* Coverage ramp for a kind into out[] (>= MUI_AA_RAMP_MAX); returns the slot count. AGA: face, TEXT_DISABLED, TEXT_MUTED, TEXT
@@ -69,29 +64,7 @@ uint32_t mui_aa_state_calls(void);
 int mui_aa_ramp_pens(int kind, const uint32_t* token, uint32_t fg, uint32_t bg, uint32_t* out);
 /* Slot of an 8-bit coverage in a ramp kind (AGA quarters, RTG eight steps, TC always the top slot). */
 int mui_aa_ramp_slot(int kind, int coverage);
-/* Font pixel size for the screen: 13 up to 600 rows, 15 up to 800, 17 above, 0 (bitmap topaz 8) at 256 rows or less. */
-int mui_aa_font_px(int screen_rows, int screen_cols);
-/* I972: bitmap font for the own screen, from a mui_aa_font_px size, so MUI's stock objects and the PLAIN text backend (no
- * ttengine or no Inter: text drawn in _font(obj), the screen font) grow with the tier like the antialiased text. Stock
- * Workbench 3.x helvetica (9 11 13 15 18 24) at the largest size not above font_px + 1. Returns 0 for font_px 0 (the 256-row
- * tier keeps the Workbench font, topaz 8) and fills nothing. */
-typedef struct mui_aa_screen_font_t {
-    const char* name; /* diskfont name, e.g. "helvetica.font" */
-    int ysize;
-} mui_aa_screen_font_t;
-int mui_aa_screen_font(int font_px, mui_aa_screen_font_t* out);
 int mui_aa_tier(int screen_rows);
-/* Control heights and paddings of one tier table for a font size from mui_aa_font_px. */
-void mui_aa_metrics(int font_px, mui_aa_metrics_t* out);
-/* I949e (design 2026-11-01-I949 section 4, answer 4): the same on a screen of pixel aspect aspect_q8. Square pixels give mui_aa_metrics.
- * Tall pixels at the bitmap tier select the tight tier: pad_x 4, icon_gap 4, vertical sizes counted in rows (a row is aspect_q8/256 wide). */
-void mui_aa_metrics_aspect(int font_px, int aspect_q8, mui_aa_metrics_t* out);
-/* A length of px square pixels as rows on a screen of aspect_q8 (rounded, at least 1). The one place vertical sizes are scaled. */
-int mui_aa_rows(int px, int aspect_q8);
-/* I949a: pixel aspect (height over width, x 256) from DisplayInfo.Resolution (ticks per pixel): hires PAL non-laced 22x44 gives 512,
- * laced and RTG about 1:1 give 256; clamped to 256..512. mui_pixel_aspect_calls counts the calls (sentinel for mui_screen_open). */
-int mui_pixel_aspect_q8(int res_x, int res_y);
-uint32_t mui_pixel_aspect_calls(void);
 
 /* I667d (design 3.7, AAText): text tones, alignment and the ellipsis cut. Pure maths, tested on the host. */
 enum { MUI_AA_TONE_NORMAL = UPV_Text_Tone_Normal, MUI_AA_TONE_MUTED = UPV_Text_Tone_Muted, MUI_AA_TONE_TITLE = UPV_Text_Tone_Title, MUI_AA_TONE_HEADING = UPV_Text_Tone_Heading };
@@ -101,12 +74,9 @@ enum { MUI_AA_ALIGN_LEFT = UPV_Text_Align_Left, MUI_AA_ALIGN_CENTRE = UPV_Text_A
 #define MUI_AA_HEADING_FACTOR 2
 /* I685w run 5: card padding = this many SPACING units (Mac 24 px = 3 x 8). */
 #define MUI_AA_PANEL_PAD_UNITS 3
-/* I685w run 6: gap between the children of a card (1 unit, 8 px) and between the cards on the page (2 units, 16 px). */
-#define MUI_AA_CARD_GAP_UNITS 1
-#define MUI_AA_PAGE_GAP_UNITS 2
 /* SEL_GUI_TOKEN_* a tone draws in: normal and title TEXT, muted TEXT_MUTED. */
 int mui_aa_tone_token(int tone);
-/* Font pixel size of a tone for the screen base size from mui_aa_font_px: title = base + 4, others = base; the bitmap tier (0) stays 0. */
+/* Font pixel size of a tone for the screen base size from up_font_px: title = base + 4, others = base; the bitmap tier (0) stays 0. */
 int mui_aa_tone_font_px(int tone, int base_px);
 /* Left edge of content of width cw in a box of width w for an alignment (never left of 0). */
 int mui_aa_align_x(int align, int w, int cw);
@@ -138,15 +108,9 @@ int mui_aa_panel_spacing(const uint32_t* token);
 void mui_aa_panel_pad(const uint32_t* token, int aspect_q8, int* pad_x, int* pad_y);
 /* I685w run 6: scale a pad from mui_aa_panel_pad for the role: a Surface (nested) card takes half. */
 void mui_aa_panel_role_pad(int role, int* pad_x, int* pad_y);
-/* I685w run 6: spacing between the children of a panel of this role (same aspect packing as the pad). */
-void mui_aa_panel_gap(const uint32_t* token, int aspect_q8, int role, int* gap_x, int* gap_y);
 
 /* I667f (design 3.2, AASlider and AAProgress): track height and radius per tier, the colours by state, and the value <-> pixel maths.
  * No knob (owner decision 2026-10-29): only the TRACK track and the ACCENT fill are drawn, like the Mac desktop seek bar. */
-typedef struct mui_aa_slider_t {
-    int track_h, radius, min_w, height;
-} mui_aa_slider_t;
-void mui_aa_slider_metrics(int font_px, int aspect_q8, mui_aa_slider_t* out);
 /* Track and filled part colours in a state (MUI_AA_NORMAL, _HOVER, _DISABLED): TRACK, ACCENT; disabled fill TEXT_DISABLED. Any out
  * pointer may be NULL. */
 void mui_aa_slider_rgb(const uint32_t* token, int state, uint32_t* track, uint32_t* fill);
@@ -163,10 +127,10 @@ typedef struct mui_aa_slider_op_t {
     uint32_t rgb;
 } mui_aa_slider_op_t;
 #define MUI_AA_SLIDER_OPS 3
-int mui_aa_slider_plan(const uint32_t* token, const mui_aa_slider_t* m, int state, int w, int h, long value, long lo, long hi, mui_aa_slider_op_t* out);
+int mui_aa_slider_plan(const uint32_t* token, const up_slider_t* m, int state, int w, int h, long value, long lo, long hi, mui_aa_slider_op_t* out);
 /* I739: partial-draw plan of a value change (no erase): fill only when it grew, track then fill when it shrank, 0 ops when the fill width
  * equals prev_fw (prev_fw < 0: never drawn, so always paints both). mui_aa_slider_partial_count counts the non-empty plans. */
-int mui_aa_slider_update_plan(const uint32_t* token, const mui_aa_slider_t* m, int state, int w, int h, int prev_fw, long value, long lo, long hi,
+int mui_aa_slider_update_plan(const uint32_t* token, const up_slider_t* m, int state, int w, int h, int prev_fw, long value, long lo, long hi,
                               mui_aa_slider_op_t* out);
 uint32_t mui_aa_slider_partial_count(void);
 /* AAProgress: filled pixels of a bar of width w for value of max (clamped, max <= 0 gives 0). */
@@ -229,28 +193,20 @@ uint32_t mui_aa_field_calls(void);
 
 /* I667i (design 3.5, AAScroller): the flat thumb-only scroll bar. Width 10 (tier S 6), thumb radius 4 (S 2), thumb minimum 20 high, track
  * SURFACE (the list face), thumb TRACK, SURFACE_PRESSED while hovered or dragged. No arrow buttons. Tested on the host (mui-scroller-geom). */
-typedef struct mui_aa_scroller_t {
-    int width, radius, min_thumb, min_h; /* min_h: smallest track height, so the bar is never a stub (I685w run 5) */
-} mui_aa_scroller_t;
-void mui_aa_scroller_metrics(int font_px, int aspect_q8, mui_aa_scroller_t* out);
 void mui_aa_scroller_rgb(const uint32_t* token, int state, uint32_t* track, uint32_t* thumb);
 /* Thumb top and height inside a track of height h for the first visible entry; both 0 and a 0 return when everything fits. The thumb
  * is at least min_thumb (at most h); first is clamped to [0, entries - visible]. */
-int mui_aa_scroller_geom(const mui_aa_scroller_t* m, int h, long first, long visible, long entries, int* thumb_y, int* thumb_h);
+int mui_aa_scroller_geom(const up_scroller_t* m, int h, long first, long visible, long entries, int* thumb_y, int* thumb_h);
 /* First entry for a pointer at track y while the thumb is held grab pixels below its top; clamped to the ends. */
-long mui_aa_scroller_first_at(const mui_aa_scroller_t* m, int h, int grab, int y, long visible, long entries);
+long mui_aa_scroller_first_at(const up_scroller_t* m, int h, int grab, int y, long visible, long entries);
 uint32_t mui_aa_scroller_calls(void);
 
 /* I667i (design 3.6, AAList; popup look 3.3): row model maths of the virtual list. Row height font + 8 (tier S 10), left pad 10, a vertical pad
  * of 4 (S 2) inside the face above the first and below the last row, column gap 8. Rows: SURFACE, hover SURFACE_HOVER, selected
  * SURFACE_PRESSED, playing title ACCENT. Tested on the host (mui-list-rows). */
-typedef struct mui_aa_list_t {
-    int row_h, pad_x, pad_y, gap, scroller_w, radius;
-} mui_aa_list_t;
 enum { MUI_AA_LIST_KEY_UP, MUI_AA_LIST_KEY_DOWN, MUI_AA_LIST_KEY_PAGEUP, MUI_AA_LIST_KEY_PAGEDOWN, MUI_AA_LIST_KEY_HOME, MUI_AA_LIST_KEY_END };
-void mui_aa_list_metrics(int font_px, int aspect_q8, mui_aa_list_t* out);
 /* Whole rows that fit a list face of height h (after the vertical pads). */
-int mui_aa_list_visible(const mui_aa_list_t* m, int h);
+int mui_aa_list_visible(const up_list_t* m, int h);
 long mui_aa_list_clamp_first(long first, long visible, long count);
 /* Active row clamped into [0, count - 1]; -1 for an empty list. */
 long mui_aa_list_clamp_active(long active, long count);
@@ -259,21 +215,20 @@ long mui_aa_list_move(long active, long count, long visible, int key);
 /* First row after scrolling just enough to show the active row. */
 long mui_aa_list_scroll_to(long first, long visible, long count, long active);
 /* Row under a pointer at list-relative y (-1 on the pads or past the last row). */
-long mui_aa_list_row_at(const mui_aa_list_t* m, int y, long first, long count);
+long mui_aa_list_row_at(const up_list_t* m, int y, long first, long count);
 /* Row face (MUI_AA_NORMAL, _HOVER, _SELECTED) and text colour (ACCENT when playing). Any out pointer may be NULL. */
 void mui_aa_list_row_rgb(const uint32_t* token, int row_state, int playing, uint32_t* face, uint32_t* text);
 uint32_t mui_aa_list_calls(void);
 /* Left edge (list-relative x) of the text of column col (0-based) when column k is w[k] wide: pad_x for column 0, then each column adds its
  * width, the gap on both sides of the divider and the 1 px divider. w may be NULL for column 0. Johan 2026-10-29: text sat 5 px from the frame
  * and from the dividers; the target is pad_x at the edge and gap (8) on each side of a divider, header row included. */
-int mui_aa_list_col_x(const mui_aa_list_t* m, int col, const int* w);
+int mui_aa_list_col_x(const up_list_t* m, int col, const int* w);
 /* MUIA_List_Format DELTA of a column followed by a divider (BAR): MUI centres the BAR in the delta, so gap on each side needs 2 * gap. */
-int mui_aa_list_delta(const mui_aa_list_t* m);
 /* I667i2: column widths of a multi-column list face of width total. Column k with weight[k] > 0 shares what is left after the fixed columns
  * (fixed[k] px each, weight 0) and the dividers (2 * gap + 1 each) and both pads, by weight; out[k] is its ink width (never negative). */
-void mui_aa_list_col_widths(const mui_aa_list_t* m, int total, int n, const int* weight, const int* fixed, int* out);
+void mui_aa_list_col_widths(const up_list_t* m, int total, int n, const int* weight, const int* fixed, int* out);
 /* Height of the title row (the column header): row_h when the list has one, else 0. */
-int mui_aa_list_title_h(const mui_aa_list_t* m, int has_title);
+int mui_aa_list_title_h(const up_list_t* m, int has_title);
 /* Secondary column text (TEXT_MUTED, also the header text) and the header divider / column divider colour (DIVIDER). Any out pointer may be NULL. */
 void mui_aa_list_header_rgb(const uint32_t* token, uint32_t* muted, uint32_t* divider);
 

@@ -106,7 +106,7 @@ static ULONG aapanel_setup(struct IClass* cl, Object* obj, Msg msg) {
     aa_setup(obj, &d->aa, NULL, 0);
     if (d->inner != NULL) { /* I685w run 6: the gap between children is its own rung of the spacing scale, not the card pad */
         int gx, gy;
-        mui_aa_panel_gap(d->aa.tok, d->aa.aspect_q8, d->role, &gx, &gy);
+        up_panel_gap(mui_aa_panel_spacing(d->aa.tok), d->aa.aspect_q8, d->role == MUI_AA_PANEL_PANEL, &gx, &gy);
         aapanel_space(d->inner, gx, gy, 0);
     }
     return TRUE;

@@ -49,7 +49,7 @@ const uint8_t* mui_icon_body(int icon, int px);
 /* The body of exactly w x h (mui_icon_sizes / mui_icon_heights), NULL when no set has that shape. mui_icon_body(icon, px) is w = h = px. */
 const uint8_t* mui_icon_body_wh(int icon, int w, int h);
 uint32_t mui_icon_body_lookups_wh(int w, int h);
-/* Icon edge the width and height models assume on a screen of aspect_q8: the tier M size (mui_aa_metrics), the tier of the laced 640x512 screen. */
+/* Icon edge the width and height models assume on a screen of aspect_q8: the tier M size (up_metrics), the tier of the laced 640x512 screen. */
 int mui_model_icon_px(int aspect_q8);
 /* Its height in rows on the open screen (aspect_q8): equal to the edge on square pixels, half on a tall-pixel screen. */
 int mui_model_icon_h(int aspect_q8);

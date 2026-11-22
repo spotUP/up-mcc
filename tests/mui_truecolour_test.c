@@ -64,12 +64,12 @@ static long r_pen(void* ctx, uint32_t rgb) {
 
 /* The Button plan: check plan ops, the rounded body in the Play face, a glyph row of three ramp slots. */
 static void run_plan(const mui_aa_paint_ops* ops, const uint32_t* token) {
-    mui_aa_metrics_t m;
+    up_metrics_t m;
     mui_aa_check_op_t cops[MUI_AA_CHECK_OPS];
     uint32_t face, text, slot_rgb[4];
     unsigned char slots[8] = {0, 1, 1, 2, 2, 3, 0, 1};
     int k, n;
-    mui_aa_metrics(16, &m);
+    up_metrics(16, &m);
     n = mui_aa_check_plan(token, &m, MUI_AA_SELECTED, cops);
     for (k = 0; k < n; k++) {
         mui_aa_paint_round_fill(ops, 10 + cops[k].inset, 10 + cops[k].inset, m.check_px - 2 * cops[k].inset, m.check_px - 2 * cops[k].inset, cops[k].radius, cops[k].rgb);

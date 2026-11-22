@@ -46,7 +46,7 @@ void aa_set_font_px(aa_ctx* c, int px);
  * pens are re-obtained lazily by aa_pen at the next draw. Returns how many contexts were refreshed. */
 uint32_t aa_retheme_all(void);
 /* I685w run 6: the PLAIN backend (no ttengine or no Inter, rig 2) has no scalable font, so aa_set_font_px cannot grow a tone there.
- * This opens the bitmap disk font (mui_aa_screen_font: helvetica at the largest stock size not above px + 1) for the tone and
+ * This opens the bitmap disk font (up_screen_font: helvetica at the largest stock size not above px + 1) for the tone and
  * draws it bold when asked. No-op on the antialiased backends, for px <= 0 or when the open fails (the MUI font stays).
  * Call after aa_setup; aa_cleanup closes it. */
 void aa_plain_font(aa_ctx* c, Object* obj, int px, int bold);

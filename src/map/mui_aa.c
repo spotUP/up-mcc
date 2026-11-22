@@ -175,73 +175,19 @@ int mui_aa_ramp_slot(int kind, int coverage) {
     return kind == MUI_AA_RAMP_RTG ? mui_aa_ramp_index(coverage, MUI_AA_RAMP_MAX) : 0;
 }
 
-int mui_aa_font_px(int screen_rows, int screen_cols) {
-    (void)screen_cols;
-    return screen_rows <= 256 ? 0 : screen_rows <= 600 ? 13 : screen_rows <= 800 ? 15 : 17;
-}
 
-int mui_aa_screen_font(int font_px, mui_aa_screen_font_t* out) {
-    static const int sizes[] = {24, 18, 15, 13, 11, 9};
-    unsigned i = 0;
-    if (font_px <= 0 || out == NULL) {
-        return 0;
-    }
-    while (i + 1 < sizeof sizes / sizeof sizes[0] && sizes[i] > font_px + 1) {
-        i++;
-    }
-    out->name = "helvetica.font";
-    out->ysize = sizes[i];
-    return 1;
-}
 
 int mui_aa_tier(int screen_rows) {
     return screen_rows <= 256 ? MUI_AA_TIER_S : screen_rows <= 600 ? MUI_AA_TIER_M : screen_rows <= 800 ? MUI_AA_TIER_L : MUI_AA_TIER_XL;
 }
 
-int mui_aa_rows(int px, int aspect_q8) {
-    int a = aspect_q8 < 256 ? 256 : aspect_q8;
-    int r = (px * 256 + a / 2) / a;
-    return r < 1 ? 1 : r;
-}
 
-void mui_aa_metrics_aspect(int font_px, int aspect_q8, mui_aa_metrics_t* out) {
-    int small = font_px <= 0;
-    int tight = small && aspect_q8 > 256; /* 640x256 PAL: tall pixels and 256 rows */
-    out->font_px = small ? 8 : font_px;
-    out->pad_x = tight ? 4 : small ? 6 : 10;
-    out->pad_y = small ? mui_aa_rows(3, aspect_q8) : 6;
-    /* I667m (design 3.11): the one icon table, by tier font: S 12, M 18, L 20, XL 24 (desktop icon:text about 1.4). */
-    out->icon_px = tight ? 16 : small ? 12 : font_px <= 13 ? 18 : font_px <= 15 ? 20 : 24; /* I949e2: tight tier = the baked 16x8 set */
-    out->icon_gap = tight ? 4 : 6;
-    out->icon_h = mui_aa_rows(out->icon_px, aspect_q8); /* tight: 16 -> 8, the 16x8 body */
-    out->radius = small ? 4 : 6;
-    out->check_px = small ? 12 : 16;
-    out->check_h = mui_aa_rows(out->check_px, aspect_q8);
-    out->height = small ? out->font_px + 2 * out->pad_y : (out->font_px > out->icon_px ? out->font_px : out->icon_px) + 2 * out->pad_y;
-    out->aspect_q8 = aspect_q8 < 256 ? 256 : aspect_q8;
-}
 
-void mui_aa_metrics(int font_px, mui_aa_metrics_t* out) {
-    mui_aa_metrics_aspect(font_px, 256, out);
-}
 
-static uint32_t g_aspect_calls;
 
-int mui_pixel_aspect_q8(int res_x, int res_y) {
-    int q;
-    g_aspect_calls++;
-    if (res_x <= 0 || res_y <= 0) {
-        return 256;
-    }
-    q = (int)(((long)res_y * 256L + res_x / 2) / res_x);
-    return q < 256 ? 256 : q > 512 ? 512 : q;
-}
 
-uint32_t mui_pixel_aspect_calls(void) {
-    return g_aspect_calls;
-}
 
-int mui_aa_check_plan(const uint32_t* token, const mui_aa_metrics_t* m, int state, mui_aa_check_op_t* out) {
+int mui_aa_check_plan(const uint32_t* token, const up_metrics_t* m, int state, mui_aa_check_op_t* out) {
     int r = (int)token[SEL_GUI_TOKEN_RADIUS_SMALL], line = m->check_px >= 16 ? 2 : 1, n = 0;
     uint32_t face, ink;
     if (m->check_px < 16) {
@@ -334,7 +280,7 @@ void mui_aa_panel_pad(const uint32_t* token, int aspect_q8, int* pad_x, int* pad
     int sp = mui_aa_panel_spacing(token) * MUI_AA_PANEL_PAD_UNITS;
     /* I949e2 (answer 4): on tall pixels the group spacing packs: half across, the same length counted in rows down. Square: unchanged. */
     *pad_x = aspect_q8 > 256 ? sp / 2 : sp;
-    *pad_y = mui_aa_rows(sp, aspect_q8);
+    *pad_y = up_rows(sp, aspect_q8);
 }
 
 void mui_aa_panel_role_pad(int role, int* pad_x, int* pad_y) {
@@ -346,13 +292,6 @@ void mui_aa_panel_role_pad(int role, int* pad_x, int* pad_y) {
     }
 }
 
-void mui_aa_panel_gap(const uint32_t* token, int aspect_q8, int role, int* gap_x, int* gap_y) {
-    /* I685w run 6: spacing scale 8 / 16 / 24. Inside a card (Raised, Surface) children sit one unit apart; on the page (Panel role) the
-     * cards sit two units apart; the card pad is three (mui_aa_panel_pad). */
-    int sp = mui_aa_panel_spacing(token) * (role == MUI_AA_PANEL_PANEL ? MUI_AA_PAGE_GAP_UNITS : MUI_AA_CARD_GAP_UNITS);
-    *gap_x = aspect_q8 > 256 ? sp / 2 : sp;
-    *gap_y = mui_aa_rows(sp, aspect_q8);
-}
 
 static uint32_t g_slider_calls;
 
@@ -360,14 +299,6 @@ uint32_t mui_aa_slider_calls(void) {
     return g_slider_calls;
 }
 
-void mui_aa_slider_metrics(int font_px, int aspect_q8, mui_aa_slider_t* out) {
-    g_slider_calls++;
-    /* I965: vertical sizes count in rows (mui_aa_rows) at the screen aspect, so a 2x-tall pixel counts as two; square (256): unchanged. */
-    out->track_h = font_px <= 0 ? mui_aa_rows(2, aspect_q8) : 6; /* I685w run 6: the Mac track reads about 6 px; 4 looked like a hairline on rig 2 */
-    out->radius = out->track_h / 2;
-    out->min_w = 80;
-    out->height = font_px <= 0 ? mui_aa_rows(12, aspect_q8) : font_px < 15 ? 16 : font_px < 17 ? 18 : 20; /* hit height; only the track and fill are drawn */
-}
 
 void mui_aa_slider_rgb(const uint32_t* token, int state, uint32_t* track, uint32_t* fill) {
     g_slider_calls++;
@@ -401,7 +332,7 @@ long mui_aa_slider_value_at(int w, int x, long lo, long hi) {
     return v > hi ? hi : v;
 }
 
-int mui_aa_slider_plan(const uint32_t* token, const mui_aa_slider_t* m, int state, int w, int h, long value, long lo, long hi, mui_aa_slider_op_t* out) {
+int mui_aa_slider_plan(const uint32_t* token, const up_slider_t* m, int state, int w, int h, long value, long lo, long hi, mui_aa_slider_op_t* out) {
     int n = 0, ty = (h - m->track_h) / 2;
     uint32_t track, fill;
     int fw = mui_aa_slider_fill_w(w, value, lo, hi);
@@ -440,7 +371,7 @@ uint32_t mui_aa_slider_partial_count(void) {
     return g_slider_partial;
 }
 
-int mui_aa_slider_update_plan(const uint32_t* token, const mui_aa_slider_t* m, int state, int w, int h, int prev_fw, long value, long lo, long hi,
+int mui_aa_slider_update_plan(const uint32_t* token, const up_slider_t* m, int state, int w, int h, int prev_fw, long value, long lo, long hi,
                               mui_aa_slider_op_t* out) {
     int n = 0, ty = (h - m->track_h) / 2;
     uint32_t track, fill;
@@ -486,9 +417,9 @@ uint32_t mui_aa_cycle_calls(void) {
 }
 
 void mui_aa_cycle_metrics(int font_px, int aspect_q8, mui_aa_cycle_t* out) {
-    mui_aa_metrics_t b;
+    up_metrics_t b;
     g_cycle_calls++;
-    mui_aa_metrics_aspect(font_px, aspect_q8, &b);
+    up_metrics_aspect(font_px, aspect_q8, &b);
     out->height = b.height;
     out->pad_x = b.pad_x;
     out->radius = b.radius;
@@ -569,9 +500,9 @@ uint32_t mui_aa_field_calls(void) {
 }
 
 void mui_aa_field_metrics(int font_px, int aspect_q8, mui_aa_field_t* out) {
-    mui_aa_metrics_t b;
+    up_metrics_t b;
     g_field_calls++;
-    mui_aa_metrics_aspect(font_px, aspect_q8, &b);
+    up_metrics_aspect(font_px, aspect_q8, &b);
     out->height = b.height;
     out->radius = b.radius;
     out->pad_x = 8; /* same on every tier: the group's inner offsets are fixed at construction, before the screen tier is known */
@@ -622,13 +553,6 @@ uint32_t mui_aa_list_calls(void) {
     return g_list_calls;
 }
 
-void mui_aa_scroller_metrics(int font_px, int aspect_q8, mui_aa_scroller_t* out) {
-    g_scroller_calls++;
-    out->width = font_px <= 0 ? (aspect_q8 > 256 ? 4 : 6) : 10; /* I965: tight tier (tall pixels, small font) packs across */
-    out->radius = font_px <= 0 ? 2 : 4;
-    out->min_thumb = 20;
-    out->min_h = 4 * out->min_thumb;
-}
 
 void mui_aa_scroller_rgb(const uint32_t* token, int state, uint32_t* track, uint32_t* thumb) {
     g_scroller_calls++;
@@ -641,7 +565,7 @@ void mui_aa_scroller_rgb(const uint32_t* token, int state, uint32_t* track, uint
     }
 }
 
-int mui_aa_scroller_geom(const mui_aa_scroller_t* m, int h, long first, long visible, long entries, int* thumb_y, int* thumb_h) {
+int mui_aa_scroller_geom(const up_scroller_t* m, int h, long first, long visible, long entries, int* thumb_y, int* thumb_h) {
     long range, th, travel;
     g_scroller_calls++;
     if (h <= 0 || entries <= 0 || visible >= entries || visible <= 0) {
@@ -664,7 +588,7 @@ int mui_aa_scroller_geom(const mui_aa_scroller_t* m, int h, long first, long vis
     return 1;
 }
 
-long mui_aa_scroller_first_at(const mui_aa_scroller_t* m, int h, int thumb_h_grab, int y, long visible, long entries) {
+long mui_aa_scroller_first_at(const up_scroller_t* m, int h, int thumb_h_grab, int y, long visible, long entries) {
     long range, travel, th;
     int ty, thh;
     g_scroller_calls++;
@@ -684,21 +608,8 @@ long mui_aa_scroller_first_at(const mui_aa_scroller_t* m, int h, int thumb_h_gra
     return (range * y + travel / 2) / travel;
 }
 
-void mui_aa_list_metrics(int font_px, int aspect_q8, mui_aa_list_t* out) {
-    mui_aa_scroller_t s;
-    mui_aa_metrics_t b;
-    g_list_calls++;
-    mui_aa_scroller_metrics(font_px, aspect_q8, &s);
-    mui_aa_metrics_aspect(font_px, aspect_q8, &b); /* I965: the pad and gap across come from the one metrics table (tight tier: 4) */
-    out->row_h = font_px <= 0 ? 10 : font_px + 8;
-    out->pad_x = font_px <= 0 ? b.pad_x : 10;
-    out->pad_y = font_px <= 0 ? mui_aa_rows(2, aspect_q8) : 4; /* inside the list face above the first and below the last row (I667i: the cycle popup had none) */
-    out->gap = font_px <= 0 ? b.icon_gap : 8;
-    out->scroller_w = s.width;
-    out->radius = font_px <= 0 ? 4 : 6;
-}
 
-int mui_aa_list_col_x(const mui_aa_list_t* m, int col, const int* w) {
+int mui_aa_list_col_x(const up_list_t* m, int col, const int* w) {
     int x = m->pad_x, k;
     g_list_calls++;
     for (k = 0; k < col && w != NULL; k++) {
@@ -709,12 +620,8 @@ int mui_aa_list_col_x(const mui_aa_list_t* m, int col, const int* w) {
     return x;
 }
 
-int mui_aa_list_delta(const mui_aa_list_t* m) {
-    g_list_calls++;
-    return 2 * m->gap;
-}
 
-int mui_aa_list_visible(const mui_aa_list_t* m, int h) {
+int mui_aa_list_visible(const up_list_t* m, int h) {
     g_list_calls++;
     h -= 2 * m->pad_y;
     return h < m->row_h ? 0 : h / m->row_h;
@@ -782,7 +689,7 @@ long mui_aa_list_scroll_to(long first, long visible, long count, long active) {
     return mui_aa_list_clamp_first(first, visible, count);
 }
 
-long mui_aa_list_row_at(const mui_aa_list_t* m, int y, long first, long count) {
+long mui_aa_list_row_at(const up_list_t* m, int y, long first, long count) {
     long row;
     g_list_calls++;
     y -= m->pad_y;
@@ -805,7 +712,7 @@ void mui_aa_list_row_rgb(const uint32_t* token, int row_state, int playing, uint
 
 /* I1079b: a thin wrapper over the shared splitter sel_uim_cols_split (design 2026-11-05-I1079 section 3.4). A column with
  * neither weight nor fixed width is absent: width 0 and no gap (mui_aa_list_col_x skips it the same way). */
-void mui_aa_list_col_widths(const mui_aa_list_t* m, int total, int n, const int* weight, const int* fixed, int* out) {
+void mui_aa_list_col_widths(const up_list_t* m, int total, int n, const int* weight, const int* fixed, int* out) {
     sel_uim_col c[SEL_UIM_COLS_MAX];
     int32_t x[SEL_UIM_COLS_MAX], w[SEL_UIM_COLS_MAX];
     int k, cnt = n < SEL_UIM_COLS_MAX ? n : SEL_UIM_COLS_MAX;
@@ -821,7 +728,7 @@ void mui_aa_list_col_widths(const mui_aa_list_t* m, int total, int n, const int*
     }
 }
 
-int mui_aa_list_title_h(const mui_aa_list_t* m, int has_title) {
+int mui_aa_list_title_h(const up_list_t* m, int has_title) {
     g_list_calls++;
     return has_title ? m->row_h : 0;
 }

@@ -329,7 +329,7 @@ void aa_setup(Object* obj, aa_ctx* c, const uint32_t* rgb, int n) {
     c->cm = c->scr->ViewPort.ColorMap;
     depth = (int)GetBitMapAttr(c->scr->RastPort.BitMap, BMA_DEPTH);
     /* I685e1: the screen's pixel shape from its DrawInfo (valid MUIM_Setup..MUIM_Cleanup, as this context); no display database call per object. */
-    c->aspect_q8 = _dri(obj) != NULL ? mui_pixel_aspect_q8((int)_dri(obj)->dri_Resolution.X, (int)_dri(obj)->dri_Resolution.Y) : 256;
+    c->aspect_q8 = _dri(obj) != NULL ? up_pixel_aspect_q8((int)_dri(obj)->dri_Resolution.X, (int)_dri(obj)->dri_Resolution.Y) : 256;
     if (!g_rtg_tried) {
         g_rtg_tried = 1;
         g_p96 = OpenLibrary((CONST_STRPTR) "Picasso96API.library", 0);
@@ -348,7 +348,7 @@ void aa_setup(Object* obj, aa_ctx* c, const uint32_t* rgb, int n) {
                          : "up-mcc: no RTG library, pens on a truecolour screen\n");
         }
     }
-    c->font_px = mui_aa_font_px(c->scr->Height, c->scr->Width);
+    c->font_px = up_font_px(c->scr->Height, c->scr->Width);
     c->font = c->font_px > 0 ? font_get(c->scr, c->font_px) : NULL;
     if (c->font == NULL) {
         c->backend = AA_PLAIN;
@@ -378,14 +378,14 @@ void aa_set_font_px(aa_ctx* c, int px) {
 }
 
 void aa_plain_font(aa_ctx* c, Object* obj, int px, int bold) {
-    mui_aa_screen_font_t sf;
+    up_screen_font_t sf;
     struct TextAttr ta;
     struct TextFont* f;
     if (c->backend != AA_PLAIN || px <= 0) {
         return;
     }
     c->plain_bold = bold;
-    if (!mui_aa_screen_font(px, &sf) || sf.ysize <= (int)_font(obj)->tf_YSize) {
+    if (!up_screen_font(px, &sf) || sf.ysize <= (int)_font(obj)->tf_YSize) {
         return; /* no larger stock size than the MUI font: keep it */
     }
     if (DiskfontBase == NULL) {
