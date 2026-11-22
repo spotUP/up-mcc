@@ -339,6 +339,7 @@ static ULONG aabtn_new(struct IClass* cl, Object* obj, struct opSet* msg) {
 
 /* I625a6: first-call guards of the --log trace (one line per method, the first button that reaches it). */
 static unsigned long g_n_setup, g_n_ask, g_n_show, g_n_draw;
+static void aabtn_relayout(Object* obj);
 static ULONG __attribute__((used)) aabtn_dispatch_c(struct IClass* cl, Object* obj, Msg msg);
 
 extern ULONG aabtn_dispatch(void);
@@ -356,9 +357,21 @@ static ULONG __attribute__((used)) aabtn_dispatch_c(struct IClass* cl, Object* o
         if (on != NULL) {
             mui_aabtn_set_on(obj, (int)on->ti_Data);
         }
+        on = FindTagItem(UPA_Button_Alt, ((struct opSet*)msg)->ops_AttrList);
+        if (on != NULL) {
+            mui_aabtn_set_alt(obj, (int)on->ti_Data);
+        }
+        on = FindTagItem(UPA_Button_Caption, ((struct opSet*)msg)->ops_AttrList);
+        if (on != NULL && on->ti_Data != 0) {
+            mui_aabtn_set_caption(obj, (const char*)(uintptr_t)on->ti_Data);
+        }
         return aatip_super_set(cl, obj, (struct opSet*)msg, offsetof(aabtn_data, tip));
     }
     case OM_GET:
+        if (((struct opGet*)msg)->opg_AttrID == UPA_Button_Caption) {
+            *((struct opGet*)msg)->opg_Storage = (ULONG)(uintptr_t)((aabtn_data*)INST_DATA(cl, obj))->caption;
+            return TRUE;
+        }
         if (aatip_get((struct opGet*)msg, &((aabtn_data*)INST_DATA(cl, obj))->tip)) {
             return TRUE;
         }
@@ -417,6 +430,18 @@ uint32_t mui_aabtn_made(void) {
     return g_made;
 }
 
+/* U2: a changed caption or icon can change the minimum size; ask the parent group to lay out again (no parent or no window yet: nothing to do). */
+static void aabtn_relayout(Object* obj) {
+    Object* parent = NULL;
+    if (!aa_live(obj)) {
+        return;
+    }
+    GetAttr(MUIA_Parent, obj, (ULONG*)&parent);
+    if (parent != NULL && DoMethod(parent, MUIM_Group_InitChange)) {
+        DoMethod(parent, MUIM_Group_ExitChange);
+    }
+}
+
 void mui_aabtn_set_caption(Object* obj, const char* caption) {
     aabtn_data* d = INST_DATA(g_class->mcc_Class, obj);
     if (strcmp(d->caption, caption) == 0) {
@@ -428,6 +453,7 @@ void mui_aabtn_set_caption(Object* obj, const char* caption) {
         d->widest[sizeof d->widest - 1] = '\0';
     }
     SetAttrs(obj, MUIA_ShortHelp, (ULONG)d->caption, TAG_DONE); /* icon-only buttons: the state text is the tooltip */
+    aabtn_relayout(obj);
     MUI_Redraw(obj, MADF_DRAWOBJECT);
 }
 
@@ -448,6 +474,7 @@ void mui_aabtn_set_alt(Object* obj, int alt) {
         return;
     }
     d->alt = alt != 0;
+    aabtn_relayout(obj); /* the two icons may differ in size; a redraw alone would clip */
     MUI_Redraw(obj, MADF_DRAWOBJECT);
 }
 

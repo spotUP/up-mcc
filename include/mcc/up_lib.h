@@ -32,6 +32,10 @@ LONG UP_SetFontFile(STRPTR path);
  * and height; NULL when the icon has no body. */
 void UP_Log(STRPTR fmt, void* args);
 void* UP_FontFiles(void);
+
+/* U3 (v1.1): UP_SetLogHook(hook) sends every library and class log line to hook (a struct Hook*; message = the formatted
+ * NUL terminated line, up to 255 bytes, object NULL), whether or not ENV:UP-MCC/Debug is set; NULL removes it. One hook per process. */
+void UP_SetLogHook(APTR hook); /* APTR to match the generated SFD prototype; pass a struct Hook* */
 void* UP_IconBody(LONG icon, LONG w, LONG h, LONG* bwh);
 
 /* I1491a2 (library version 2): the draw layer. The class libraries keep their aa_ctx and aatip_slot in the instance data and hand the

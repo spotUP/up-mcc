@@ -43,7 +43,7 @@ mcc_test(mcc-slim-size-limit COMMAND "${CMAKE_COMMAND}" "-DNM_TEXT=${_slimdir}/o
 set_tests_properties(mcc-slim-bans-theme-parser mcc-slim-bans-stdio mcc-slim-bans-draw mcc-slim-bans-sibling mcc-slim-size-limit PROPERTIES WILL_FAIL TRUE)
 
 mcc_test_exe(mcc_log_test)
-foreach(t gate-off gate-on source)
+foreach(t gate-off gate-on hook source)
   mcc_test(mcc-log-${t} COMMAND mcc_log_test ${t} "${CMAKE_CURRENT_BINARY_DIR}/mcc_log_${t}.txt")
 endforeach()
 mcc_test_exe(mcc_link_test)
