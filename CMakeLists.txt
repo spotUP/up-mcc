@@ -16,14 +16,15 @@ add_library(mui INTERFACE)
 if(SEL_AMIGA)
   target_link_libraries(mui INTERFACE -lmui)
 endif()
-set(MCC_MAP_SOURCES src/map/mui_aa.c src/map/mui_aa_paint.c src/map/mui_aasel.c src/map/mui_aatip.c src/map/mui_theme.c src/map/mui_icons.c src/map/mui_fontprobe.c src/map/mui_log.c src/map/up_prefs_map.c src/map/up_origin.c src/map/up_store.c)
+set(MCC_MAP_SOURCES src/map/mui_aa.c src/map/mui_aa_paint.c src/map/mui_aasel.c src/map/mui_aascr.c src/map/mui_aatip.c src/map/mui_theme.c src/map/mui_icons.c src/map/mui_fontprobe.c src/map/mui_log.c src/map/up_prefs_map.c src/map/up_origin.c src/map/up_store.c)
 set(MCC_AMIGA_SOURCES src/mui_aa_draw.c src/mui_aatip.c
   src/class/mui_aabtn_class.c src/class/mui_aatext_class.c src/class/mui_aapanel_class.c src/class/mui_aatabs_class.c
   src/class/mui_aabalance_class.c src/class/mui_aaslider_class.c src/class/mui_aacycle_class.c src/class/mui_aalist_class.c
   src/class/mui_aascroller_class.c src/class/mui_aafield_class.c src/class/mui_aacheckmark_class.c src/class/mui_aaradio_class.c src/class/mui_aapopstring_class.c
   src/class/mui_aanumeric_class.c src/class/mui_aascale_class.c
   src/class/mui_aacolorfield_class.c src/class/mui_aapalette_class.c
-  src/class/mui_aaimage_class.c src/class/mui_aamenu_class.c)
+  src/class/mui_aaimage_class.c src/class/mui_aamenu_class.c
+  src/class/mui_aavirtgroup_class.c src/class/mui_aascrollgroup_class.c)
 # I685i: the eleven UP-<Name>.mcc libraries (section 3.2/3.3), one row each: name | class source | description symbol of the file.
 # Slider and Progress both come from mui_aaslider_class.c. The class sources of the libraries must be the class sources of
 # sel_mcc_static (ctest mcc-classlibs-source; the Amiga part below also checks every library's SOURCES).
@@ -48,7 +49,9 @@ set(MCC_CLASS_LIBS
   "Colorfield|src/class/mui_aacolorfield_class.c|aacolorfield_class_desc"
   "Palette|src/class/mui_aapalette_class.c|aapalette_class_desc"
   "Image|src/class/mui_aaimage_class.c|aaimage_class_desc"
-  "Menu|src/class/mui_aamenu_class.c|aamenu_class_desc")
+  "Menu|src/class/mui_aamenu_class.c|aamenu_class_desc"
+  "Virtgroup|src/class/mui_aavirtgroup_class.c|aavirtgroup_class_desc"
+  "Scrollgroup|src/class/mui_aascrollgroup_class.c|aascrollgroup_class_desc")
 set(_mcc_lib_sources "")
 foreach(row ${MCC_CLASS_LIBS})
   string(REPLACE "|" ";" cols "${row}")
@@ -218,7 +221,7 @@ target_link_options(up_mcc_prefs PRIVATE -nostartfiles)
 up_mcc_lib_skeleton(up_mcc_prefs)
 up_check_no_store(up_mcc_prefs)
 add_custom_target(up_mcc_classes DEPENDS up_mcc_Button up_mcc_Text up_mcc_Panel up_mcc_Tabs up_mcc_Balance up_mcc_Slider up_mcc_Progress
-  up_mcc_Cycle up_mcc_Field up_mcc_Scroller up_mcc_List up_mcc_Checkmark up_mcc_Radio up_mcc_Popstring up_mcc_Poplist up_mcc_Numericbutton up_mcc_Scale up_mcc_Colorfield up_mcc_Palette up_mcc_Image up_mcc_Menu up_mcc_prefs)
+  up_mcc_Cycle up_mcc_Field up_mcc_Scroller up_mcc_List up_mcc_Checkmark up_mcc_Radio up_mcc_Popstring up_mcc_Poplist up_mcc_Numericbutton up_mcc_Scale up_mcc_Colorfield up_mcc_Palette up_mcc_Image up_mcc_Menu up_mcc_Virtgroup up_mcc_Scrollgroup up_mcc_prefs)
 
 # I685k: UP-Demo (demo/updemo.c). Headers: the release set staged here (include/mcc/*.h plus the one header up.h needs,
 # selecta/uimodel/tokens.h, which the release archive carries as Include/selecta/uimodel/tokens.h) and the sfdc headers. No Selecta

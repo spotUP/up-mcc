@@ -1334,6 +1334,16 @@
 *
 *   INPUTS
 *       UPA_Popstring_String - access IG. Tag value from <mcc/up.h>.
+/****** UP-Virtgroup.mcc/UPA_Virtgroup_Left ******
+*
+*   NAME
+*       UPA_Virtgroup_Left -- attribute of UP-Virtgroup.mcc
+*
+*   FUNCTION
+*       LONG: pixels the contents are scrolled left; clamped to the contents at layout
+*
+*   INPUTS
+*       UPA_Virtgroup_Left - access ISG. Tag value from <mcc/up.h>.
 *
 *   RESULT
 *       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
@@ -1353,6 +1363,20 @@
 *
 *   INPUTS
 *       UPA_Popstring_Button - access I. Tag value from <mcc/up.h>.
+*       <mcc/up.h>, UP-Virtgroup.mcc
+*
+******/
+
+/****** UP-Virtgroup.mcc/UPA_Virtgroup_Top ******
+*
+*   NAME
+*       UPA_Virtgroup_Top -- attribute of UP-Virtgroup.mcc
+*
+*   FUNCTION
+*       LONG: pixels the contents are scrolled up; clamped to the contents at layout
+*
+*   INPUTS
+*       UPA_Virtgroup_Top - access ISG. Tag value from <mcc/up.h>.
 *
 *   RESULT
 *       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
@@ -1372,6 +1396,20 @@
 *
 *   INPUTS
 *       UPA_Popstring_Popup - access IS. Tag value from <mcc/up.h>.
+*       <mcc/up.h>, UP-Virtgroup.mcc
+*
+******/
+
+/****** UP-Virtgroup.mcc/UPA_Virtgroup_Width ******
+*
+*   NAME
+*       UPA_Virtgroup_Width -- attribute of UP-Virtgroup.mcc
+*
+*   FUNCTION
+*       LONG: minimum width of the contents
+*
+*   INPUTS
+*       UPA_Virtgroup_Width - access G. Tag value from <mcc/up.h>.
 *
 *   RESULT
 *       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
@@ -1391,6 +1429,20 @@
 *
 *   INPUTS
 *       UPA_Popstring_OpenHook - access IS. Tag value from <mcc/up.h>.
+*       <mcc/up.h>, UP-Virtgroup.mcc
+*
+******/
+
+/****** UP-Virtgroup.mcc/UPA_Virtgroup_Height ******
+*
+*   NAME
+*       UPA_Virtgroup_Height -- attribute of UP-Virtgroup.mcc
+*
+*   FUNCTION
+*       LONG: minimum height of the contents
+*
+*   INPUTS
+*       UPA_Virtgroup_Height - access G. Tag value from <mcc/up.h>.
 *
 *   RESULT
 *       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
@@ -1410,6 +1462,20 @@
 *
 *   INPUTS
 *       UPA_Popstring_CloseHook - access IS. Tag value from <mcc/up.h>.
+*       <mcc/up.h>, UP-Virtgroup.mcc
+*
+******/
+
+/****** UP-Scrollgroup.mcc/UPA_Scrollgroup_Top ******
+*
+*   NAME
+*       UPA_Scrollgroup_Top -- attribute of UP-Scrollgroup.mcc
+*
+*   FUNCTION
+*       LONG: pixels the contents are scrolled up; the vertical bar shows only while the contents are taller than the view
+*
+*   INPUTS
+*       UPA_Scrollgroup_Top - access ISG. Tag value from <mcc/up.h>.
 *
 *   RESULT
 *       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
@@ -1967,5 +2033,6 @@
 *
 *   SEE ALSO
 *       <mcc/up.h>, UP-Menu.mcc
+*       <mcc/up.h>, UP-Scrollgroup.mcc
 *
 ******/

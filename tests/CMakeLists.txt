@@ -32,6 +32,8 @@ mcc_test(mcc-classlibs-source COMMAND "${CMAKE_COMMAND}" "-DLIB_SOURCES=${_lib_s
 
 mcc_test_exe(mui_aasel_test)
 mcc_test(mui-aasel-plan COMMAND mui_aasel_test)
+mcc_test_exe(mui_aascr_test)
+mcc_test(mui-aascr-geom COMMAND mui_aascr_test)
 
 mcc_test_exe(mcc_log_test)
 foreach(t gate-off gate-on source)
