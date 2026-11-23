@@ -184,14 +184,14 @@ static ULONG aatabs_new(struct IClass* cl, Object* obj, struct opSet* msg) {
         }
         if (i > 0) {
             /* I685w run 6: a one-space UP-Text keeps the chips apart; a group spacing would fill the gap with MUI's snapped pen */
-            struct TagItem gt[] = {{UPA_Text_Contents, (ULONG)(uintptr_t)" "}, {MUIA_Weight, 0}, {TAG_DONE, 0}};
+            struct TagItem gt[] = {{UPA_Text_Contents, (ULONG)(uintptr_t)" "}, {UPA_Text_FillHeight, TRUE}, {MUIA_Weight, 0}, {TAG_DONE, 0}};
             DoMethod(obj, OM_ADDMEMBER, UP_NewText(gt));
         }
         DoMethod(obj, OM_ADDMEMBER, d->btn[i]);
         DoMethod(d->btn[i], MUIM_Notify, MUIA_Pressed, FALSE, obj, 3, MUIM_Set, UPA_Tabs_Active, (ULONG)i);
     }
     {   /* the slack right of the chips: an UP-Text erases it in the exact panel token; a Rectangle left MUI's snapped pen there */
-        struct TagItem st[] = {{UPA_Text_Contents, (ULONG)(uintptr_t)" "}, {TAG_DONE, 0}};
+        struct TagItem st[] = {{UPA_Text_Contents, (ULONG)(uintptr_t)" "}, {UPA_Text_FillHeight, TRUE}, {TAG_DONE, 0}};
         DoMethod(obj, OM_ADDMEMBER, UP_NewText(st));
     }
     aatabs_sync(d);

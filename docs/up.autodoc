@@ -116,6 +116,25 @@
 *
 ******/
 
+/****** UP-Text.mcc/UPA_Text_FillHeight ******
+*
+*   NAME
+*       UPA_Text_FillHeight -- attribute of UP-Text.mcc
+*
+*   FUNCTION
+*       BOOL grow to the height of the row, so the erase covers the whole row
+*
+*   INPUTS
+*       UPA_Text_FillHeight - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Text.mcc
+*
+******/
+
 /****** UP-Slider.mcc/UP-Slider.mcc ******
 *
 *   NAME
