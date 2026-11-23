@@ -183,8 +183,8 @@ static ULONG aatabs_new(struct IClass* cl, Object* obj, struct opSet* msg) {
             return 0;
         }
         if (i > 0) {
-            /* I685w run 6: a one-space UP-Text keeps the chips apart; a group spacing would fill the gap with MUI's snapped pen */
-            struct TagItem gt[] = {{UPA_Text_Contents, (ULONG)(uintptr_t)" "}, {UPA_Text_FillHeight, TRUE}, {MUIA_Weight, 0}, {TAG_DONE, 0}};
+            /* I685w run 6: an empty UP-Text erases a 2 px gap in the surface token (MUIA_FixWidth); a group spacing would fill it with MUI's snapped pen, and a space glyph measured 0 px wide */
+            struct TagItem gt[] = {{UPA_Text_Contents, (ULONG)(uintptr_t)""}, {UPA_Text_FillHeight, TRUE}, {MUIA_Weight, 0}, {MUIA_FixWidth, 2}, {TAG_DONE, 0}};
             DoMethod(obj, OM_ADDMEMBER, UP_NewText(gt));
         }
         DoMethod(obj, OM_ADDMEMBER, d->btn[i]);
