@@ -26,6 +26,7 @@ extern struct Library* MUIMasterBase;
 
 typedef struct aapanel_data {
     int role;
+    int flat_tl;    /* UPA_Panel_FlatTopLeft: square top left corner */
     int popup;      /* I1349: root of a borderless popup window: square corners, no card pad */
     int fixed;      /* > 0: the art frame, no pad */
     Object* inner;  /* I685e5: the plain vertical group that holds the program's children */
@@ -214,6 +215,10 @@ static ULONG aapanel_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
         }
         aa_round_corners(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad, d->aa.tok[SEL_GUI_TOKEN_BACKGROUND]); /* I676c: read at draw, a live THEME changes both */
         aa_low_outline(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad);
+        if (d->flat_tl && rad > 0) { /* square the top left: the face over the wedge the round corner left in the window colour */
+            aa_rect(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mleft(obj) + rad - 1, _mtop(obj) + mui_aa_rows(rad, d->aa.aspect_q8) - 1,
+                    mui_aa_panel_rgb(d->aa.tok, d->role));
+        }
     }
     return r;
 }
@@ -276,6 +281,7 @@ static ULONG aapanel_new_by_name(struct IClass* cl, Object* obj, struct opSet* o
         aapanel_data* d = (aapanel_data*)INST_DATA(cl, (Object*)made);
         d->role = role;
         d->popup = GetTagData(UPA_Panel_Popup, FALSE, ops->ops_AttrList) ? 1 : 0;
+        d->flat_tl = GetTagData(UPA_Panel_FlatTopLeft, FALSE, ops->ops_AttrList) ? 1 : 0;
         d->inner = inner;
         g_made++;
     }

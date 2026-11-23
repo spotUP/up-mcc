@@ -232,6 +232,7 @@ typedef struct UP_ListGetRow {
 #define UPA_Button_FixedHeight UP_TAG(UP_CLS_BUTTON, 0x08) /* I LONG exact height in px, 0 = from the contents */
 #define UPA_Button_Align UP_TAG(UP_CLS_BUTTON, 0x09)       /* I UPV_Button_Align_* */
 #define UPA_Button_IconData UP_TAG(UP_CLS_BUTTON, 0x0A)    /* I struct UP_IconData*: caller icon for a glyph not in the set; used when UPA_Button_Icon names none. The struct and its mask are NOT copied: they must stay valid until the object is disposed */
+#define UPA_Button_Flat UP_TAG(UP_CLS_BUTTON, 0x0B)        /* I BOOL: no face in the normal state (the parent shows through); hover and press show it. A square fixed size draws a circle */
 typedef struct UP_IconData { /* an alpha mask, w x h bytes row by row (0 clear .. 255 full); drawn like a baked icon, scaled to the icon box */
     const unsigned char* alpha;
     LONG w, h;
@@ -256,6 +257,7 @@ enum { UPV_Button_Align_Left, UPV_Button_Align_Centre, UPV_Button_Align_Right };
 #define UPA_Panel_Self UP_TAG(UP_CLS_PANEL, 0x05)        /* G Object*: the panel itself. A MUI Group passes an unknown OM_GET on to its \
                                                             children, so a Role answer counts only when Self names the asked object */
 #define UPA_Panel_Popup UP_TAG(UP_CLS_PANEL, 0x06)       /* I BOOL: root of a borderless popup window: square corners, no card padding (I1349) */
+#define UPA_Panel_FlatTopLeft UP_TAG(UP_CLS_PANEL, 0x07) /* I BOOL: square top left corner, so the card sits flush against the first tab */
 enum { UPV_Panel_Role_Panel, UPV_Panel_Role_Surface, UPV_Panel_Role_Raised, UPV_Panel_Role_Count };
 /* I1371: MUIA_UserData value of a plain MUI Group inside a panel that keeps the spacing it was created with (a tool row of buttons). */
 #define UPV_Panel_KeepSpacing 0x55505331UL

@@ -31,7 +31,7 @@ extern struct Library* MUIMasterBase;
 typedef struct aabtn_data {
     char caption[48], widest[48];
     const UP_IconData* data; /* UPA_Button_IconData, caller owned */
-    int icon[2], alt, icon_only, role, hover, backend, minw, minh, align, on, fit, fixed_w, fixed_h;
+    int icon[2], alt, icon_only, role, hover, backend, minw, minh, align, on, fit, fixed_w, fixed_h, flat;
     mui_aa_metrics_t m;
     aa_ctx aa;
     struct MUI_EventHandlerNode ehn;
@@ -63,6 +63,9 @@ static void aabtn_face(const aabtn_data* d, int st, uint32_t* face, uint32_t* te
     mui_aa_button_rgb(d->aa.tok, d->role, st, face, text);
     if (d->role == MUI_AA_ROLE_NORMAL && d->aa.tc && *face == d->aa.bg_rgb) {
         *face = d->aa.tok[st == MUI_AA_NORMAL ? SEL_GUI_TOKEN_SURFACE_HOVER : SEL_GUI_TOKEN_SURFACE_PRESSED];
+    }
+    if (d->flat && d->aa.tc && st == MUI_AA_NORMAL) {
+        *face = d->aa.bg_rgb; /* flat: the parent shows through until hover or press */
     }
 }
 
@@ -213,7 +216,7 @@ static ULONG aabtn_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     aabtn_data* d = INST_DATA(cl, obj);
     struct RastPort* rp;
     ULONG active = 0;
-    int l, t, w, h, tw = 0, th = 0, state, icon = aabtn_cur_icon(d), cw, x;
+    int l, t, w, h, tw = 0, th = 0, state, icon = aabtn_cur_icon(d), cw, x, rad;
     uint32_t face, text;
     char cap[sizeof d->caption];
     strcpy(cap, d->caption);
@@ -227,6 +230,7 @@ static ULONG aabtn_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     w = _mwidth(obj);
     h = _mheight(obj);
     state = aabtn_state(obj, d);
+    rad = (d->flat && w == h) ? w / 2 : d->m.radius; /* a flat square button is a circle */
     aabtn_face(d, state, &face, &text);
     if (d->role == MUI_AA_ROLE_TOGGLE) {
         /* AACheck: the paint plan (mui_aa_check_plan) draws corners, outline and face; the checked box is ACCENT with the ACCENT_TEXT check icon. */
@@ -251,14 +255,14 @@ static ULONG aabtn_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     }
     if (d->aa.tc) {
         /* I685x: the super filled the corner wedges with the snapped parent pen; on truecolour repaint them in the exact parent RGB. */
-        aa_round_corners(&d->aa, rp, l, t, w, h, d->m.radius, d->aa.bg_rgb);
+        aa_round_corners(&d->aa, rp, l, t, w, h, rad, d->aa.bg_rgb);
     }
-    aa_round_fill(&d->aa, rp, l, t, w, h, d->m.radius, face);
+    aa_round_fill(&d->aa, rp, l, t, w, h, rad, face);
     if (d->role == MUI_AA_ROLE_TAB) {
         /* I1349: the active tab rounds only its top corners; the bottom half is square so it sits flush on the ACCENT underline */
         aa_rect(&d->aa, rp, l, t + h / 2, l + w - 1, t + h - 1, face);
     } else {
-        aa_low_outline(&d->aa, rp, l, t, w, h, d->m.radius);
+        aa_low_outline(&d->aa, rp, l, t, w, h, rad);
     }
     if (!d->icon_only) {
         int room = mui_aa_btn_text_room(w, d->m.pad_x, d->m.icon_px, d->m.icon_gap, icon != AABTN_NO_ICON);
@@ -286,7 +290,7 @@ static ULONG aabtn_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     if (aa_live(obj)) {
         GetAttr(MUIA_Window_ActiveObject, _win(obj), &active);
         if ((Object*)active == obj) {
-            aa_round_frame(&d->aa, rp, l, t, w, h, d->m.radius, d->aa.tok[SEL_GUI_TOKEN_FOCUS_RING]);
+            aa_round_frame(&d->aa, rp, l, t, w, h, rad, d->aa.tok[SEL_GUI_TOKEN_FOCUS_RING]);
         }
     }
     d->backend = d->aa.backend + 1;
@@ -350,6 +354,7 @@ static ULONG aabtn_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     d->align = (int)GetTagData(UPA_Button_Align, UPV_Button_Align_Left, tags);
     d->fixed_w = (int)GetTagData(UPA_Button_FixedWidth, 0, tags);
     d->fixed_h = (int)GetTagData(UPA_Button_FixedHeight, 0, tags);
+    d->flat = GetTagData(UPA_Button_Flat, FALSE, tags) ? 1 : 0;
     return (ULONG)obj;
 }
 
