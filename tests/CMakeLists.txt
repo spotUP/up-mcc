@@ -61,3 +61,6 @@ mcc_test(mcc-dist-layout COMMAND "${CMAKE_COMMAND}" -DMODE=selftest "-DWORK=${CM
 mcc_test(mcc-demo-headers-only COMMAND "${CMAKE_COMMAND}" "-DINCLUDES=${MCC_DEMO_INCLUDES}" "-DLIBS=${MCC_DEMO_LIBS}"
   "-DSOURCE=${MCC_DIR}/demo/updemo.c" "-DRELEASE_INC=${MCC_RELEASE_INC}" "-DSOURCE_ROOT=${PROJECT_SOURCE_DIR}"
   "-DBINARY_ROOT=${PROJECT_BINARY_DIR}" -P "${PROJECT_SOURCE_DIR}/cmake/mcc_check_demo.cmake")
+
+mcc_test_exe(mui_pop_test)
+mcc_test(mui-pop-state COMMAND mui_pop_test)

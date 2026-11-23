@@ -937,3 +937,30 @@ void mui_aabtn_minmax(uint32_t content_w, uint32_t content_h, uint32_t fixed_w, 
     out->w_fixed = (fixed_w != 0u || toggle) ? 1u : 0u;
     out->h_fixed = 1u;
 }
+
+int mui_aa_pop_click(mui_aa_pop_t* s, uint32_t now_ms) {
+    if (s->open) {
+        return MUI_AA_POP_CLOSE;
+    }
+    if (s->by_deactivate && (uint32_t)(now_ms - s->closed_ms) < MUI_AA_POP_GUARD_MS) {
+        s->by_deactivate = 0;
+        return MUI_AA_POP_NONE;
+    }
+    s->by_deactivate = 0;
+    return s->created ? MUI_AA_POP_OPEN_REUSE : MUI_AA_POP_OPEN_NEW;
+}
+
+void mui_aa_pop_opened(mui_aa_pop_t* s) {
+    s->created = 1;
+    s->open = 1;
+    s->by_deactivate = 0;
+}
+
+void mui_aa_pop_closed(mui_aa_pop_t* s, int by_deactivate, uint32_t now_ms) {
+    if (!s->open) {
+        return;
+    }
+    s->open = 0;
+    s->by_deactivate = by_deactivate;
+    s->closed_ms = now_ms;
+}
