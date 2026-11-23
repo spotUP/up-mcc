@@ -38,21 +38,18 @@ struct Library* MUIMasterBase;
 #define IntuitionBase demo_IntuitionBase
 struct IntuitionBase* IntuitionBase;
 
+/* The base is opened once by demo_main and stays open for the whole run: demo_tier and the requester both call Intuition. */
 static void demo_requester(const char* text) {
     struct EasyStruct es;
-    struct IntuitionBase* ib = (struct IntuitionBase*)OpenLibrary((CONST_STRPTR) "intuition.library", 36);
-    if (ib == NULL) {
+    if (IntuitionBase == NULL) {
         return;
     }
-    IntuitionBase = ib;
     es.es_StructSize = sizeof es;
     es.es_Flags = 0;
     es.es_Title = (UBYTE*)"UP-Demo";
     es.es_TextFormat = (UBYTE*)"%s";
     es.es_GadgetFormat = (UBYTE*)"Ok";
     EasyRequest(NULL, &es, NULL, (APTR)text);
-    CloseLibrary((struct Library*)ib);
-    IntuitionBase = NULL;
 }
 
 #define CLASS_COUNT 11
@@ -185,7 +182,7 @@ static int demo_tier(void) {
     return h < 400 ? 0 : h < 700 ? 1 : 2;
 }
 
-static int demo_main(int argc, char** argv) {
+static int demo_body(int argc, char** argv) {
     Object* obj[CLASS_COUNT];
     Object *app = NULL, *win, *root, *content = NULL;
     ULONG sigs = 0, is_open = 0;
@@ -343,6 +340,18 @@ static int demo_main(int argc, char** argv) {
     }
     CloseLibrary(MUIMasterBase);
     return ok == CLASS_COUNT ? 0 : 20;
+}
+
+static int demo_main(int argc, char** argv) {
+    int rc;
+    IntuitionBase = (struct IntuitionBase*)OpenLibrary((CONST_STRPTR) "intuition.library", 36);
+    if (IntuitionBase == NULL) {
+        return 20;
+    }
+    rc = demo_body(argc, argv);
+    CloseLibrary((struct Library*)IntuitionBase);
+    IntuitionBase = NULL;
+    return rc;
 }
 
 /* Run demo_main on a stack of DEMO_STACK_BYTES when the process stack is smaller (I1343). Same technique as

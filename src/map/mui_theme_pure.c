@@ -10,7 +10,7 @@ static uint32_t g_applied[MUI_TH_COUNT];
 void mui_theme_bg_spec(uint32_t rgb, char* out, size_t cap) {
     /* MUI RGB image spec "2:rrrrrrrr,gggggggg,bbbbbbbb": each 8-bit component replicated to 32 bits. Hand written hex: no libnix printf. */
     static const char hex[] = "0123456789abcdef";
-    char tmp[28];
+    char tmp[29]; /* 2 + 3*8 + 2 commas + NUL; 28 put the NUL on the saved return address (I1496b3) */
     int n = 0, c, k;
     tmp[n++] = '2';
     tmp[n++] = ':';

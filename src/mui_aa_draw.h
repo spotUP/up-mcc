@@ -37,6 +37,10 @@ typedef struct aa_ctx {
     struct TextFont* plain; /* I685w run 6: PLAIN backend tone font (diskfont), NULL = the object's MUI font */
     int plain_bold;         /* I685w run 6: PLAIN backend draws the title and heading tones in algorithmic bold */
 } aa_ctx;
+#ifdef __mc68000__
+/* ABI 2 is frozen: up-mcc.library UP_DrawSetup refuses a class built with another size, so a layout change must bump the ABI, not slip through. */
+_Static_assert(sizeof(aa_ctx) == 588, "aa_ctx size is frozen (ABI 2); append only and bump the ABI");
+#endif
 
 /* Backend, font, and the n colours in rgb[] as held pens. Call from MUIM_Setup after the super class. */
 void aa_setup(Object* obj, aa_ctx* c, const uint32_t* rgb, int n);
