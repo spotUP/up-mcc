@@ -1647,6 +1647,101 @@
 *
 ******/
 
+/****** UP-Colorfield.mcc/UPA_Colorfield_RGB ******
+*
+*   NAME
+*       UPA_Colorfield_RGB -- attribute of UP-Colorfield.mcc
+*
+*   FUNCTION
+*       ULONG: 0xRRGGBB shown (default 0, black)
+*
+*   INPUTS
+*       UPA_Colorfield_RGB - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Colorfield.mcc
+*
+******/
+
+/****** UP-Palette.mcc/UPA_Palette_Entries ******
+*
+*   NAME
+*       UPA_Palette_Entries -- attribute of UP-Palette.mcc
+*
+*   FUNCTION
+*       ULONG*: array of 0xRRGGBB, copied at construction (at most 256)
+*
+*   INPUTS
+*       UPA_Palette_Entries - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Palette.mcc
+*
+******/
+
+/****** UP-Palette.mcc/UPA_Palette_Count ******
+*
+*   NAME
+*       UPA_Palette_Count -- attribute of UP-Palette.mcc
+*
+*   FUNCTION
+*       LONG: number of entries in UPA_Palette_Entries
+*
+*   INPUTS
+*       UPA_Palette_Count - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Palette.mcc
+*
+******/
+
+/****** UP-Palette.mcc/UPA_Palette_Active ******
+*
+*   NAME
+*       UPA_Palette_Active -- attribute of UP-Palette.mcc
+*
+*   FUNCTION
+*       LONG: index of the chosen swatch (default 0; notifies)
+*
+*   INPUTS
+*       UPA_Palette_Active - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Palette.mcc
+*
+******/
+
+/****** UP-Palette.mcc/UPA_Palette_Columns ******
+*
+*   NAME
+*       UPA_Palette_Columns -- attribute of UP-Palette.mcc
+*
+*   FUNCTION
+*       LONG: swatches per row (default 8, at most the entry count)
+*
+*   INPUTS
+*       UPA_Palette_Columns - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Palette.mcc
+*
+******/
+
 /****** UP-Numericbutton.mcc/UPM_Numeric_Deactivated ******
 *
 *   NAME

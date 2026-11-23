@@ -361,6 +361,13 @@ int mui_aa_scale_plan(int w, long lo, long hi, int ticks, mui_aa_scale_tick_t* o
 /* Tick lengths for a font of font_px: minor = major / 2 (at least 2), major = font_px / 2 (at least 4), gap above the labels. */
 void mui_aa_scale_metrics(int font_px, int* minor_h, int* major_h, int* gap);
 
+/* UP-Palette grid maths (host test mui-palette). Cells of cw x ch pixels with gap pixels between them, row-major, cols per row. */
+int mui_aa_palette_rows(int n, int cols);                /* rows needed for n cells */
+void mui_aa_palette_cell(int i, int cols, int cw, int ch, int gap, int* x, int* y); /* top-left of cell i */
+int mui_aa_palette_hit(int x, int y, int cols, int n, int cw, int ch, int gap);     /* cell under x,y (box-relative), -1 on a gap or outside */
+/* Cursor key step: dx/dy of -1,0,1. No wrap; a step down into a short last row lands on the last cell; a step off the grid stays. */
+int mui_aa_palette_move(int active, int n, int cols, int dx, int dy);
+
 #ifdef __cplusplus
 }
 #endif

@@ -73,6 +73,8 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_POPLIST 0x0D
 #define UP_CLS_NUMERIC 0x11 /* UP-Numericbutton */
 #define UP_CLS_SCALE 0x12   /* UP-Scale */
+#define UP_CLS_COLORFIELD 0x13 /* UP-Colorfield */
+#define UP_CLS_PALETTE 0x14    /* UP-Palette */
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
 
 /* ---- Attributes (UPA_), methods (UPM_) and enumeration values (UPV_) of every class (design 8.3). The numbers are written here
@@ -132,6 +134,15 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_Scale_Min UP_TAG(UP_CLS_SCALE, 0x01)   /* ISG LONG: value at the left end (default 0) */
 #define UPA_Scale_Max UP_TAG(UP_CLS_SCALE, 0x02)   /* ISG LONG: value at the right end (default 100) */
 #define UPA_Scale_Ticks UP_TAG(UP_CLS_SCALE, 0x03) /* ISG LONG: number of ticks, 2..64 (default 11) */
+
+/* UP-Colorfield (MUIC_Coloradjust-like swatch): shows one RGB colour; a click notifies MUIA_Pressed, as a UP-Button does. */
+#define UPA_Colorfield_RGB UP_TAG(UP_CLS_COLORFIELD, 0x01) /* ISG ULONG: 0xRRGGBB shown (default 0, black) */
+
+/* UP-Palette: a grid of colour swatches, one active; a click or the cursor keys (while it is the active object) choose it. */
+#define UPA_Palette_Entries UP_TAG(UP_CLS_PALETTE, 0x01) /* I ULONG*: array of 0xRRGGBB, copied at construction (at most 256) */
+#define UPA_Palette_Count UP_TAG(UP_CLS_PALETTE, 0x02)   /* I LONG: number of entries in UPA_Palette_Entries */
+#define UPA_Palette_Active UP_TAG(UP_CLS_PALETTE, 0x03)  /* ISG LONG: index of the chosen swatch (default 0; notifies) */
+#define UPA_Palette_Columns UP_TAG(UP_CLS_PALETTE, 0x04) /* I LONG: swatches per row (default 8, at most the entry count) */
 
 /* UP-Tabs */
 #define UPA_Tabs_Active UP_TAG(UP_CLS_TABS, 0x01)   /* ISG LONG: index of the active tab (notifies) */
@@ -244,6 +255,8 @@ Object* UP_NewPopstring(const struct TagItem* tags);
 Object* UP_NewPoplist(const struct TagItem* tags);
 Object* UP_NewNumericbutton(const struct TagItem* tags);
 Object* UP_NewScale(const struct TagItem* tags);
+Object* UP_NewColorfield(const struct TagItem* tags);
+Object* UP_NewPalette(const struct TagItem* tags);
 Object* UP_NewPanel(const struct TagItem* tags);
 Object* UP_NewBalance(const struct TagItem* tags);
 Object* UP_NewCheckmark(const struct TagItem* tags);

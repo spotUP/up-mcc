@@ -1017,3 +1017,40 @@ void mui_aa_scale_metrics(int font_px, int* minor_h, int* major_h, int* gap) {
     *minor_h = maj / 2 < 2 ? 2 : maj / 2;
     *gap = 2;
 }
+
+int mui_aa_palette_rows(int n, int cols) {
+    return n <= 0 || cols <= 0 ? 0 : (n + cols - 1) / cols;
+}
+
+void mui_aa_palette_cell(int i, int cols, int cw, int ch, int gap, int* x, int* y) {
+    *x = (i % cols) * (cw + gap);
+    *y = (i / cols) * (ch + gap);
+}
+
+int mui_aa_palette_hit(int x, int y, int cols, int n, int cw, int ch, int gap) {
+    int c, r, i;
+    if (x < 0 || y < 0 || cols <= 0 || cw <= 0 || ch <= 0) {
+        return -1;
+    }
+    c = x / (cw + gap);
+    r = y / (ch + gap);
+    if (c >= cols || x % (cw + gap) >= cw || y % (ch + gap) >= ch) {
+        return -1;
+    }
+    i = r * cols + c;
+    return i < n ? i : -1;
+}
+
+int mui_aa_palette_move(int active, int n, int cols, int dx, int dy) {
+    int c, r, ni;
+    if (n <= 0 || cols <= 0 || active < 0 || active >= n) {
+        return active;
+    }
+    c = active % cols + dx;
+    r = active / cols + dy;
+    if (c < 0 || c >= cols || r < 0 || r >= mui_aa_palette_rows(n, cols)) {
+        return active;
+    }
+    ni = r * cols + c;
+    return ni >= n ? n - 1 : ni;
+}
