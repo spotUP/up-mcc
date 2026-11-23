@@ -82,6 +82,17 @@ int main(void) {
     CHECK(UP_ThemeLoad((STRPTR) "/nonexistent/i685h/theme") == -1, "missing theme not -1");
     CHECK(memcmp(before, UP_ThemeTokens(), sizeof before) == 0, "tokens changed by a failed load");
     CHECK(mui_theme_requests() == 0, "failed load counted as request");
+    /* I1496b3: bg spec is 28 characters plus NUL; a 28 byte scratch buffer put the NUL on the saved return address (Amiga guru) */
+    {
+        char spec[64], tight[29];
+        mui_theme_bg_spec(0x123456u, spec, sizeof spec);
+        CHECK(strlen(spec) == 28 && strcmp(spec, "2:12121212,34343434,56565656") == 0, "bg spec 0x123456: '%s'", spec);
+        mui_theme_bg_spec(0xFFFFFFu, spec, sizeof spec);
+        CHECK(strlen(spec) == 28 && strcmp(spec, "2:ffffffff,ffffffff,ffffffff") == 0, "bg spec 0xFFFFFF: '%s'", spec);
+        memset(tight, 'x', sizeof tight);
+        mui_theme_bg_spec(0x123456u, tight, sizeof tight);
+        CHECK(strcmp(tight, "2:12121212,34343434,56565656") == 0, "bg spec cap 29: '%s'", tight);
+    }
     printf("mcc-support-api OK\n");
     return 0;
 }
