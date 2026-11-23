@@ -75,6 +75,8 @@ mcc_test(mui-numeric-scale COMMAND mui_numeric_scale_test)
 
 mcc_test_exe(mui_palette_test)
 mcc_test(mui-palette COMMAND mui_palette_test)
+mcc_test_exe(mui_cycle_test)
+mcc_test(mui-cycle-empty COMMAND mui_cycle_test)
 
 mcc_test_exe(mui_image_fit_test)
 mcc_test(mui-image-fit COMMAND mui_image_fit_test)
