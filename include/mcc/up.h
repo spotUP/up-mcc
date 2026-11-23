@@ -67,6 +67,8 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_FIELD 0x07
 #define UP_CLS_PANEL 0x08
 #define UP_CLS_BALANCE 0x09
+#define UP_CLS_CHECKMARK 0x0A
+#define UP_CLS_RADIO 0x0B
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
 
 /* ---- Attributes (UPA_), methods (UPM_) and enumeration values (UPV_) of every class (design 8.3). The numbers are written here
@@ -85,6 +87,13 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 /* UP-Progress and the slider value */
 #define UPA_Progress_Value UP_TAG(UP_CLS_PROGRESS, 0x01) /* ISG LONG: filled part */
 #define UPA_Progress_Max UP_TAG(UP_CLS_PROGRESS, 0x02)   /* ISG LONG: value that fills the bar */
+
+/* UP-Checkmark: MUIA_Selected (ISG BOOL, notifies) is the checked value, as for MUIC_Checkmark */
+#define UPA_Checkmark_Label UP_TAG(UP_CLS_CHECKMARK, 0x01) /* I STRPTR text right of the box; must outlive the object; absent = box only */
+
+/* UP-Radio */
+#define UPA_Radio_Entries UP_TAG(UP_CLS_RADIO, 0x01) /* I char**: NULL terminated, must outlive the object */
+#define UPA_Radio_Active UP_TAG(UP_CLS_RADIO, 0x02)  /* ISG LONG: index of the chosen entry (notifies) */
 
 /* UP-Cycle */
 #define UPA_Cycle_Active UP_TAG(UP_CLS_CYCLE, 0x01)  /* ISG LONG: index of the shown entry (notifies) */
@@ -199,6 +208,8 @@ Object* UP_NewList(const struct TagItem* tags, Object** list_out); /* returns th
 Object* UP_NewField(const struct TagItem* tags);
 Object* UP_NewPanel(const struct TagItem* tags);
 Object* UP_NewBalance(const struct TagItem* tags);
+Object* UP_NewCheckmark(const struct TagItem* tags);
+Object* UP_NewRadio(const struct TagItem* tags);
 #endif
 
 /* Theme token names (I685d2): UPTOK_<id> equals SEL_GUI_TOKEN_<id> for every token of the SEL_GUI_TOKENS list in

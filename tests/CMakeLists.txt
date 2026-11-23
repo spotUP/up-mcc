@@ -30,6 +30,9 @@ string(REPLACE ";" "\\;" _static_src "${MCC_STATIC_SOURCES}")
 mcc_test(mcc-classlibs-source COMMAND "${CMAKE_COMMAND}" "-DLIB_SOURCES=${_lib_src}" "-DSTATIC_SOURCES=${_static_src}"
   -P "${PROJECT_SOURCE_DIR}/cmake/mcc_check_classlibs.cmake")
 
+mcc_test_exe(mui_aasel_test)
+mcc_test(mui-aasel-plan COMMAND mui_aasel_test)
+
 mcc_test_exe(mcc_log_test)
 foreach(t gate-off gate-on source)
   mcc_test(mcc-log-${t} COMMAND mcc_log_test ${t} "${CMAKE_CURRENT_BINARY_DIR}/mcc_log_${t}.txt")

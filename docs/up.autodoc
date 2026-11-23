@@ -180,6 +180,63 @@
 *
 ******/
 
+/****** UP-Checkmark.mcc/UPA_Checkmark_Label ******
+*
+*   NAME
+*       UPA_Checkmark_Label -- attribute of UP-Checkmark.mcc
+*
+*   FUNCTION
+*       STRPTR: text right of the box; must outlive the object; absent = box only. The checked value is MUIA_Selected (ISG, notifies).
+*
+*   INPUTS
+*       UPA_Checkmark_Label - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Checkmark.mcc
+*
+******/
+
+/****** UP-Radio.mcc/UPA_Radio_Active ******
+*
+*   NAME
+*       UPA_Radio_Active -- attribute of UP-Radio.mcc
+*
+*   FUNCTION
+*       LONG: index of the chosen entry (notifies)
+*
+*   INPUTS
+*       UPA_Radio_Active - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Radio.mcc
+*
+******/
+
+/****** UP-Radio.mcc/UPA_Radio_Entries ******
+*
+*   NAME
+*       UPA_Radio_Entries -- attribute of UP-Radio.mcc
+*
+*   FUNCTION
+*       char**: NULL terminated entry labels; must outlive the object
+*
+*   INPUTS
+*       UPA_Radio_Entries - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Radio.mcc
+*
+******/
+
 /****** UP-Cycle.mcc/UPA_Cycle_Active ******
 *
 *   NAME

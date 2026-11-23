@@ -29,6 +29,8 @@ Classes
   UP-Slider.mcc     slider
   UP-Progress.mcc   progress bar
   UP-Cycle.mcc      cycle gadget with a list of entries
+  UP-Checkmark.mcc  checkmark box with an optional label (MUIA_Selected)
+  UP-Radio.mcc      vertical radio buttons (UPA_Radio_Entries, UPA_Radio_Active)
   UP-Field.mcc      text entry field with outline and placeholder
   UP-Scroller.mcc   scroller for a list
   UP-List.mcc       list with columns, selection and a playing row marker
