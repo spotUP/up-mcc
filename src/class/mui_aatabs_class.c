@@ -50,6 +50,7 @@ static ULONG aatabs_setup(struct IClass* cl, Object* obj, Msg msg) {
     aa_setup(obj, &d->aa, NULL, 0);
     mui_aa_tabs_rgb(d->aa.tok, &line, NULL, NULL);
     aa_hold(&d->aa, line);
+    aa_hold(&d->aa, d->aa.tok[SEL_GUI_TOKEN_PANEL]);
     d->ehn.ehn_Priority = 0;
     d->ehn.ehn_Flags = 0;
     d->ehn.ehn_Object = obj;
@@ -71,7 +72,7 @@ static ULONG aatabs_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) 
     ULONG r;
     if ((msg->flags & MADF_DRAWOBJECT) && d->aa.tc) {
         /* I685w run 6: the strip has MUIA_FillArea FALSE; on truecolour paint the gaps between the chips in the exact panel token, not MUI's snapped pen */
-        aa_rect(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj), d->aa.bg_rgb);
+        aa_rect(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj), d->aa.tok[SEL_GUI_TOKEN_PANEL]); /* the strip sits on the panel colour; ctx_bg gives BACKGROUND for a non-Self object, and a retheme resets bg_rgb */
     }
     r = DoSuperMethodA(cl, obj, (Msg)msg);
     if ((msg->flags & MADF_DRAWOBJECT) && d->n > 0) {
@@ -83,6 +84,15 @@ static ULONG aatabs_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) 
         aa_rect(&d->aa, _rp(obj), lx, ly, lx + lw - 1, ly + lh - 1, line);
     }
     return r;
+}
+
+/* The strip fills the width of its parent (a trailing Rectangle takes the slack) but never grows taller than its chips: the Rectangle has no height limit and a stretched strip left a gap under the tabs and a dark block beside them. */
+static ULONG aatabs_askminmax(struct IClass* cl, Object* obj, struct MUIP_AskMinMax* msg) {
+    DoSuperMethodA(cl, obj, (Msg)msg);
+    msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+    msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
+    msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
+    return 0;
 }
 
 static ULONG aatabs_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* msg) {
@@ -180,8 +190,7 @@ static ULONG aatabs_new(struct IClass* cl, Object* obj, struct opSet* msg) {
         DoMethod(obj, OM_ADDMEMBER, d->btn[i]);
         DoMethod(d->btn[i], MUIM_Notify, MUIA_Pressed, FALSE, obj, 3, MUIM_Set, UPA_Tabs_Active, (ULONG)i);
     }
-    {
-        /* an UP-Text spacer erases in the panel token; a stock Rectangle would fill with MUI's snapped background pen */
+    {   /* the slack right of the chips: an UP-Text erases it in the exact panel token; a Rectangle left MUI's snapped pen there */
         struct TagItem st[] = {{UPA_Text_Contents, (ULONG)(uintptr_t)" "}, {TAG_DONE, 0}};
         DoMethod(obj, OM_ADDMEMBER, UP_NewText(st));
     }
@@ -207,6 +216,8 @@ static ULONG __attribute__((used)) aatabs_dispatch_c(struct IClass* cl, Object* 
         return aatabs_setup(cl, obj, msg);
     case MUIM_Cleanup:
         return aatabs_cleanup(cl, obj, msg);
+    case MUIM_AskMinMax:
+        return aatabs_askminmax(cl, obj, (struct MUIP_AskMinMax*)msg);
     case MUIM_Draw:
         return aatabs_draw(cl, obj, (struct MUIP_Draw*)msg);
     case MUIM_HandleEvent:

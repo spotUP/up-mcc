@@ -126,11 +126,12 @@ static ULONG aapanel_cleanup(struct IClass* cl, Object* obj, Msg msg) {
 static int aapanel_holes(Object* grp, int* holes, int n, int depth, int max_depth, int* full) {
     struct List* kids = NULL;
     Object *state, *child;
-    static struct IClass* group_cl;
+    static struct IClass *group_cl, *rect_cl;
     LONG page = -1;
     ULONG pm = 0;
     if (group_cl == NULL) {
         group_cl = MUI_GetClass((char*)MUIC_Group);
+        rect_cl = MUI_GetClass((char*)MUIC_Rectangle);
     }
     GetAttr(MUIA_Group_ChildList, grp, (ULONG*)&kids);
     if (kids == NULL) {
@@ -147,6 +148,9 @@ static int aapanel_holes(Object* grp, int* holes, int n, int depth, int max_dept
         while (!*full && (child = NextObject(&state)) != NULL) {
             if (page >= 0 && i++ != page) {
                 continue;
+            }
+            if (rect_cl != NULL && OCLASS(child) == rect_cl) {
+                continue; /* a plain Rectangle is a spacer that paints nothing; as a hole it left MUI's darker snapped pen in the card */
             }
             if (depth < max_depth && group_cl != NULL && OCLASS(child) == group_cl) {
                 n = aapanel_holes(child, holes, n, depth + 1, max_depth, full);

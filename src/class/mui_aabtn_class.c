@@ -58,6 +58,14 @@ static int aabtn_cur_icon(const aabtn_data* d) {
     return d->icon[d->alt] != AABTN_NO_ICON ? d->icon[d->alt] : d->icon[0];
 }
 
+/* A normal button on a raised card has the card's own colour as its face and vanishes until hover: lift it one step (hover token, hover shows the pressed token). */
+static void aabtn_face(const aabtn_data* d, int st, uint32_t* face, uint32_t* text) {
+    mui_aa_button_rgb(d->aa.tok, d->role, st, face, text);
+    if (d->role == MUI_AA_ROLE_NORMAL && d->aa.tc && *face == d->aa.bg_rgb) {
+        *face = d->aa.tok[st == MUI_AA_NORMAL ? SEL_GUI_TOKEN_SURFACE_HOVER : SEL_GUI_TOKEN_SURFACE_PRESSED];
+    }
+}
+
 static ULONG aabtn_setup(struct IClass* cl, Object* obj, Msg msg) {
     aabtn_data* d = INST_DATA(cl, obj);
     uint32_t face, text;
@@ -68,7 +76,7 @@ static ULONG aabtn_setup(struct IClass* cl, Object* obj, Msg msg) {
     aa_setup(obj, &d->aa, NULL, 0);
     mui_aa_metrics_aspect(d->aa.font_px, d->aa.aspect_q8, &d->m);
     for (st = MUI_AA_NORMAL; st <= MUI_AA_SELECTED; st++) {
-        mui_aa_button_rgb(d->aa.tok, d->role, st, &face, &text);
+        aabtn_face(d, st, &face, &text);
         aa_hold(&d->aa, face);
     }
     aa_hold(&d->aa, d->aa.tok[SEL_GUI_TOKEN_FOCUS_RING]);
@@ -219,7 +227,7 @@ static ULONG aabtn_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     w = _mwidth(obj);
     h = _mheight(obj);
     state = aabtn_state(obj, d);
-    mui_aa_button_rgb(d->aa.tok, d->role, state, &face, &text);
+    aabtn_face(d, state, &face, &text);
     if (d->role == MUI_AA_ROLE_TOGGLE) {
         /* AACheck: the paint plan (mui_aa_check_plan) draws corners, outline and face; the checked box is ACCENT with the ACCENT_TEXT check icon. */
         int bx = l + (w - d->m.check_px) / 2, by = t + (h - d->m.check_h) / 2, cp = d->m.check_px, ch = d->m.check_h, asp = d->m.aspect_q8;
@@ -246,7 +254,7 @@ static ULONG aabtn_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
         aa_round_corners(&d->aa, rp, l, t, w, h, d->m.radius, d->aa.bg_rgb);
     }
     aa_round_fill(&d->aa, rp, l, t, w, h, d->m.radius, face);
-    if (d->role == MUI_AA_ROLE_TAB && (state == MUI_AA_SELECTED || state == MUI_AA_PRESSED)) {
+    if (d->role == MUI_AA_ROLE_TAB) {
         /* I1349: the active tab rounds only its top corners; the bottom half is square so it sits flush on the ACCENT underline */
         aa_rect(&d->aa, rp, l, t + h / 2, l + w - 1, t + h - 1, face);
     } else {
