@@ -66,6 +66,15 @@ static ULONG aapanel_layout(struct Hook* hook, Object* obj, struct MUI_LayoutMsg
         lm->lm_MinMax.DefHeight = (WORD)(_defheight(in) + 2 * py);
         lm->lm_MinMax.MaxWidth = _maxwidth(in) >= MUI_MAXMAX ? MUI_MAXMAX : (WORD)(_maxwidth(in) + 2 * px);
         lm->lm_MinMax.MaxHeight = _maxheight(in) >= MUI_MAXMAX ? MUI_MAXMAX : (WORD)(_maxheight(in) + 2 * py);
+        {
+            /* A panel without children is a filler: an empty group reports max 0, which narrowed every Vert group the panel sat in. */
+            struct List* kids = NULL;
+            GetAttr(MUIA_Group_ChildList, in, (ULONG*)&kids);
+            if (kids == NULL || kids->lh_Head == (struct Node*)&kids->lh_Tail) {
+                lm->lm_MinMax.MaxWidth = MUI_MAXMAX;
+                lm->lm_MinMax.MaxHeight = MUI_MAXMAX;
+            }
+        }
         return 0;
     }
     case MUILM_LAYOUT:

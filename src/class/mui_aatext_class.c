@@ -63,7 +63,7 @@ static ULONG aatext_setup(struct IClass* cl, Object* obj, Msg msg) {
     aa_hold(&d->aa, d->aa.tok[mui_aa_tone_token(d->tone)]);
     aa_hold(&d->aa, d->aa.bg_rgb);
     dots = aa_text_width(&d->aa, obj, "...");
-    d->defw = aa_text_width(&d->aa, obj, d->widest);
+    d->defw = aa_text_width(&d->aa, obj, d->widest) + (d->fixed ? 2 : 0); /* a fixed box is its text width exactly; a glyph overhang (t, n) was clipped */
     d->minw = d->ellipsis ? (dots < d->defw ? dots : d->defw) : d->defw;
     d->minh = aa_text_height(&d->aa, obj);
     d->shown = 1;
