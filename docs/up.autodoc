@@ -1323,3 +1323,212 @@
 *       <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
 *
 ******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_String ******
+*
+*   NAME
+*       UPA_Popstring_String -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       Object*: the string object (default a UP-Field); MUIA_String_Contents set and get are forwarded to it
+*
+*   INPUTS
+*       UPA_Popstring_String - access IG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_Button ******
+*
+*   NAME
+*       UPA_Popstring_Button -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       Object*: the button that opens the popup (default a UP-Button with a chevron)
+*
+*   INPUTS
+*       UPA_Popstring_Button - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_Popup ******
+*
+*   NAME
+*       UPA_Popstring_Popup -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       Object*: root object of the popup window, owned by the class from then on; it is disposed with the owner window cleanup, set a new one before the next open
+*
+*   INPUTS
+*       UPA_Popstring_Popup - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_OpenHook ******
+*
+*   NAME
+*       UPA_Popstring_OpenHook -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       struct Hook*: called before the popup opens, object = the popup root, message = the string object; returns FALSE to refuse
+*
+*   INPUTS
+*       UPA_Popstring_OpenHook - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_CloseHook ******
+*
+*   NAME
+*       UPA_Popstring_CloseHook -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       struct Hook*: called once after the popup closed, object = the popup root, message = the string object
+*
+*   INPUTS
+*       UPA_Popstring_CloseHook - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_Open ******
+*
+*   NAME
+*       UPA_Popstring_Open -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       BOOL: the popup is open; set TRUE opens, FALSE closes (notifies)
+*
+*   INPUTS
+*       UPA_Popstring_Open - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPM_Popstring_Click ******
+*
+*   NAME
+*       UPM_Popstring_Click -- method of UP-Popstring.mcc
+*
+*   FUNCTION
+*       the button was pressed (toggle); internal, used by the button notify
+*
+*   INPUTS
+*       UPM_Popstring_Click - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPM_Popstring_Closed ******
+*
+*   NAME
+*       UPM_Popstring_Closed -- method of UP-Popstring.mcc
+*
+*   FUNCTION
+*       the popup window closed; internal
+*
+*   INPUTS
+*       UPM_Popstring_Closed - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPM_Popstring_Deactivated ******
+*
+*   NAME
+*       UPM_Popstring_Deactivated -- method of UP-Popstring.mcc
+*
+*   FUNCTION
+*       the popup window lost activation; internal
+*
+*   INPUTS
+*       UPM_Popstring_Deactivated - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Poplist.mcc/UPA_Poplist_Entries ******
+*
+*   NAME
+*       UPA_Poplist_Entries -- attribute of UP-Poplist.mcc
+*
+*   FUNCTION
+*       Char**: NULL terminated, must outlive the object
+*
+*   INPUTS
+*       UPA_Poplist_Entries - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Poplist.mcc
+*
+******/
+
+/****** UP-Poplist.mcc/UPA_Poplist_Active ******
+*
+*   NAME
+*       UPA_Poplist_Active -- attribute of UP-Poplist.mcc
+*
+*   FUNCTION
+*       LONG: chosen entry, -1 none (default); setting it fills the string; notifies
+*
+*   INPUTS
+*       UPA_Poplist_Active - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Poplist.mcc
+*
+******/

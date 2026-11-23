@@ -27,5 +27,6 @@ struct aa_class_desc {
 
 extern const struct aa_class_desc aabtn_class_desc, aatext_class_desc, aapanel_class_desc, aatabs_class_desc, aabal_class_desc,
     aaslider_class_desc, aaprogress_class_desc, aacycle_class_desc, aafield_class_desc, aascroller_class_desc, aalist_class_desc, aacheckmark_class_desc, aaradio_class_desc;
+    aaslider_class_desc, aaprogress_class_desc, aacycle_class_desc, aafield_class_desc, aascroller_class_desc, aalist_class_desc, aapopstring_class_desc, aapoplist_class_desc;
 
 #endif

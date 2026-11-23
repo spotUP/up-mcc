@@ -69,6 +69,8 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_BALANCE 0x09
 #define UP_CLS_CHECKMARK 0x0A
 #define UP_CLS_RADIO 0x0B
+#define UP_CLS_POPSTRING 0x0C
+#define UP_CLS_POPLIST 0x0D
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
 
 /* ---- Attributes (UPA_), methods (UPM_) and enumeration values (UPV_) of every class (design 8.3). The numbers are written here
@@ -98,6 +100,23 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 /* UP-Cycle */
 #define UPA_Cycle_Active UP_TAG(UP_CLS_CYCLE, 0x01)  /* ISG LONG: index of the shown entry (notifies) */
 #define UPA_Cycle_Entries UP_TAG(UP_CLS_CYCLE, 0x02) /* I char**: NULL terminated, must outlive the object */
+
+/* UP-Popstring: a UP-Field plus a button that opens a popup window under the object (MUIC_Popstring, simplified). One popup window per
+ * object, created at the first open and reused; it closes on a pick, Esc, a click outside or another click on the button. */
+#define UPA_Popstring_String UP_TAG(UP_CLS_POPSTRING, 0x01)   /* IG Object*: the string object (default a UP-Field); MUIA_String_Contents set/get are forwarded to it */
+#define UPA_Popstring_Button UP_TAG(UP_CLS_POPSTRING, 0x02)   /* I Object*: the button that opens the popup (default a UP-Button with a chevron) */
+#define UPA_Popstring_Popup UP_TAG(UP_CLS_POPSTRING, 0x03)    /* IS Object*: root object of the popup window, owned by the class from then on; it is disposed with the owner window's cleanup, set a new one before the next open */
+#define UPA_Popstring_OpenHook UP_TAG(UP_CLS_POPSTRING, 0x04) /* IS struct Hook*: called before the popup opens, object = the popup root, message = the string object; returns FALSE to refuse */
+#define UPA_Popstring_CloseHook UP_TAG(UP_CLS_POPSTRING, 0x05) /* IS struct Hook*: called once after the popup closed, object = the popup root, message = the string object */
+#define UPA_Popstring_Open UP_TAG(UP_CLS_POPSTRING, 0x06)     /* ISG BOOL: the popup is open; set TRUE opens, FALSE closes (notifies) */
+#define UPM_Popstring_Click UP_TAG(UP_CLS_POPSTRING, 0x10)    /* method: the button was pressed (toggle). Internal, used by the button notify */
+#define UPM_Popstring_Closed UP_TAG(UP_CLS_POPSTRING, 0x11)   /* method: the popup window closed. Internal */
+#define UPM_Popstring_Deactivated UP_TAG(UP_CLS_POPSTRING, 0x12) /* method: the popup window lost activation. Internal */
+
+/* UP-Poplist: a Popstring whose popup is a UP-List; the chosen entry is copied into the string. */
+#define UPA_Poplist_Entries UP_TAG(UP_CLS_POPLIST, 0x01) /* I char**: NULL terminated, must outlive the object */
+#define UPA_Poplist_Active UP_TAG(UP_CLS_POPLIST, 0x02)  /* ISG LONG: chosen entry, -1 none (default); setting it fills the string; notifies */
+/* Poplist also takes UPA_Popstring_String, _Button, _OpenHook, _CloseHook, _Open. */
 
 /* UP-Tabs */
 #define UPA_Tabs_Active UP_TAG(UP_CLS_TABS, 0x01)   /* ISG LONG: index of the active tab (notifies) */
@@ -206,6 +225,8 @@ Object* UP_NewTabs(const struct TagItem* tags);
 Object* UP_NewScroller(const struct TagItem* tags);
 Object* UP_NewList(const struct TagItem* tags, Object** list_out); /* returns the list+scroller group; *list_out the list */
 Object* UP_NewField(const struct TagItem* tags);
+Object* UP_NewPopstring(const struct TagItem* tags);
+Object* UP_NewPoplist(const struct TagItem* tags);
 Object* UP_NewPanel(const struct TagItem* tags);
 Object* UP_NewBalance(const struct TagItem* tags);
 Object* UP_NewCheckmark(const struct TagItem* tags);

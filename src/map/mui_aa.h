@@ -328,6 +328,21 @@ typedef struct mui_btn_box {
 } mui_btn_box_t;
 void mui_aabtn_minmax(uint32_t content_w, uint32_t content_h, uint32_t fixed_w, uint32_t fixed_h, uint32_t toggle, mui_btn_box_t* out);
 
+/* UP-Popstring / UP-Poplist popup state, pure (host test mui-pop-state). One popup window per object, created at the first open and
+ * REUSED: it is never disposed while it may still be running its own notification (the UP-Cycle crash on the second click came from
+ * leaving a closed popup half alive). A click on the button while the popup is open closes it. Closing by window deactivation (the
+ * click that lands on the button first deactivates the popup) is remembered for MUI_AA_POP_GUARD_MS so that same click toggles shut
+ * instead of reopening. */
+#define MUI_AA_POP_GUARD_MS 300
+enum { MUI_AA_POP_NONE, MUI_AA_POP_OPEN_NEW, MUI_AA_POP_OPEN_REUSE, MUI_AA_POP_CLOSE };
+typedef struct mui_aa_pop_t {
+    int created, open, by_deactivate;
+    uint32_t closed_ms;
+} mui_aa_pop_t;
+int mui_aa_pop_click(mui_aa_pop_t* s, uint32_t now_ms);           /* the action the caller must take; updates nothing but the guard */
+void mui_aa_pop_opened(mui_aa_pop_t* s);                         /* the window is now open (also the first time) */
+void mui_aa_pop_closed(mui_aa_pop_t* s, int by_deactivate, uint32_t now_ms); /* the window closed, for any reason; idempotent */
+
 #ifdef __cplusplus
 }
 #endif
