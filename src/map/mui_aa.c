@@ -128,14 +128,14 @@ void mui_aa_button_rgb(const uint32_t* token, int role, int state, uint32_t* fac
         t = token[SEL_GUI_TOKEN_TEXT];
         f = state == MUI_AA_SELECTED ? token[SEL_GUI_TOKEN_SURFACE_RAISED] : mui_aa_state_rgb(token, f, state == MUI_AA_DISABLED ? MUI_AA_NORMAL : state);
     } else if (role == MUI_AA_ROLE_TAB) {
-        /* I685w run 6: AATabs as the Mac Home filter chips: the active chip is an ACCENT face with ACCENT_TEXT, the others a raised chip in TEXT. */
+        /* The active tab is the paper (the raised card colour it sits flush against); an idle tab is halfway between the paper and the window surface. */
         if (state == MUI_AA_SELECTED || state == MUI_AA_PRESSED) {
-            f = token[SEL_GUI_TOKEN_ACCENT];
-            t = token[SEL_GUI_TOKEN_ACCENT_TEXT];
+            f = token[SEL_GUI_TOKEN_SURFACE_RAISED];
         } else {
-            f = mui_aa_state_rgb(token, token[SEL_GUI_TOKEN_SURFACE_RAISED], state);
-            t = token[SEL_GUI_TOKEN_TEXT];
+            uint32_t a = token[SEL_GUI_TOKEN_SURFACE], b = token[SEL_GUI_TOKEN_SURFACE_RAISED];
+            f = mui_aa_state_rgb(token, (((a ^ b) & 0xFEFEFEu) >> 1) + (a & b), state);
         }
+        t = token[SEL_GUI_TOKEN_TEXT];
     } else {
         f = mui_aa_state_rgb(token, token[SEL_GUI_TOKEN_SURFACE_RAISED], state);
         t = token[SEL_GUI_TOKEN_TEXT];

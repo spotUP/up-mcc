@@ -50,7 +50,7 @@ static ULONG aatabs_setup(struct IClass* cl, Object* obj, Msg msg) {
     aa_setup(obj, &d->aa, NULL, 0);
     mui_aa_tabs_rgb(d->aa.tok, &line, NULL, NULL);
     aa_hold(&d->aa, line);
-    aa_hold(&d->aa, d->aa.tok[SEL_GUI_TOKEN_PANEL]);
+    aa_hold(&d->aa, d->aa.tok[SEL_GUI_TOKEN_SURFACE]);
     d->ehn.ehn_Priority = 0;
     d->ehn.ehn_Flags = 0;
     d->ehn.ehn_Object = obj;
@@ -72,7 +72,7 @@ static ULONG aatabs_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) 
     ULONG r;
     if ((msg->flags & MADF_DRAWOBJECT) && d->aa.tc) {
         /* I685w run 6: the strip has MUIA_FillArea FALSE; on truecolour paint the gaps between the chips in the exact panel token, not MUI's snapped pen */
-        aa_rect(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj), d->aa.tok[SEL_GUI_TOKEN_PANEL]); /* the strip sits on the panel colour; ctx_bg gives BACKGROUND for a non-Self object, and a retheme resets bg_rgb */
+        aa_rect(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj), d->aa.tok[SEL_GUI_TOKEN_SURFACE]); /* the strip sits on the window surface colour; ctx_bg gives BACKGROUND for a non-Self object, and a retheme resets bg_rgb */
     }
     r = DoSuperMethodA(cl, obj, (Msg)msg);
     if ((msg->flags & MADF_DRAWOBJECT) && d->n > 0) {
