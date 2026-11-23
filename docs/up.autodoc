@@ -1532,3 +1532,155 @@
 *       <mcc/up.h>, UP-Poplist.mcc
 *
 ******/
+
+/****** UP-Numericbutton.mcc/UPA_Numeric_Min ******
+*
+*   NAME
+*       UPA_Numeric_Min -- attribute of UP-Numericbutton.mcc
+*
+*   FUNCTION
+*       LONG: the lowest value (default 0)
+*
+*   INPUTS
+*       UPA_Numeric_Min - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Numericbutton.mcc
+*
+******/
+
+/****** UP-Numericbutton.mcc/UPA_Numeric_Max ******
+*
+*   NAME
+*       UPA_Numeric_Max -- attribute of UP-Numericbutton.mcc
+*
+*   FUNCTION
+*       LONG: the highest value (default 100)
+*
+*   INPUTS
+*       UPA_Numeric_Max - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Numericbutton.mcc
+*
+******/
+
+/****** UP-Numericbutton.mcc/UPA_Numeric_Value ******
+*
+*   NAME
+*       UPA_Numeric_Value -- attribute of UP-Numericbutton.mcc
+*
+*   FUNCTION
+*       LONG: the current value, clamped to Min..Max; setting it notifies
+*
+*   INPUTS
+*       UPA_Numeric_Value - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Numericbutton.mcc
+*
+******/
+
+/****** UP-Scale.mcc/UPA_Scale_Min ******
+*
+*   NAME
+*       UPA_Scale_Min -- attribute of UP-Scale.mcc
+*
+*   FUNCTION
+*       LONG: the value at the left end of the ruler (default 0)
+*
+*   INPUTS
+*       UPA_Scale_Min - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Scale.mcc
+*
+******/
+
+/****** UP-Scale.mcc/UPA_Scale_Max ******
+*
+*   NAME
+*       UPA_Scale_Max -- attribute of UP-Scale.mcc
+*
+*   FUNCTION
+*       LONG: the value at the right end of the ruler (default 100)
+*
+*   INPUTS
+*       UPA_Scale_Max - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Scale.mcc
+*
+******/
+
+/****** UP-Scale.mcc/UPA_Scale_Ticks ******
+*
+*   NAME
+*       UPA_Scale_Ticks -- attribute of UP-Scale.mcc
+*
+*   FUNCTION
+*       LONG: number of ticks, 2..64 (default 11)
+*
+*   INPUTS
+*       UPA_Scale_Ticks - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Scale.mcc
+*
+******/
+
+/****** UP-Numericbutton.mcc/UPM_Numeric_Deactivated ******
+*
+*   NAME
+*       UPM_Numeric_Deactivated -- method of UP-Numericbutton.mcc
+*
+*   FUNCTION
+*       the popup window lost the active state; internal, used by the window notify
+*
+*   INPUTS
+*       UPM_Numeric_Deactivated - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Numericbutton.mcc
+*
+******/
+
+/****** UP-Numericbutton.mcc/UPM_Numeric_Closed ******
+*
+*   NAME
+*       UPM_Numeric_Closed -- method of UP-Numericbutton.mcc
+*
+*   FUNCTION
+*       the popup window closed; internal, used by the window notify
+*
+*   INPUTS
+*       UPM_Numeric_Closed - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Numericbutton.mcc
+*
+******/

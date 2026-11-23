@@ -964,3 +964,56 @@ void mui_aa_pop_closed(mui_aa_pop_t* s, int by_deactivate, uint32_t now_ms) {
     s->by_deactivate = by_deactivate;
     s->closed_ms = now_ms;
 }
+
+long mui_aa_numeric_clamp(long v, long lo, long hi) {
+    return v < lo ? lo : v > hi ? hi : v;
+}
+
+long mui_aa_numeric_drag(long start, int dx, int w, long lo, long hi) {
+    if (w <= 0 || hi <= lo) {
+        return lo;
+    }
+    return mui_aa_numeric_clamp(start + (long)dx * (hi - lo) / (2L * w), lo, hi);
+}
+
+int mui_aa_numeric_text(long v, char* out, int cap) {
+    char tmp[16];
+    int n = 0, len = 0;
+    unsigned long u = v < 0 ? 0UL - (unsigned long)v : (unsigned long)v;
+    if (cap < 1) {
+        return 0;
+    }
+    do {
+        tmp[n++] = (char)('0' + u % 10);
+        u /= 10;
+    } while (u != 0 && n < 15);
+    if (v < 0 && len < cap - 1) {
+        out[len++] = '-';
+    }
+    while (n > 0 && len < cap - 1) {
+        out[len++] = tmp[--n];
+    }
+    out[len] = '\0';
+    return len;
+}
+
+int mui_aa_scale_plan(int w, long lo, long hi, int ticks, mui_aa_scale_tick_t* out) {
+    int i, n = ticks < 2 ? 2 : ticks > MUI_AA_SCALE_MAX ? MUI_AA_SCALE_MAX : ticks;
+    long span = hi - lo;
+    if (span <= 0 || w < 2) {
+        return 0;
+    }
+    for (i = 0; i < n; i++) {
+        out[i].x = (int)(((long)i * (w - 1) + (n - 1) / 2) / (n - 1));
+        out[i].value = lo + ((long)i * span + (n - 1) / 2) / (n - 1);
+        out[i].major = i == 0 || i == n - 1 || ((n & 1) && i == n / 2);
+    }
+    return n;
+}
+
+void mui_aa_scale_metrics(int font_px, int* minor_h, int* major_h, int* gap) {
+    int maj = font_px / 2 < 4 ? 4 : font_px / 2;
+    *major_h = maj;
+    *minor_h = maj / 2 < 2 ? 2 : maj / 2;
+    *gap = 2;
+}

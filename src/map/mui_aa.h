@@ -343,6 +343,24 @@ int mui_aa_pop_click(mui_aa_pop_t* s, uint32_t now_ms);           /* the action 
 void mui_aa_pop_opened(mui_aa_pop_t* s);                         /* the window is now open (also the first time) */
 void mui_aa_pop_closed(mui_aa_pop_t* s, int by_deactivate, uint32_t now_ms); /* the window closed, for any reason; idempotent */
 
+/* UP-Numericbutton / UP-Scale pure maths (host test mui-numeric-scale). The button shows value as text; a drag of dx pixels from the
+ * value at the press moves it by dx * (hi - lo) / (2 * w) (a travel of two button widths sweeps the range), clamped; fewer than
+ * MUI_AA_NUM_DRAG_SLOP pixels is a click (opens the popup slider). */
+#define MUI_AA_NUM_DRAG_SLOP 3
+long mui_aa_numeric_clamp(long v, long lo, long hi);
+long mui_aa_numeric_drag(long start, int dx, int w, long lo, long hi);
+int mui_aa_numeric_text(long v, char* out, int cap); /* decimal text, NUL terminated; returns its length */
+/* Tick ruler of a width w: ticks (clamped 2..MUI_AA_SCALE_MAX) evenly spread over x 0..w-1, x[0] = 0 and x[n-1] = w-1. A tick is major
+ * when it is an end or the middle of an odd count; value is lo..hi at that tick (rounded). hi <= lo or w < 2 gives 0 ticks. */
+#define MUI_AA_SCALE_MAX 64
+typedef struct mui_aa_scale_tick_t {
+    int x, major;
+    long value;
+} mui_aa_scale_tick_t;
+int mui_aa_scale_plan(int w, long lo, long hi, int ticks, mui_aa_scale_tick_t* out);
+/* Tick lengths for a font of font_px: minor = major / 2 (at least 2), major = font_px / 2 (at least 4), gap above the labels. */
+void mui_aa_scale_metrics(int font_px, int* minor_h, int* major_h, int* gap);
+
 #ifdef __cplusplus
 }
 #endif

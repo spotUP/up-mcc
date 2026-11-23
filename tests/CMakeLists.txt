@@ -67,3 +67,6 @@ mcc_test(mcc-demo-headers-only COMMAND "${CMAKE_COMMAND}" "-DINCLUDES=${MCC_DEMO
 
 mcc_test_exe(mui_pop_test)
 mcc_test(mui-pop-state COMMAND mui_pop_test)
+
+mcc_test_exe(mui_numeric_scale_test)
+mcc_test(mui-numeric-scale COMMAND mui_numeric_scale_test)

@@ -71,6 +71,8 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_RADIO 0x0B
 #define UP_CLS_POPSTRING 0x0C
 #define UP_CLS_POPLIST 0x0D
+#define UP_CLS_NUMERIC 0x11 /* UP-Numericbutton */
+#define UP_CLS_SCALE 0x12   /* UP-Scale */
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
 
 /* ---- Attributes (UPA_), methods (UPM_) and enumeration values (UPV_) of every class (design 8.3). The numbers are written here
@@ -117,6 +119,19 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_Poplist_Entries UP_TAG(UP_CLS_POPLIST, 0x01) /* I char**: NULL terminated, must outlive the object */
 #define UPA_Poplist_Active UP_TAG(UP_CLS_POPLIST, 0x02)  /* ISG LONG: chosen entry, -1 none (default); setting it fills the string; notifies */
 /* Poplist also takes UPA_Popstring_String, _Button, _OpenHook, _CloseHook, _Open. */
+
+/* UP-Numericbutton (MUIC_Numericbutton equivalent): a button showing the number; a click opens a small popup slider under it, a
+ * horizontal drag over the button changes the value directly (two button widths sweep the range). */
+#define UPA_Numeric_Min UP_TAG(UP_CLS_NUMERIC, 0x01)   /* ISG LONG: lowest value (default 0) */
+#define UPA_Numeric_Max UP_TAG(UP_CLS_NUMERIC, 0x02)   /* ISG LONG: highest value (default 100) */
+#define UPA_Numeric_Value UP_TAG(UP_CLS_NUMERIC, 0x03) /* ISG LONG: current value, clamped to Min..Max (notifies) */
+#define UPM_Numeric_Deactivated UP_TAG(UP_CLS_NUMERIC, 0x10) /* method: the popup window lost activation. Internal */
+#define UPM_Numeric_Closed UP_TAG(UP_CLS_NUMERIC, 0x11)      /* method: the popup window closed. Internal */
+
+/* UP-Scale (MUIC_Scale equivalent): a horizontal tick ruler with the end and middle values as labels, meant under a UP-Slider. */
+#define UPA_Scale_Min UP_TAG(UP_CLS_SCALE, 0x01)   /* ISG LONG: value at the left end (default 0) */
+#define UPA_Scale_Max UP_TAG(UP_CLS_SCALE, 0x02)   /* ISG LONG: value at the right end (default 100) */
+#define UPA_Scale_Ticks UP_TAG(UP_CLS_SCALE, 0x03) /* ISG LONG: number of ticks, 2..64 (default 11) */
 
 /* UP-Tabs */
 #define UPA_Tabs_Active UP_TAG(UP_CLS_TABS, 0x01)   /* ISG LONG: index of the active tab (notifies) */
@@ -227,6 +242,8 @@ Object* UP_NewList(const struct TagItem* tags, Object** list_out); /* returns th
 Object* UP_NewField(const struct TagItem* tags);
 Object* UP_NewPopstring(const struct TagItem* tags);
 Object* UP_NewPoplist(const struct TagItem* tags);
+Object* UP_NewNumericbutton(const struct TagItem* tags);
+Object* UP_NewScale(const struct TagItem* tags);
 Object* UP_NewPanel(const struct TagItem* tags);
 Object* UP_NewBalance(const struct TagItem* tags);
 Object* UP_NewCheckmark(const struct TagItem* tags);
