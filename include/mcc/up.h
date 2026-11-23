@@ -69,6 +69,8 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_BALANCE 0x09
 #define UP_CLS_CHECKMARK 0x0A
 #define UP_CLS_RADIO 0x0B
+#define UP_CLS_SCROLLGROUP 0x0E
+#define UP_CLS_VIRTGROUP 0x10
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
 
 /* ---- Attributes (UPA_), methods (UPM_) and enumeration values (UPV_) of every class (design 8.3). The numbers are written here
@@ -94,6 +96,15 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 /* UP-Radio */
 #define UPA_Radio_Entries UP_TAG(UP_CLS_RADIO, 0x01) /* I char**: NULL terminated, must outlive the object */
 #define UPA_Radio_Active UP_TAG(UP_CLS_RADIO, 0x02)  /* ISG LONG: index of the chosen entry (notifies) */
+
+/* UP-Virtgroup: a group whose contents (MUIA_Group_Child) are laid out at their own size, larger than the view, and shown through it at an offset */
+#define UPA_Virtgroup_Left UP_TAG(UP_CLS_VIRTGROUP, 0x01)   /* ISG LONG: pixels the contents are shifted left; clamped to the contents */
+#define UPA_Virtgroup_Top UP_TAG(UP_CLS_VIRTGROUP, 0x02)    /* ISG LONG: pixels the contents are shifted up; clamped to the contents */
+#define UPA_Virtgroup_Width UP_TAG(UP_CLS_VIRTGROUP, 0x03)  /* G LONG: width of the contents */
+#define UPA_Virtgroup_Height UP_TAG(UP_CLS_VIRTGROUP, 0x04) /* G LONG: height of the contents */
+
+/* UP-Scrollgroup: a virtgroup with an UP-Scroller on the right that shows only while the contents are taller than the view */
+#define UPA_Scrollgroup_Top UP_TAG(UP_CLS_SCROLLGROUP, 0x01) /* ISG LONG: pixels the contents are scrolled up */
 
 /* UP-Cycle */
 #define UPA_Cycle_Active UP_TAG(UP_CLS_CYCLE, 0x01)  /* ISG LONG: index of the shown entry (notifies) */
@@ -210,6 +221,8 @@ Object* UP_NewPanel(const struct TagItem* tags);
 Object* UP_NewBalance(const struct TagItem* tags);
 Object* UP_NewCheckmark(const struct TagItem* tags);
 Object* UP_NewRadio(const struct TagItem* tags);
+Object* UP_NewVirtgroup(const struct TagItem* tags);   /* MUIA_Group_Child / MUIA_Group_Horiz describe the contents */
+Object* UP_NewScrollgroup(const struct TagItem* tags); /* MUIA_Group_Child / MUIA_Group_Horiz describe the contents */
 #endif
 
 /* Theme token names (I685d2): UPTOK_<id> equals SEL_GUI_TOKEN_<id> for every token of the SEL_GUI_TOKENS list in

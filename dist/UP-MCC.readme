@@ -8,8 +8,8 @@ Requires:     MUI 3.8
 URL:          https://github.com/spotUP/selecta
 Replaces:     -
 
-UP-MCC is a package of eleven MUI 3.8 custom classes (UP-Button, UP-Text, UP-Panel,
-UP-Tabs, UP-Balance, UP-Slider, UP-Progress, UP-Cycle, UP-Field, UP-Scroller, UP-List, UP-Checkmark, UP-Radio),
+UP-MCC is a package of fifteen MUI 3.8 custom classes (UP-Button, UP-Text, UP-Panel,
+UP-Tabs, UP-Balance, UP-Slider, UP-Progress, UP-Cycle, UP-Field, UP-Scroller, UP-List, UP-Checkmark, UP-Radio, UP-Scrollgroup, UP-Virtgroup),
 a preferences class (UP-MCC.mcp), the support library up-mcc.library, the Inter font,
 dark and light theme files, programmer headers, AutoDoc files and a demonstration
 program with its source.
