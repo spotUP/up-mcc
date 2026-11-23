@@ -134,7 +134,9 @@ static ULONG aacycle_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
         /* I685x: the super filled the corner wedges with the snapped parent pen; on truecolour repaint them in the exact parent RGB. */
         aa_round_corners(&d->aa, rp, l, t, w, h, d->m.radius, d->aa.bg_rgb);
     }
-    aa_round_fill(&d->aa, rp, l, t, w, h, d->m.radius, face);
+    /* Same outline as UP-Field (TRACK line, face inset by one): on a raised card the face alone equals the card and the box vanishes. */
+    aa_round_fill(&d->aa, rp, l, t, w, h, d->m.radius, d->aa.tok[SEL_GUI_TOKEN_TRACK]);
+    aa_round_fill(&d->aa, rp, l + 1, t + 1, w - 2, h - 2, d->m.radius > 1 ? d->m.radius - 1 : 0, face);
     if (d->n > 0) {
         th = aa_text_height(&d->aa, obj);
         aa_text(&d->aa, obj, rp, l + d->m.pad_x, t + (h - th) / 2, d->entries[d->active], text, face);
@@ -166,8 +168,17 @@ static void aacycle_open_popup(Object* obj, aacycle_data* d) {
     Object *app = NULL, *list = NULL, *group;
     struct TagItem tl[7];
     struct Window* win = _window(obj);
-    if (win == NULL || d->n <= 0 || d->popup != NULL) {
+    ULONG is_open = 0;
+    if (win == NULL || d->n <= 0) {
         return;
+    }
+    if (d->popup != NULL) {
+        /* A pick, cancel or lost focus closes the popup window by notification but leaves it allocated: reopen from a fresh one. */
+        GetAttr(MUIA_Window_Open, d->popup, &is_open);
+        if (is_open) {
+            return;
+        }
+        aacycle_drop_popup(obj, d);
     }
     GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
     if (app == NULL) {
