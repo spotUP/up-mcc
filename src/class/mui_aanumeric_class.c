@@ -188,7 +188,7 @@ static Object* aanum_build(aanumeric_data* d) {
     if (slider == NULL) {
         return NULL;
     }
-    card = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Raised, UPA_Panel_Popup, (ULONG)TRUE, MUIA_Group_Child, (ULONG)slider, TAG_DONE);
+    card = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Popup, UPA_Panel_Popup, (ULONG)TRUE, MUIA_Group_Child, (ULONG)slider, TAG_DONE);
     d->slider = card != NULL ? slider : NULL;
     if (card == NULL) {
         MUI_DisposeObject(slider);

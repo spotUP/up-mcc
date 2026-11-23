@@ -44,7 +44,9 @@ typedef struct aalist_data {
 static void aalist_row_rgb(const aalist_data* d, int st, int playing, uint32_t* face, uint32_t* text) {
     mui_aa_list_row_rgb(d->aa.tok, st, playing, face, text);
     if (face != NULL && d->raised && st == MUI_AA_NORMAL) {
-        *face = d->aa.tok[SEL_GUI_TOKEN_SURFACE_RAISED];
+        *face = d->aa.tok[SEL_GUI_TOKEN_SURFACE_HOVER]; /* rows rest on the Popup body, one step above Raised */
+    } else if (face != NULL && d->raised && st == MUI_AA_HOVER) {
+        *face = d->aa.tok[SEL_GUI_TOKEN_SURFACE_PRESSED];
     }
 }
 

@@ -91,7 +91,7 @@ static int aapop_build_list(Object* obj, aapop_data* d) {
     if (group == NULL) {
         return 0;
     }
-    card = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Raised, UPA_Panel_Popup, (ULONG)TRUE, MUIA_Group_Child, (ULONG)group, TAG_DONE);
+    card = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Popup, UPA_Panel_Popup, (ULONG)TRUE, MUIA_Group_Child, (ULONG)group, TAG_DONE);
     d->root = card != NULL ? card : group;
     d->list = list;
     return 1;

@@ -75,14 +75,7 @@ static ULONG aatabs_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) 
         aa_rect(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj), d->aa.tok[SEL_GUI_TOKEN_SURFACE]); /* the strip sits on the window surface colour; ctx_bg gives BACKGROUND for a non-Self object, and a retheme resets bg_rgb */
     }
     r = DoSuperMethodA(cl, obj, (Msg)msg);
-    if ((msg->flags & MADF_DRAWOBJECT) && d->n > 0) {
-        Object* b = d->btn[d->active];
-        int lx, ly, lw, lh;
-        uint32_t line;
-        mui_aa_tabs_rgb(d->aa.tok, &line, NULL, NULL);
-        mui_aa_tabs_line(d->aa.font_px, _mleft(b), _mtop(b), _mwidth(b), _mheight(b), &lx, &ly, &lw, &lh);
-        aa_rect(&d->aa, _rp(obj), lx, ly, lx + lw - 1, ly + lh - 1, line);
-    }
+    /* No accent underline: the paper active tab marks the selection, and the chip repaint after a click erased a line the strip had just drawn (a blue flash) */
     return r;
 }
 

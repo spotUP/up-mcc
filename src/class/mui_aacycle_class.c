@@ -200,7 +200,7 @@ static void aacycle_open_popup(Object* obj, aacycle_data* d) {
     }
     {
         /* I1349: root = a themed card (Raised token, rounded, no MUI frame) around the list, not MUI's stock window frame and bevel */
-        Object* card = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Raised, UPA_Panel_Popup, (ULONG)TRUE, MUIA_Group_Child, (ULONG)group, TAG_DONE);
+        Object* card = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Popup, UPA_Panel_Popup, (ULONG)TRUE, MUIA_Group_Child, (ULONG)group, TAG_DONE);
         if (card != NULL) {
             group = card;
         }

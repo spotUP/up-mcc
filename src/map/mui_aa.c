@@ -314,7 +314,7 @@ int mui_aa_text_fit(const char* s, int max_w, mui_aa_width_fn width, void* ctx, 
 }
 
 int mui_aa_panel_token(int role) {
-    return role == MUI_AA_PANEL_SURFACE ? SEL_GUI_TOKEN_SURFACE : role == MUI_AA_PANEL_RAISED ? SEL_GUI_TOKEN_SURFACE_RAISED : SEL_GUI_TOKEN_PANEL;
+    return role == MUI_AA_PANEL_POPUP ? SEL_GUI_TOKEN_SURFACE_HOVER : role == MUI_AA_PANEL_SURFACE ? SEL_GUI_TOKEN_SURFACE : role == MUI_AA_PANEL_RAISED ? SEL_GUI_TOKEN_SURFACE_RAISED : SEL_GUI_TOKEN_PANEL;
 }
 
 uint32_t mui_aa_panel_rgb(const uint32_t* token, int role) {

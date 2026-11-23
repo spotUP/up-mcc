@@ -128,7 +128,7 @@ int mui_aa_text_maxw(int fixed, int defw);
 
 /* I667e (design 3.8, AAPanel): rounded panel groups. Role -> face token (panel PANEL, surface SURFACE, raised SURFACE_RAISED),
  * corner radius RADIUS_LARGE (tier S, font_px 0: half), inner padding and spacing SPACING. Tested on the host. */
-enum { MUI_AA_PANEL_PANEL = UPV_Panel_Role_Panel, MUI_AA_PANEL_SURFACE = UPV_Panel_Role_Surface, MUI_AA_PANEL_RAISED = UPV_Panel_Role_Raised,
+enum { MUI_AA_PANEL_PANEL = UPV_Panel_Role_Panel, MUI_AA_PANEL_SURFACE = UPV_Panel_Role_Surface, MUI_AA_PANEL_RAISED = UPV_Panel_Role_Raised, MUI_AA_PANEL_POPUP = UPV_Panel_Role_Popup,
        MUI_AA_PANEL_ROLES = UPV_Panel_Role_Count };
 int mui_aa_panel_token(int role);
 uint32_t mui_aa_panel_rgb(const uint32_t* token, int role);
