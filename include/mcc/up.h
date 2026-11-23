@@ -75,6 +75,8 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_SCALE 0x12   /* UP-Scale */
 #define UP_CLS_COLORFIELD 0x13 /* UP-Colorfield */
 #define UP_CLS_PALETTE 0x14    /* UP-Palette */
+#define UP_CLS_IMAGE 0x15   /* UP-Image */
+#define UP_CLS_MENU 0x16    /* UP-Menu */
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
 
 /* ---- Attributes (UPA_), methods (UPM_) and enumeration values (UPV_) of every class (design 8.3). The numbers are written here
@@ -143,6 +145,22 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_Palette_Count UP_TAG(UP_CLS_PALETTE, 0x02)   /* I LONG: number of entries in UPA_Palette_Entries */
 #define UPA_Palette_Active UP_TAG(UP_CLS_PALETTE, 0x03)  /* ISG LONG: index of the chosen swatch (default 0; notifies) */
 #define UPA_Palette_Columns UP_TAG(UP_CLS_PALETTE, 0x04) /* I LONG: swatches per row (default 8, at most the entry count) */
+
+/* UP-Image (MUIC_Dtpic-like): a picture from a file (picture.datatype, remapped to the window screen) or from a caller bitmap, on the panel
+ * background. Without picture.datatype, a readable file or any bitmap the box stays empty (an outline only). */
+#define UPA_Image_File UP_TAG(UP_CLS_IMAGE, 0x01)   /* IS STRPTR: path of the picture, copied (at most 255 characters); set reloads and redraws */
+#define UPA_Image_Bitmap UP_TAG(UP_CLS_IMAGE, 0x02) /* IS struct BitMap*: caller bitmap shown instead of a file; NOT copied, must stay valid; wins over the file */
+#define UPA_Image_Fit UP_TAG(UP_CLS_IMAGE, 0x03)    /* I BOOL: scale to the box keeping the aspect (the box then stretches); default FALSE = the picture size */
+
+/* UP-Menu (MUIC_Menustrip-like, one menu): a UP-Button caption that opens a dark popup list of items under it. Several UP-Menu objects side by
+ * side in a horizontal group make a menu strip. One popup window, created at the first open and reused (as UP-Poplist). */
+#define UPA_Menu_Title UP_TAG(UP_CLS_MENU, 0x01)  /* I STRPTR: caption of the menu button; must outlive the object */
+#define UPA_Menu_Items UP_TAG(UP_CLS_MENU, 0x02)  /* I char**: NULL terminated item texts, "-" is a separator row; must outlive the object */
+#define UPA_Menu_Chosen UP_TAG(UP_CLS_MENU, 0x03) /* ISG LONG: index of the item last chosen, -1 before any (notifies on every pick, also the same item again) */
+#define UPA_Menu_Open UP_TAG(UP_CLS_MENU, 0x04)   /* ISG BOOL: the popup is open; set TRUE opens, FALSE closes */
+#define UPM_Menu_Click UP_TAG(UP_CLS_MENU, 0x10)  /* method: the title button was pressed. Internal */
+#define UPM_Menu_Closed UP_TAG(UP_CLS_MENU, 0x11) /* method: the popup window closed. Internal */
+#define UPM_Menu_Deactivated UP_TAG(UP_CLS_MENU, 0x12) /* method: the popup window lost activation. Internal */
 
 /* UP-Tabs */
 #define UPA_Tabs_Active UP_TAG(UP_CLS_TABS, 0x01)   /* ISG LONG: index of the active tab (notifies) */
@@ -257,6 +275,8 @@ Object* UP_NewNumericbutton(const struct TagItem* tags);
 Object* UP_NewScale(const struct TagItem* tags);
 Object* UP_NewColorfield(const struct TagItem* tags);
 Object* UP_NewPalette(const struct TagItem* tags);
+Object* UP_NewImage(const struct TagItem* tags);
+Object* UP_NewMenu(const struct TagItem* tags);
 Object* UP_NewPanel(const struct TagItem* tags);
 Object* UP_NewBalance(const struct TagItem* tags);
 Object* UP_NewCheckmark(const struct TagItem* tags);

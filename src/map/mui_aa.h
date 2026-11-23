@@ -368,6 +368,10 @@ int mui_aa_palette_hit(int x, int y, int cols, int n, int cw, int ch, int gap); 
 /* Cursor key step: dx/dy of -1,0,1. No wrap; a step down into a short last row lands on the last cell; a step off the grid stays. */
 int mui_aa_palette_move(int active, int n, int cols, int dx, int dy);
 
+/* UP-Image (host test mui-image-fit). Size of an sw x sh picture shown in a bw x bh box: fit=0 the picture size, fit=1 scaled to the box
+ * keeping the aspect (never below 1 pixel); the offsets centre it in the box (may be negative when the picture is larger). */
+void mui_aa_image_fit(int sw, int sh, int bw, int bh, int fit, int* dw, int* dh, int* ox, int* oy);
+
 #ifdef __cplusplus
 }
 #endif

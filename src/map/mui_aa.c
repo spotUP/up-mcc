@@ -1054,3 +1054,19 @@ int mui_aa_palette_move(int active, int n, int cols, int dx, int dy) {
     ni = r * cols + c;
     return ni >= n ? n - 1 : ni;
 }
+
+void mui_aa_image_fit(int sw, int sh, int bw, int bh, int fit, int* dw, int* dh, int* ox, int* oy) {
+    int w = sw, h = sh;
+    if (fit && sw > 0 && sh > 0 && bw > 0 && bh > 0) {
+        if ((long)bw * sh <= (long)bh * sw) { /* width limits */
+            w = bw;
+            h = (int)((long)sh * bw / sw);
+        } else {
+            h = bh;
+            w = (int)((long)sw * bh / sh);
+        }
+        w = w < 1 ? 1 : w;
+        h = h < 1 ? 1 : h;
+    }
+    *dw = w, *dh = h, *ox = (bw - w) / 2, *oy = (bh - h) / 2;
+}

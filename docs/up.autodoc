@@ -1779,3 +1779,193 @@
 *       <mcc/up.h>, UP-Numericbutton.mcc
 *
 ******/
+
+/****** UP-Image.mcc/UPA_Image_File ******
+*
+*   NAME
+*       UPA_Image_File -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       path of the picture (STRPTR), copied, at most 255 characters; set reloads and redraws
+*
+*   INPUTS
+*       UPA_Image_File - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Bitmap ******
+*
+*   NAME
+*       UPA_Image_Bitmap -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       struct BitMap*: caller bitmap shown instead of a file, not copied and must stay valid; wins over the file
+*
+*   INPUTS
+*       UPA_Image_Bitmap - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Fit ******
+*
+*   NAME
+*       UPA_Image_Fit -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       BOOL: scale to the box keeping the aspect (the box then stretches); default FALSE = the picture size
+*
+*   INPUTS
+*       UPA_Image_Fit - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Title ******
+*
+*   NAME
+*       UPA_Menu_Title -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       STRPTR caption of the menu button; must outlive the object
+*
+*   INPUTS
+*       UPA_Menu_Title - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Items ******
+*
+*   NAME
+*       UPA_Menu_Items -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       char**: NULL terminated item texts, "-" is a separator row; must outlive the object
+*
+*   INPUTS
+*       UPA_Menu_Items - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Chosen ******
+*
+*   NAME
+*       UPA_Menu_Chosen -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       LONG: index of the item last chosen, -1 before any (notifies on every pick, also the same item again)
+*
+*   INPUTS
+*       UPA_Menu_Chosen - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Open ******
+*
+*   NAME
+*       UPA_Menu_Open -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       BOOL: the popup is open; set TRUE opens, FALSE closes
+*
+*   INPUTS
+*       UPA_Menu_Open - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPM_Menu_Click ******
+*
+*   NAME
+*       UPM_Menu_Click -- method of UP-Menu.mcc
+*
+*   FUNCTION
+*       the title button was pressed; internal
+*
+*   INPUTS
+*       UPM_Menu_Click - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPM_Menu_Closed ******
+*
+*   NAME
+*       UPM_Menu_Closed -- method of UP-Menu.mcc
+*
+*   FUNCTION
+*       the popup window closed; internal
+*
+*   INPUTS
+*       UPM_Menu_Closed - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPM_Menu_Deactivated ******
+*
+*   NAME
+*       UPM_Menu_Deactivated -- method of UP-Menu.mcc
+*
+*   FUNCTION
+*       the popup window lost activation; internal
+*
+*   INPUTS
+*       UPM_Menu_Deactivated - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
