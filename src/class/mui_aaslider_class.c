@@ -175,7 +175,7 @@ static ULONG aaslider_handle(struct IClass* cl, Object* obj, struct MUIP_HandleE
         aatip_event(obj, &d->tip, im, 0);
     }
     if (im->Class == IDCMP_MOUSEMOVE) {
-        int in = im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj);
+        int in = aa_inside(&d->aa, obj, im);
         aatip_event(obj, &d->tip, im, in);
         if (d->drag && !dis) {
             aaslider_move_to(obj, im->MouseX);
@@ -186,7 +186,7 @@ static ULONG aaslider_handle(struct IClass* cl, Object* obj, struct MUIP_HandleE
         }
         return 0;
     }
-    if (im->Code == SELECTDOWN && !dis && im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj)) {
+    if (im->Code == SELECTDOWN && !dis && aa_inside(&d->aa, obj, im)) {
         d->drag = 1;
         aaslider_move_to(obj, im->MouseX);
         MUI_Redraw(obj, MADF_DRAWOBJECT);
@@ -222,7 +222,11 @@ static ULONG __attribute__((used)) aaslider_dispatch_c(struct IClass* cl, Object
         aaslider_data* d = INST_DATA(cl, obj);
         return aatip_fire(obj, &d->aa, &d->tip);
     }
+    case MUIM_Show:
+        ((aaslider_data*)INST_DATA(cl, obj))->aa.shown = 1;
+        break;
     case MUIM_Hide:
+        ((aaslider_data*)INST_DATA(cl, obj))->aa.shown = 0;
         aatip_drop(obj);
         break;
     case MUIM_Setup:

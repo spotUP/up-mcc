@@ -213,7 +213,7 @@ static ULONG aafield_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
     aafield_data* d = INST_DATA(cl, obj);
     struct IntuiMessage* im = msg->imsg;
     if (im != NULL) {
-        aatip_event(obj, &d->tip, im, im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj));
+        aatip_event(obj, &d->tip, im, aa_inside(&d->aa, obj, im));
         if (d->esc_close && im->Class == IDCMP_RAWKEY && (im->Code & 0x80) == 0 && (im->Code & 0x7Fu) == 0x45u /* Esc; raw code, so the standalone UP-*.mcc libraries need no Selecta symbol */) {
             ULONG active = 0;
             GetAttr(MUIA_Window_ActiveObject, _win(obj), &active);
@@ -307,7 +307,11 @@ static ULONG __attribute__((used)) aafield_dispatch_c(struct IClass* cl, Object*
         aafield_data* d = INST_DATA(cl, obj);
         return aatip_fire(obj, &d->aa, &d->tip);
     }
+    case MUIM_Show:
+        ((aafield_data*)INST_DATA(cl, obj))->aa.shown = 1;
+        break;
     case MUIM_Hide:
+        ((aafield_data*)INST_DATA(cl, obj))->aa.shown = 0;
         aatip_drop(obj);
         break;
     case MUIM_HandleEvent:

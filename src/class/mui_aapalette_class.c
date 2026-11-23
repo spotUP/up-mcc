@@ -129,7 +129,7 @@ static ULONG aapalette_handle(struct IClass* cl, Object* obj, struct MUIP_Handle
         return DoSuperMethodA(cl, obj, (Msg)msg);
     }
     GetAttr(MUIA_Disabled, obj, &dis);
-    in = im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj);
+    in = aa_inside(&d->aa, obj, im);
     hit = in ? mui_aa_palette_hit(im->MouseX - _left(obj), im->MouseY - _top(obj), d->cols, d->n, d->cw, d->ch, PAL_GAP) : -1;
     if (im->Class == IDCMP_MOUSEMOVE) {
         if (hit != d->hover) {
@@ -231,6 +231,7 @@ static ULONG __attribute__((used)) aapalette_dispatch_c(struct IClass* cl, Objec
         return aapalette_set(cl, obj, (struct opSet*)msg);
     case OM_GET:
         return aapalette_get(cl, obj, (struct opGet*)msg);
+    AA_SHOWN_CASES(aapalette_data)
     case MUIM_Setup:
         return aapalette_setup(cl, obj, msg);
     case MUIM_Cleanup:

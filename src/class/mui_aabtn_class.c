@@ -300,7 +300,7 @@ static ULONG aabtn_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
 static ULONG aabtn_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* msg) {
     aabtn_data* d = INST_DATA(cl, obj);
     if (msg->imsg != NULL && msg->imsg->Class == IDCMP_MOUSEMOVE) {
-        int in = msg->imsg->MouseX >= _left(obj) && msg->imsg->MouseX <= _right(obj) && msg->imsg->MouseY >= _top(obj) && msg->imsg->MouseY <= _bottom(obj);
+        int in = aa_inside(&d->aa, obj, msg->imsg);
         aatip_event(obj, &d->tip, msg->imsg, in);
         if (in != d->hover) {
             d->hover = in;
@@ -384,9 +384,11 @@ static ULONG __attribute__((used)) aabtn_dispatch_c(struct IClass* cl, Object* o
         return aatip_fire(obj, &d->aa, &d->tip);
     }
     case MUIM_Hide:
+        ((aabtn_data*)INST_DATA(cl, obj))->aa.shown = 0;
         aatip_drop(obj);
         break;
     case MUIM_Show:
+        ((aabtn_data*)INST_DATA(cl, obj))->aa.shown = 1;
         if (g_n_show++ == 0) {
             aa_trace("mcc: first MUIM_Show reached a button (window is open, layout done)");
         }

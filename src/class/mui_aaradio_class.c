@@ -133,7 +133,7 @@ static ULONG aaradio_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
         return DoSuperMethodA(cl, obj, (Msg)msg);
     }
     GetAttr(MUIA_Disabled, obj, &dis);
-    in = im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj);
+    in = aa_inside(&d->aa, obj, im);
     row = in ? mui_aa_radio_hit(im->MouseY - _top(obj), d->row_h, d->n) : -1;
     if (im->Class == IDCMP_MOUSEMOVE) {
         if (row != d->hover) {
@@ -221,6 +221,7 @@ static ULONG __attribute__((used)) aaradio_dispatch_c(struct IClass* cl, Object*
         return aaradio_set(cl, obj, (struct opSet*)msg);
     case OM_GET:
         return aaradio_get(cl, obj, (struct opGet*)msg);
+    AA_SHOWN_CASES(aaradio_data)
     case MUIM_Setup:
         return aaradio_setup(cl, obj, msg);
     case MUIM_Cleanup:

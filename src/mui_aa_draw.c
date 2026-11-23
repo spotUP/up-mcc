@@ -354,6 +354,10 @@ struct TextFont* aa_plain_textfont(const aa_ctx* c, Object* obj) {
     return c->plain != NULL ? c->plain : _font(obj);
 }
 
+int aa_inside(const aa_ctx* c, Object* obj, const struct IntuiMessage* im) {
+    return c->shown && im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj);
+}
+
 int aa_live(Object* obj) {
     return obj != NULL && muiRenderInfo(obj) != NULL && _win(obj) != NULL;
 }

@@ -35,6 +35,7 @@ typedef struct aa_ctx {
     int linked;
     struct TextFont* plain; /* I685w run 6: PLAIN backend tone font (diskfont), NULL = the object's MUI font */
     int plain_bold;         /* I685w run 6: PLAIN backend draws the title and heading tones in algorithmic bold */
+    int shown;              /* MUIM_Show seen, MUIM_Hide not yet: the object is on screen. Set by AA_SHOWN_CASES */
 } aa_ctx;
 
 /* Backend, font, and the n colours in rgb[] as held pens. Call from MUIM_Setup after the super class. */
@@ -58,6 +59,16 @@ void aa_cleanup(aa_ctx* c);
  * garbage window crashed the Amiga (I684a, AACycle set before the window opened). Use this before every redraw from
  * OM_SET or an outside call. */
 int aa_live(Object* obj);
+/* True when the mouse of im lies in obj AND obj is on screen. A Setup object on a hidden PageMode page keeps its event handler and its
+ * old box, so a bare box test lets a click on the visible page open the hidden page's popups. Every HandleEvent hit test goes here. */
+struct IntuiMessage;
+int aa_inside(const aa_ctx* c, Object* obj, const struct IntuiMessage* im);
+/* In a class dispatcher: tracks MUIM_Show / MUIM_Hide into d->aa.shown, then falls to the super class. D is the instance data type. */
+#define AA_SHOWN_CASES(D) \
+    case MUIM_Show: \
+    case MUIM_Hide: \
+        ((D*)INST_DATA(cl, obj))->aa.shown = (msg->MethodID == MUIM_Show); \
+        break;
 /* I685w: every fill takes the 0xRRGGBB itself. On a truecolour screen (c->tc) the RGB reaches the screen unchanged through
  * p96RectFill or FillPixelArray; on a palette screen it goes through the nearest held pen. Classes never see a pen. */
 /* Palette screens: hold the pen of rgb now, so a later draw cannot find the colour table full. A no-op on truecolour. */

@@ -245,7 +245,7 @@ static ULONG aalist_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEve
     if (im == NULL) {
         return DoSuperMethodA(cl, obj, (Msg)msg);
     }
-    in = im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj);
+    in = aa_inside(&d->aa, obj, im);
     vis = aalist_visible(obj, d);
     if (im->Class == IDCMP_MOUSEMOVE) {
         long hv = in && !d->no_select ? mui_aa_list_row_at(&d->m, im->MouseY - _mtop(obj) - aalist_title_h(d), d->first, d->count) : -1;
@@ -472,6 +472,7 @@ static ULONG __attribute__((used)) aalist_dispatch_c(struct IClass* cl, Object* 
         return aalist_get(cl, obj, (struct opGet*)msg);
     case UPM_List_GetRow:
         return aalist_getrow(cl, obj, (UP_ListGetRow*)msg);
+    AA_SHOWN_CASES(aalist_data)
     case MUIM_Setup:
         return aalist_setup(cl, obj, msg);
     case MUIM_Cleanup:

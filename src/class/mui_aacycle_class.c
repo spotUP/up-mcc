@@ -234,7 +234,7 @@ static ULONG aacycle_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
         return DoSuperMethodA(cl, obj, (Msg)msg);
     }
     GetAttr(MUIA_Disabled, obj, &dis);
-    in = im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj);
+    in = aa_inside(&d->aa, obj, im);
     if (im->Class == IDCMP_MOUSEMOVE) {
         if (in != d->hover) {
             d->hover = in;
@@ -322,6 +322,7 @@ static ULONG __attribute__((used)) aacycle_dispatch_c(struct IClass* cl, Object*
         return aacycle_set(cl, obj, (struct opSet*)msg);
     case OM_GET:
         return aacycle_get(cl, obj, (struct opGet*)msg);
+    AA_SHOWN_CASES(aacycle_data)
     case MUIM_Setup:
         return aacycle_setup(cl, obj, msg);
     case MUIM_Cleanup:

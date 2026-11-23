@@ -147,7 +147,7 @@ static ULONG aacheckmark_handle(struct IClass* cl, Object* obj, struct MUIP_Hand
     if (im == NULL || im->Class != IDCMP_MOUSEMOVE) {
         return DoSuperMethodA(cl, obj, (Msg)msg);
     }
-    in = im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj);
+    in = aa_inside(&d->aa, obj, im);
     if (in != d->hover) {
         d->hover = in;
         MUI_Redraw(obj, MADF_DRAWOBJECT);
@@ -190,6 +190,7 @@ static ULONG __attribute__((used)) aacheckmark_dispatch_c(struct IClass* cl, Obj
     switch (msg->MethodID) {
     case OM_NEW:
         return aacheckmark_new(cl, obj, (struct opSet*)msg);
+    AA_SHOWN_CASES(aacheckmark_data)
     case MUIM_Setup:
         return aacheckmark_setup(cl, obj, msg);
     case MUIM_Cleanup:

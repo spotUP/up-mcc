@@ -252,8 +252,8 @@ static void aanum_click(Object* obj, aanumeric_data* d) {
     }
 }
 
-static int aanum_inside(Object* obj, const struct IntuiMessage* im) {
-    return im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj);
+static int aanum_inside(const aanumeric_data* d, Object* obj, const struct IntuiMessage* im) {
+    return aa_inside(&d->aa, obj, im);
 }
 
 static ULONG aanum_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* msg) {
@@ -266,7 +266,7 @@ static ULONG aanum_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEven
     }
     GetAttr(MUIA_Disabled, obj, &dis);
     if (im->Class == IDCMP_MOUSEMOVE) {
-        in = aanum_inside(obj, im);
+        in = aanum_inside(d, obj, im);
         if (d->press && !dis) {
             dx = im->MouseX - d->press_x;
             if (d->dragged || dx >= MUI_AA_NUM_DRAG_SLOP || -dx >= MUI_AA_NUM_DRAG_SLOP) {
@@ -283,7 +283,7 @@ static ULONG aanum_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEven
         }
         return 0;
     }
-    if (im->Code == SELECTDOWN && !dis && aanum_inside(obj, im)) {
+    if (im->Code == SELECTDOWN && !dis && aanum_inside(d, obj, im)) {
         d->press = 1;
         d->dragged = 0;
         d->press_x = im->MouseX;
@@ -294,7 +294,7 @@ static ULONG aanum_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEven
     if (im->Code == SELECTUP && d->press) {
         d->press = 0;
         MUI_Redraw(obj, MADF_DRAWOBJECT);
-        if (!d->dragged && aanum_inside(obj, im)) {
+        if (!d->dragged && aanum_inside(d, obj, im)) {
             aanum_click(obj, d);
         }
         d->dragged = 0;
@@ -400,6 +400,7 @@ static ULONG __attribute__((used)) aanumeric_dispatch_c(struct IClass* cl, Objec
         return aanum_set(cl, obj, (struct opSet*)msg);
     case OM_GET:
         return aanum_get(cl, obj, (struct opGet*)msg);
+    AA_SHOWN_CASES(aanumeric_data)
     case MUIM_Setup:
         return aanum_setup(cl, obj, msg);
     case MUIM_Cleanup:
