@@ -138,7 +138,7 @@ static ULONG aaradio_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
     if (im->Class == IDCMP_MOUSEMOVE) {
         if (row != d->hover) {
             d->hover = row;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
         return 0;
     }
@@ -190,7 +190,7 @@ static ULONG aaradio_set(struct IClass* cl, Object* obj, struct opSet* msg) {
     if (ta != NULL && mui_aa_cycle_valid((int)ta->ti_Data, d->n) && (int)ta->ti_Data != d->active) {
         d->active = (int)ta->ti_Data;
         if (aa_live(obj)) {
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);

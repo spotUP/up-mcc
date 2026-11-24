@@ -279,7 +279,7 @@ static ULONG aanum_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEven
         }
         if (in != d->hover) {
             d->hover = in;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
         return 0;
     }
@@ -288,12 +288,12 @@ static ULONG aanum_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEven
         d->dragged = 0;
         d->press_x = im->MouseX;
         d->start_val = d->val;
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
         return MUI_EventHandlerRC_Eat;
     }
     if (im->Code == SELECTUP && d->press) {
         d->press = 0;
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
         if (!d->dragged && aanum_inside(d, obj, im)) {
             aanum_click(obj, d);
         }
@@ -359,7 +359,7 @@ static ULONG aanum_set(struct IClass* cl, Object* obj, struct opSet* msg) {
             set(d->slider, MUIA_Numeric_Value, (ULONG)d->val); /* the slider's own notify comes back with the same value: no change, no loop */
         }
         if (aa_live(obj)) {
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);

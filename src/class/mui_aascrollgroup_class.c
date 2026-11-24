@@ -24,6 +24,7 @@
 typedef struct aascrollgroup_data {
     Object *virt, *bar;
     long s_first, s_vis, s_ent; /* last values pushed to the bar */
+    int bar_on;                 /* MUIA_ShowMe last asked of the bar, -1 before the first layout */
 } aascrollgroup_data;
 
 static struct MUI_CustomClass* g_class;
@@ -59,6 +60,12 @@ static ULONG aascrollgroup_layout(struct Hook* hook, Object* obj, struct MUI_Lay
             MUI_Layout(d->bar, vw, 0, w - vw, h, 0);
         } else {
             MUI_Layout(d->bar, w, 0, 0, 0, 0); /* hidden: no width */
+        }
+        if (need != d->bar_on) {
+            /* D6: hide the bar while the contents fit (as UP-List does with its scroller), re-checked on every layout. ShowMe
+             * relayouts the group, so it is pushed to run after this layout, not set inside it; the next layout asks the same. */
+            d->bar_on = need;
+            DoMethod(_app(obj), MUIM_Application_PushMethod, (ULONG)(uintptr_t)d->bar, 3, MUIM_Set, MUIA_ShowMe, (ULONG)need);
         }
         GetAttr(UPA_Virtgroup_Top, d->virt, &top); /* the virtgroup clamped it during its own layout */
         if ((long)top != d->s_first || h != d->s_vis || (long)ch != d->s_ent) {
@@ -148,6 +155,7 @@ static ULONG aascrollgroup_new(struct IClass* cl, Object* obj, struct opSet* ops
         d->virt = virt;
         d->bar = bar;
         d->s_first = d->s_vis = d->s_ent = -1;
+        d->bar_on = -1;
         SetAttrs(virt, UPA_Virtgroup_Top, GetTagData(UPA_Scrollgroup_Top, 0, ops->ops_AttrList), TAG_DONE);
         DoMethod(bar, MUIM_Notify, UPA_Scroller_First, MUIV_EveryTime, virt, 3, MUIM_Set, UPA_Virtgroup_Top, MUIV_TriggerValue);
         g_made++;

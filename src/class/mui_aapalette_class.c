@@ -134,7 +134,7 @@ static ULONG aapalette_handle(struct IClass* cl, Object* obj, struct MUIP_Handle
     if (im->Class == IDCMP_MOUSEMOVE) {
         if (hit != d->hover) {
             d->hover = hit;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
         return 0;
     }
@@ -200,7 +200,7 @@ static ULONG aapalette_set(struct IClass* cl, Object* obj, struct opSet* msg) {
     if (ta != NULL && (long)ta->ti_Data >= 0 && (long)ta->ti_Data < d->n && (int)ta->ti_Data != d->active) {
         d->active = (int)ta->ti_Data;
         if (aa_live(obj)) {
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);

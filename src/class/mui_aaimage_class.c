@@ -227,7 +227,7 @@ static ULONG aaimage_set(struct IClass* cl, Object* obj, struct opSet* msg) {
         }
         if (aa_live(obj)) {
             aaimage_load(obj, d);
-            MUI_Redraw(obj, MADF_DRAWOBJECT); /* the box keeps its layout size; a different picture size needs a relayout by the caller */
+            aa_redraw(obj, MADF_DRAWOBJECT); /* the box keeps its layout size; a different picture size needs a relayout by the caller */
         }
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);

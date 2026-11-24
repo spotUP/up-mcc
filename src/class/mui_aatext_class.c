@@ -154,7 +154,7 @@ static void aatext_store(Object* obj, aatext_data* d, const char* text) {
     strncpy(d->text, text, sizeof d->text - 1);
     d->text[sizeof d->text - 1] = '\0';
     if (d->shown) {
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
     }
 }
 

@@ -236,7 +236,7 @@ static ULONG aafield_set(struct IClass* cl, Object* obj, struct opSet* msg) {
         } else if (tag->ti_Tag == UPA_Field_Error && d->error != (tag->ti_Data != 0)) {
             d->error = tag->ti_Data != 0;
             if (aa_live(obj)) {
-                MUI_Redraw(obj, MADF_DRAWOBJECT);
+                aa_redraw(obj, MADF_DRAWOBJECT);
             }
         }
     }
@@ -374,7 +374,7 @@ static ULONG __attribute__((used)) aafield_dispatch_c(struct IClass* cl, Object*
         ((aafield_data*)INST_DATA(cl, obj))->error = 0;
         /* fall through: the placeholder and the outline repaint */
     case UPM_Field_Redraw:
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
         return 0;
     }
     return DoSuperMethodA(cl, obj, msg);

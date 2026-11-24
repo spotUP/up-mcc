@@ -182,19 +182,19 @@ static ULONG aaslider_handle(struct IClass* cl, Object* obj, struct MUIP_HandleE
         }
         if (in != d->hover) {
             d->hover = in;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
         return 0;
     }
     if (im->Code == SELECTDOWN && !dis && aa_inside(&d->aa, obj, im)) {
         d->drag = 1;
         aaslider_move_to(obj, im->MouseX);
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
         return MUI_EventHandlerRC_Eat;
     }
     if (im->Code == SELECTUP && d->drag) {
         d->drag = 0;
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
         return MUI_EventHandlerRC_Eat;
     }
     return 0;
@@ -326,7 +326,7 @@ static ULONG aaprogress_set(struct IClass* cl, Object* obj, struct opSet* msg) {
         changed = 1;
     }
     if (changed && aa_live(obj)) {
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }

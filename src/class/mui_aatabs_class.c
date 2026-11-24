@@ -116,7 +116,7 @@ static ULONG aatabs_set(struct IClass* cl, Object* obj, struct opSet* msg) {
         d->active = (int)ta->ti_Data;
         aatabs_sync(d);
         if (aa_live(obj)) {
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);

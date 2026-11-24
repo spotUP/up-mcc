@@ -304,7 +304,7 @@ static ULONG aabtn_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEven
         aatip_event(obj, &d->tip, msg->imsg, in);
         if (in != d->hover) {
             d->hover = in;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
     }
     if (msg->imsg != NULL && msg->imsg->Class != IDCMP_MOUSEMOVE) {
@@ -446,7 +446,7 @@ void mui_aabtn_set_caption(Object* obj, const char* caption) {
         d->widest[sizeof d->widest - 1] = '\0';
     }
     SetAttrs(obj, MUIA_ShortHelp, (ULONG)d->caption, TAG_DONE); /* icon-only buttons: the state text is the tooltip */
-    MUI_Redraw(obj, MADF_DRAWOBJECT);
+    aa_redraw(obj, MADF_DRAWOBJECT);
 }
 
 void mui_aabtn_set_on(Object* obj, int on) {
@@ -456,7 +456,7 @@ void mui_aabtn_set_on(Object* obj, int on) {
     }
     d->on = on != 0;
     if (aa_live(obj)) { /* AATabs sets the lit state while it builds, before any window exists (I684a) */
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
     }
 }
 
@@ -466,7 +466,7 @@ void mui_aabtn_set_alt(Object* obj, int alt) {
         return;
     }
     d->alt = alt != 0;
-    MUI_Redraw(obj, MADF_DRAWOBJECT);
+    aa_redraw(obj, MADF_DRAWOBJECT);
 }
 
 int mui_aabtn_backend(Object* obj) {

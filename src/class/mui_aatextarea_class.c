@@ -85,7 +85,7 @@ static int ta_focus(Object* obj) {
 
 static void ta_redraw(Object* obj) {
     if (aa_live(obj)) {
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
     }
 }
 
@@ -697,7 +697,7 @@ static ULONG __attribute__((used)) ta_dispatch_c(struct IClass* cl, Object* obj,
     case MUIM_Draw:
         return ta_draw(cl, obj, (struct MUIP_Draw*)msg);
     case UPM_TextArea_Redraw:
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
         return 0;
     }
     return DoSuperMethodA(cl, obj, msg);

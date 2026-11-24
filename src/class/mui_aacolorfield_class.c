@@ -110,7 +110,7 @@ static ULONG aacolorfield_set(struct IClass* cl, Object* obj, struct opSet* msg)
         d->rgb = ti->ti_Data & 0xFFFFFFu;
         if (aa_live(obj)) {
             aa_hold(&d->aa, d->rgb); /* a new colour on a palette screen needs its pen before the redraw */
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);

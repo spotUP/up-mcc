@@ -150,7 +150,7 @@ static ULONG aacheckmark_handle(struct IClass* cl, Object* obj, struct MUIP_Hand
     in = aa_inside(&d->aa, obj, im);
     if (in != d->hover) {
         d->hover = in;
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
     }
     return 0;
 }

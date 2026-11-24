@@ -3,6 +3,7 @@
  * mui_aa_scr_clamp at layout, when the view size is known. */
 #include "mui_aavirtgroup_class.h"
 #include "mui_aa_class.h"
+#include "mui_aa_draw.h"
 
 #include <stdint.h>
 
@@ -95,8 +96,15 @@ static ULONG aavirtgroup_set(struct IClass* cl, Object* obj, struct opSet* msg) 
         d->left = nl;
         d->top = nt;
         if (d->live) { /* the group lays the contents out again (the hook clamps) and redraws */
+            /* D4/D5: a scroll keeps the view's box, so whatever MUI repaints during ExitChange (it may redraw moved children
+             * directly, past this class's MUIM_Draw) is clipped to the view; then one clipped full draw puts every child back,
+             * which ExitChange alone left undone for the tab strip on the way back up. */
+            APTR clip;
             DoMethod(obj, MUIM_Group_InitChange);
+            clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
             DoMethod(obj, MUIM_Group_ExitChange);
+            MUI_RemoveClipping(muiRenderInfo(obj), clip);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);

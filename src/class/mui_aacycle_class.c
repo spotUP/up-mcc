@@ -238,19 +238,19 @@ static ULONG aacycle_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
     if (im->Class == IDCMP_MOUSEMOVE) {
         if (in != d->hover) {
             d->hover = in;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
         return 0;
     }
     if (im->Class == IDCMP_MOUSEBUTTONS) {
         if (im->Code == SELECTDOWN && in && !dis) {
             d->down = 1;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
             return MUI_EventHandlerRC_Eat;
         }
         if (im->Code == SELECTUP && d->down) {
             d->down = 0;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
             if (in && !dis) {
                 aacycle_open_popup(obj, d);
             }
@@ -291,7 +291,7 @@ static ULONG aacycle_set(struct IClass* cl, Object* obj, struct opSet* msg) {
     if (ta != NULL && mui_aa_cycle_valid((int)ta->ti_Data, d->n) && (int)ta->ti_Data != d->active) {
         d->active = (int)ta->ti_Data;
         if (aa_live(obj)) {
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);

@@ -279,7 +279,7 @@ static ULONG aalist_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEve
             d->dirty[0] = d->hover;
             d->dirty[1] = hv;
             d->hover = hv;
-            MUI_Redraw(obj, MADF_DRAWUPDATE);
+            aa_redraw(obj, MADF_DRAWUPDATE);
         }
         return 0;
     }
@@ -385,7 +385,7 @@ static ULONG aalist_set(struct IClass* cl, Object* obj, struct opSet* msg) {
     }
     if (changed && aa_live(obj)) {
         aalist_sync_scroller(obj, d);
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }

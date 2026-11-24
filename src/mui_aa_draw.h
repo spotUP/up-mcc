@@ -63,6 +63,12 @@ int aa_live(Object* obj);
  * old box, so a bare box test lets a click on the visible page open the hidden page's popups. Every HandleEvent hit test goes here. */
 struct IntuiMessage;
 int aa_inside(const aa_ctx* c, Object* obj, const struct IntuiMessage* im);
+/* D4: the part of the window obj may paint, the intersection of every ancestor's box. Inside a UP-Virtgroup the contents extend past
+ * the view; only the virtgroup's own MUIM_Draw clips, so a redraw a child starts itself (hover, OM_SET, timer) or a hit test would reach
+ * past the view onto the objects around it. False when obj lies wholly outside. Every class redraw and hit test goes through it. */
+int aa_visible(Object* obj, int* x0, int* y0, int* x1, int* y1);
+/* MUI_Redraw clipped to aa_visible; skipped when obj is scrolled wholly out of view. Use instead of MUI_Redraw in every class. */
+void aa_redraw(Object* obj, ULONG flags);
 /* In a class dispatcher: tracks MUIM_Show / MUIM_Hide into d->aa.shown, then falls to the super class. D is the instance data type. */
 #define AA_SHOWN_CASES(D) \
     case MUIM_Show: \
