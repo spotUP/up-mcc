@@ -1,6 +1,7 @@
 /* Host test of the multi-line text helpers (src/mui_text_lines.c). Fixed-width measure: 10 pixels per byte. */
 #include "mui_text_lines.h"
 
+#undef NDEBUG /* the asserts hold the test calls; the release flags define NDEBUG */
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -116,6 +117,11 @@ int main(void) {
     assert(mtl_scroll_top(19, 5, 0, 20) == 15);
     assert(mtl_scroll_top(1, 5, 9, 3) == 0);     /* fewer lines than visible */
     assert(mtl_scroll_top(3, 0, 0, 10) == 3);    /* visible clamped to 1 */
+
+    /* clipboard / select-all keys: Ctrl codes, or a letter with the Amiga key (either case) */
+    assert(mtl_clip_key(0x03, 0) == 'c' && mtl_clip_key(0x18, 0) == 'x' && mtl_clip_key(0x16, 0) == 'v' && mtl_clip_key(0x01, 0) == 'a');
+    assert(mtl_clip_key('a', 1) == 'a' && mtl_clip_key('A', 1) == 'a' && mtl_clip_key('C', 1) == 'c' && mtl_clip_key('v', 1) == 'v');
+    assert(mtl_clip_key('z', 1) == 0 && mtl_clip_key('a', 0) == 0 && mtl_clip_key(0x08, 0) == 0);
 
     puts("mui_text_lines_test: ok");
     return 0;

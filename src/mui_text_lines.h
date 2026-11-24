@@ -51,6 +51,9 @@ int mtl_delete(char *buf, int *len, int off);
 /* Selection: anchor and caret are offsets; the selection is the bytes between them (empty when equal). */
 /* Normalised range lo <= hi, clamped to [0, n]. Returns 1 when non-empty. */
 int mtl_sel_range(int anchor, int caret, int n, int *lo, int *hi);
+/* Clipboard/selection shortcut of a VANILLAKEY code: with the Amiga key held (cmd) a letter with or without Shift, without it the
+ * Ctrl control codes. Returns 'c', 'x', 'v' or 'a' (select all), 0 for any other key. */
+int mtl_clip_key(int code, int cmd);
 /* Delete the bytes [lo, hi) (clamped). Returns the number of bytes removed. */
 int mtl_delete_range(char *buf, int *len, int lo, int hi);
 /* Replace [lo, hi) by s[0..slen): the range goes first, then as much of s as fits in cap. Returns the number of bytes inserted. */

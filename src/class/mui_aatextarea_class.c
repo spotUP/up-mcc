@@ -276,18 +276,14 @@ static int ta_clip_get(char* out, int cap) {
     return n < 0 ? 0 : n;
 }
 
-/* Ctrl or Amiga + C/X/V. Returns 1 when the key was a clipboard command (handled). */
+/* Ctrl or Amiga + C/X/V/A. Returns 1 when the key was a clipboard or select-all command (handled). */
 static int ta_clipboard_key(Object* obj, ta_data* d, int code, int qual) {
     int lo, hi, edited = 0;
-    int cmd = qual & (IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND);
-    int key = code;
-    if (!cmd && !(code == 0x03 || code == 0x18 || code == 0x16)) {
-        return 0;
-    }
-    if (cmd) {
-        key = code | 0x20; /* a letter with or without Shift */
-    } else {
-        key = code == 0x03 ? 'c' : code == 0x18 ? 'x' : 'v';
+    int key = mtl_clip_key(code, qual & (IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND));
+    if (key == 'a') {
+        d->anchor = 0;
+        ta_moved(obj, d, d->len, 0, 1);
+        return 1;
     }
     if (key == 'c' || key == 'x') {
         if (ta_selection(d, &lo, &hi)) {

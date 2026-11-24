@@ -133,6 +133,11 @@ int mtl_sel_range(int anchor, int caret, int n, int *lo, int *hi) {
     return *lo < *hi;
 }
 
+int mtl_clip_key(int code, int cmd) {
+    int key = cmd ? (code | 0x20) : code == 0x03 ? 'c' : code == 0x18 ? 'x' : code == 0x16 ? 'v' : code == 0x01 ? 'a' : 0;
+    return key == 'c' || key == 'x' || key == 'v' || key == 'a' ? key : 0;
+}
+
 int mtl_delete_range(char *buf, int *len, int lo, int hi) {
     int n = *len;
     lo = lo < 0 ? 0 : lo > n ? n : lo;
