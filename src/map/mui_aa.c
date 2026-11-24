@@ -581,7 +581,7 @@ void mui_aa_field_metrics(int font_px, int aspect_q8, mui_aa_field_t* out) {
 
 int mui_aa_field_plan(const uint32_t* token, const mui_aa_field_t* m, int focus, mui_aa_check_op_t* out) {
     g_field_calls++;
-    out[0].inset = 0, out[0].radius = m->radius, out[0].rgb = token[focus ? SEL_GUI_TOKEN_FOCUS_RING : MUI_AA_FIELD_LINE];
+    out[0].inset = 0, out[0].radius = m->radius, out[0].rgb = token[focus == MUI_AA_FIELD_ERROR ? SEL_GUI_TOKEN_ERROR : focus ? SEL_GUI_TOKEN_FOCUS_RING : MUI_AA_FIELD_LINE];
     out[1].inset = m->outline, out[1].radius = m->radius > m->outline ? m->radius - m->outline : 0, out[1].rgb = token[MUI_AA_FIELD_FACE];
     return MUI_AA_FIELD_OPS;
 }

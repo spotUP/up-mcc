@@ -93,6 +93,7 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UPA_Text_Ellipsis UP_TAG(UP_CLS_TEXT, 0x05) /* I BOOL cut with "..." when wider than the box */
 #define UPA_Text_Fixed UP_TAG(UP_CLS_TEXT, 0x06)    /* I BOOL never wider than the default width of the widest text */
 #define UPA_Text_FillHeight UP_TAG(UP_CLS_TEXT, 0x07) /* I BOOL grow to the height of the row, so the erase covers the whole row */
+#define UPA_Text_Timeout UP_TAG(UP_CLS_TEXT, 0x08)  /* IS ULONG ms: a non-empty UPA_Text_Contents set clears itself this long later (0 = stays); a newer text restarts the clock */
 enum { UPV_Text_Tone_Normal, UPV_Text_Tone_Muted, UPV_Text_Tone_Title, UPV_Text_Tone_Heading };
 enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 
@@ -179,6 +180,7 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_TextArea_Text UP_TAG(UP_CLS_TEXTAREA, 0x01)        /* ISG STRPTR: the text, copied in on set; get returns the object's own NUL terminated buffer (valid until the next edit). Notifies on every change: notify with MUIV_EveryTime, the pointer stays the same */
 #define UPA_TextArea_MaxLen UP_TAG(UP_CLS_TEXTAREA, 0x02)      /* IG LONG: capacity in bytes, default 1024; longer text is cut */
 #define UPA_TextArea_Placeholder UP_TAG(UP_CLS_TEXTAREA, 0x03) /* I STRPTR hint while empty and not active; must outlive the object */
+#define UPA_TextArea_Error UP_TAG(UP_CLS_TEXTAREA, 0x04) /* SG BOOL: outline in the ERROR colour (a validation error names this field); a user edit clears it */
 #define UPM_TextArea_Redraw UP_TAG(UP_CLS_TEXTAREA, 0x10)      /* method: the window's active object changed, repaint. Internal */
 
 /* UP-Tabs */
@@ -254,6 +256,8 @@ enum { UPV_Button_Align_Left, UPV_Button_Align_Centre, UPV_Button_Align_Right };
 #define UPA_Field_Placeholder UP_TAG(UP_CLS_FIELD, 0x04) /* I STRPTR hint while empty and not active; must outlive the field */
 #define UPA_Field_MaxWidth UP_TAG(UP_CLS_FIELD, 0x05)   /* I LONG cap of the field's MaxWidth in px, 0 = unbounded */
 #define UPA_Field_EscClose UP_TAG(UP_CLS_FIELD, 0x06)   /* I S BOOL: Esc in the active field sets MUIA_Window_CloseRequest on its window (I1360); the String eats Esc itself, so the window never saw it */
+#define UPA_Field_Error UP_TAG(UP_CLS_FIELD, 0x07)     /* SG BOOL: outline in the ERROR colour (a validation error names this field); a user edit clears it */
+#define UPM_Field_Edited UP_TAG(UP_CLS_FIELD, 0x08)    /* method: the inner String contents changed; clears UPA_Field_Error and repaints. Internal */
 /* the string length limit is MUIA_String_MaxLen */
 
 /* UP-Panel */

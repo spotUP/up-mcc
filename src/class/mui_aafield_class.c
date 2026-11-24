@@ -34,6 +34,7 @@ typedef struct aafield_data {
     const char* placeholder;
     aa_ctx aa;
     int esc_close; /* I1360: Esc in the active String requests the window close */
+    int error;     /* UPA_Field_Error: ERROR outline until the next edit */
     int pens_logged; /* the old String pens went to stderr once (I667n evidence) */
     struct MUI_EventHandlerNode ehn; /* I731: pointer and key events for the flat tooltip only; it never eats one */
     aatip_slot tip;
@@ -61,14 +62,14 @@ static ULONG aafield_setup(struct IClass* cl, Object* obj, Msg msg) {
     }
     aa_setup(obj, &d->aa, NULL, 0);
     mui_aa_field_metrics(d->aa.font_px, d->aa.aspect_q8, &d->m);
-    for (k = 0; k < 2; k++) {
+    for (k = 0; k <= MUI_AA_FIELD_ERROR; k++) {
         n = mui_aa_field_plan(d->aa.tok, &d->m, k, ops);
         while (n-- > 0) {
             aa_hold(&d->aa, ops[n].rgb);
         }
     }
     DoMethod(_win(obj), MUIM_Notify, MUIA_Window_ActiveObject, MUIV_EveryTime, (ULONG)obj, 1, UPM_Field_Redraw);
-    DoMethod(d->str, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime, (ULONG)obj, 1, UPM_Field_Redraw); /* I733: the placeholder shows and hides with the contents */
+    DoMethod(d->str, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime, (ULONG)obj, 1, UPM_Field_Edited); /* I733: the placeholder shows and hides with the contents; an edit clears the error mark */
     d->ehn.ehn_Priority = 1; /* above the String's own handler, which eats Esc (I1360); every other key still passes */
     d->ehn.ehn_Flags = 0;
     d->ehn.ehn_Object = obj;
@@ -163,7 +164,7 @@ static ULONG aafield_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
     if (msg->flags & MADF_DRAWOBJECT) {
         mui_aa_check_op_t ops[MUI_AA_FIELD_OPS];
         struct RastPort* rp = _rp(obj);
-        int n = mui_aa_field_plan(d->aa.tok, &d->m, aafield_focus(obj, d), ops), k;
+        int n = mui_aa_field_plan(d->aa.tok, &d->m, d->error ? MUI_AA_FIELD_ERROR : aafield_focus(obj, d), ops), k;
         if (d->aa.tc && n > 0) {
             /* I685x: the super filled the outer corner wedges with the snapped parent pen; on truecolour repaint them in the exact parent RGB. */
             aa_round_corners(&d->aa, rp, _left(obj), _top(obj), _width(obj), _height(obj), ops[0].radius, d->aa.bg_rgb);
@@ -204,6 +205,11 @@ static ULONG aafield_set(struct IClass* cl, Object* obj, struct opSet* msg) {
             set(d->str, MUIA_String_Contents, tag->ti_Data);
         } else if (tag->ti_Tag == UPA_Field_EscClose) {
             d->esc_close = tag->ti_Data != 0;
+        } else if (tag->ti_Tag == UPA_Field_Error && d->error != (tag->ti_Data != 0)) {
+            d->error = tag->ti_Data != 0;
+            if (aa_live(obj)) {
+                MUI_Redraw(obj, MADF_DRAWOBJECT);
+            }
         }
     }
     return aatip_super_set(cl, obj, msg, offsetof(aafield_data, tip));
@@ -233,6 +239,10 @@ static ULONG aafield_get(struct IClass* cl, Object* obj, struct opGet* msg) {
     }
     if (msg->opg_AttrID == UPA_Field_String) {
         *msg->opg_Storage = (ULONG)(uintptr_t)d->str;
+        return TRUE;
+    }
+    if (msg->opg_AttrID == UPA_Field_Error) {
+        *msg->opg_Storage = (ULONG)d->error;
         return TRUE;
     }
     if (aatip_get(msg, &d->tip)) {
@@ -324,6 +334,9 @@ static ULONG __attribute__((used)) aafield_dispatch_c(struct IClass* cl, Object*
         return aafield_askminmax(cl, obj, (struct MUIP_AskMinMax*)msg);
     case MUIM_Draw:
         return aafield_draw(cl, obj, (struct MUIP_Draw*)msg);
+    case UPM_Field_Edited:
+        ((aafield_data*)INST_DATA(cl, obj))->error = 0;
+        /* fall through: the placeholder and the outline repaint */
     case UPM_Field_Redraw:
         MUI_Redraw(obj, MADF_DRAWOBJECT);
         return 0;
