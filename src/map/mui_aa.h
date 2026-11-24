@@ -208,6 +208,8 @@ void mui_aa_field_metrics(int font_px, int aspect_q8, mui_aa_field_t* out);
  * desktop search field is lighter than its bar; the outline is TRACK so the edge reads on AGA too. */
 #define MUI_AA_FIELD_FACE SEL_GUI_TOKEN_SURFACE_RAISED
 #define MUI_AA_FIELD_LINE SEL_GUI_TOKEN_TRACK
+/* focus: 0 idle, 1 active (FOCUS_RING), MUI_AA_FIELD_ERROR (UPA_Field_Error / UPA_TextArea_Error set: the outline turns ERROR, over focus). */
+#define MUI_AA_FIELD_ERROR 2
 int mui_aa_field_plan(const uint32_t* token, const mui_aa_field_t* m, int focus, mui_aa_check_op_t* out);
 /* I667n: background of the inner String gadget in a focus state: the face of the plan (op 1). MUI 3.8 String fills its box with the
  * gadget's StringExtend background pen (Pens[1], ActivePens[1] when active), not with MUIA_Background, so the class sets that pen. */

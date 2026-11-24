@@ -48,6 +48,7 @@ typedef struct ta_data {
     aa_ctx aa;
     struct MUI_EventHandlerNode ehn;
     aatip_slot tip;
+    int error; /* UPA_TextArea_Error: ERROR outline until the next edit */
 } ta_data;
 
 typedef struct ta_geom {
@@ -171,6 +172,7 @@ static void ta_moved(Object* obj, ta_data* d, int off, int keep_pref, int extend
 
 /* After an edit of the buffer: wrap again, show the caret, and announce the text (set notifies; the pointer is the buffer, so no copy). */
 static void ta_edited(Object* obj, ta_data* d) {
+    d->error = 0; /* the edit repaints, so the outline goes back to focus */
     d->anchor = d->caret;
     d->dirty = d->reveal = 1;
     d->pref_x = -1;
@@ -319,7 +321,7 @@ static ULONG ta_setup(struct IClass* cl, Object* obj, Msg msg) {
     }
     aa_setup(obj, &d->aa, NULL, 0);
     mui_aa_field_metrics(d->aa.font_px, d->aa.aspect_q8, &d->m);
-    for (k = 0; k < 2; k++) {
+    for (k = 0; k <= MUI_AA_FIELD_ERROR; k++) {
         n = mui_aa_field_plan(d->aa.tok, &d->m, k, ops);
         while (n-- > 0) {
             aa_hold(&d->aa, ops[n].rgb);
@@ -381,7 +383,7 @@ static ULONG ta_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     t = _mtop(obj);
     w = _mwidth(obj);
     h = _mheight(obj);
-    focus = ta_focus(obj);
+    focus = d->error ? MUI_AA_FIELD_ERROR : ta_focus(obj);
     n = mui_aa_field_plan(d->aa.tok, &d->m, focus, ops);
     aa_erase(&d->aa, obj, l, t, w, h);
     for (k = 0; k < n; k++) {
@@ -627,6 +629,11 @@ static ULONG ta_set(struct IClass* cl, Object* obj, struct opSet* msg) {
         }
         tag->ti_Data = (ULONG)(uintptr_t)d->buf; /* the notify delivers the buffer, never the caller's temporary string */
     }
+    tag = FindTagItem(UPA_TextArea_Error, msg->ops_AttrList);
+    if (tag != NULL && d->error != (tag->ti_Data != 0)) {
+        d->error = tag->ti_Data != 0;
+        ta_redraw(obj);
+    }
     return aatip_super_set(cl, obj, msg, offsetof(ta_data, tip));
 }
 
@@ -634,6 +641,10 @@ static ULONG ta_get(struct IClass* cl, Object* obj, struct opGet* msg) {
     ta_data* d = INST_DATA(cl, obj);
     if (msg->opg_AttrID == UPA_TextArea_Text) {
         *msg->opg_Storage = (ULONG)(uintptr_t)d->buf;
+        return TRUE;
+    }
+    if (msg->opg_AttrID == UPA_TextArea_Error) {
+        *msg->opg_Storage = (ULONG)d->error;
         return TRUE;
     }
     if (msg->opg_AttrID == UPA_TextArea_MaxLen) {

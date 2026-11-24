@@ -135,6 +135,28 @@
 *
 ******/
 
+/****** UP-Text.mcc/UPA_Text_Timeout ******
+*
+*   NAME
+*       UPA_Text_Timeout -- attribute of UP-Text.mcc
+*
+*   FUNCTION
+*       ULONG milliseconds. A non-empty UPA_Text_Contents set clears the text
+*       this long later (an MUIIHNF_TIMER input handler, armed only while the
+*       object is set up). A newer text restarts the clock, so the newest
+*       notice wins. 0 (default) keeps the text until the next set.
+*
+*   INPUTS
+*       UPA_Text_Timeout - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Text.mcc
+*
+******/
+
 /****** UP-Slider.mcc/UP-Slider.mcc ******
 *
 *   NAME
@@ -1009,6 +1031,27 @@
 *
 *   INPUTS
 *       UPA_Field_EscClose - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Field.mcc
+*
+******/
+
+/****** UP-Field.mcc/UPA_Field_Error ******
+*
+*   NAME
+*       UPA_Field_Error -- attribute of UP-Field.mcc
+*
+*   FUNCTION
+*       BOOL: draw the outline in the ERROR token colour, over the focus ring,
+*       to mark the field a validation error names. Any change of the contents
+*       clears it (the field repaints with its normal outline).
+*
+*   INPUTS
+*       UPA_Field_Error - access SG. Tag value from <mcc/up.h>.
 *
 *   RESULT
 *       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
@@ -2156,6 +2199,27 @@
 *
 *   INPUTS
 *       UPA_TextArea_Placeholder - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-TextArea.mcc
+*
+******/
+
+/****** UP-TextArea.mcc/UPA_TextArea_Error ******
+*
+*   NAME
+*       UPA_TextArea_Error -- attribute of UP-TextArea.mcc
+*
+*   FUNCTION
+*       BOOL: draw the outline in the ERROR token colour, over the focus ring,
+*       to mark the field a validation error names. The next user edit clears
+*       it.
+*
+*   INPUTS
+*       UPA_TextArea_Error - access SG. Tag value from <mcc/up.h>.
 *
 *   RESULT
 *       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
