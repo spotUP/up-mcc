@@ -26,6 +26,7 @@ extern struct Library* MUIMasterBase;
 typedef struct aapop_data {
     Object *str, *btn, *popup, *root, *list;
     int is_list, n, active, deact;
+    int no_activate; /* UPA_Popstring_NoActivate: the popup opens without taking the keyboard from the string */
     const char* const* entries;
     struct Hook *open_hook, *close_hook;
     struct Hook row_hook; /* UPA_List_RowHook of the Poplist popup: the entry text (h_Data is this data) */
@@ -125,7 +126,7 @@ static void aapop_open(Object* obj, aapop_data* d, int act) {
         d->popup = MUI_NewObject((char*)MUIC_Window, MUIA_Window_Screen, (ULONG)_screen(obj), MUIA_Window_Borderless, TRUE, MUIA_Window_DragBar, FALSE, MUIA_Window_CloseGadget, FALSE,
                                  MUIA_Window_SizeGadget, FALSE, MUIA_Window_DepthGadget, FALSE, MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)),
                                  MUIA_Window_TopEdge, (ULONG)(win->TopEdge + _bottom(obj) + 2), MUIA_Window_Width, (ULONG)_width(obj),
-                                 MUIA_Window_RootObject, (ULONG)d->root, TAG_DONE);
+                                 MUIA_Window_Activate, (ULONG)!d->no_activate, MUIA_Window_RootObject, (ULONG)d->root, TAG_DONE);
         if (d->popup == NULL) {
             MUI_DisposeObject(d->root); /* the root is still ours: the window never took it */
             d->root = d->list = NULL;
@@ -141,6 +142,9 @@ static void aapop_open(Object* obj, aapop_data* d, int act) {
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Open, FALSE, obj, 1, UPM_Popstring_Closed);
     } else {
         aapop_place(obj, d);
+        if (d->no_activate) {
+            SetAttrs(d->popup, MUIA_NoNotify, TRUE, MUIA_Window_Activate, FALSE, TAG_DONE); /* no Deactivated notify: the window is not open yet */
+        }
         if (d->list != NULL) {
             set(d->list, UPA_List_Active, (ULONG)d->active);
         }
@@ -251,6 +255,7 @@ static ULONG aapop_new(struct IClass* cl, Object* obj, struct opSet* msg, int is
     d->root = is_list ? NULL : (Object*)GetTagData(UPA_Popstring_Popup, 0, tags);
     d->open_hook = (struct Hook*)GetTagData(UPA_Popstring_OpenHook, 0, tags);
     d->close_hook = (struct Hook*)GetTagData(UPA_Popstring_CloseHook, 0, tags);
+    d->no_activate = GetTagData(UPA_Popstring_NoActivate, FALSE, tags) != 0;
     DoMethod(btn, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, UPM_Popstring_Click);
     return (ULONG)obj;
 }
@@ -292,6 +297,9 @@ static ULONG aapop_get(struct IClass* cl, Object* obj, struct opGet* msg) {
     switch (msg->opg_AttrID) {
     case UPA_Popstring_String:
         *msg->opg_Storage = (ULONG)d->str;
+        return TRUE;
+    case UPA_Popstring_Popup:
+        *msg->opg_Storage = (ULONG)d->root; /* NULL once the owner window's cleanup disposed it */
         return TRUE;
     case UPA_Popstring_Open:
         *msg->opg_Storage = (ULONG)(d->pop.open != 0);

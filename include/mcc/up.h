@@ -125,10 +125,11 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
  * object, created at the first open and reused; it closes on a pick, Esc, a click outside or another click on the button. */
 #define UPA_Popstring_String UP_TAG(UP_CLS_POPSTRING, 0x01)   /* IG Object*: the string object (default a UP-Field); MUIA_String_Contents set/get are forwarded to it */
 #define UPA_Popstring_Button UP_TAG(UP_CLS_POPSTRING, 0x02)   /* I Object*: the button that opens the popup (default a UP-Button with a chevron) */
-#define UPA_Popstring_Popup UP_TAG(UP_CLS_POPSTRING, 0x03)    /* IS Object*: root object of the popup window, owned by the class from then on; it is disposed with the owner window's cleanup, set a new one before the next open */
+#define UPA_Popstring_Popup UP_TAG(UP_CLS_POPSTRING, 0x03)    /* ISG Object*: root object of the popup window, owned by the class from then on; it is disposed with the owner window's cleanup (get then gives NULL), set a new one before the next open */
 #define UPA_Popstring_OpenHook UP_TAG(UP_CLS_POPSTRING, 0x04) /* IS struct Hook*: called before the popup opens, object = the popup root, message = the string object; returns FALSE to refuse */
 #define UPA_Popstring_CloseHook UP_TAG(UP_CLS_POPSTRING, 0x05) /* IS struct Hook*: called once after the popup closed, object = the popup root, message = the string object */
 #define UPA_Popstring_Open UP_TAG(UP_CLS_POPSTRING, 0x06)     /* ISG BOOL: the popup is open; set TRUE opens, FALSE closes (notifies) */
+#define UPA_Popstring_NoActivate UP_TAG(UP_CLS_POPSTRING, 0x07) /* I BOOL: the popup window opens inactive, so typing stays in the string (autocomplete); default FALSE */
 #define UPM_Popstring_Click UP_TAG(UP_CLS_POPSTRING, 0x10)    /* method: the button was pressed (toggle). Internal, used by the button notify */
 #define UPM_Popstring_Closed UP_TAG(UP_CLS_POPSTRING, 0x11)   /* method: the popup window closed. Internal */
 #define UPM_Popstring_Deactivated UP_TAG(UP_CLS_POPSTRING, 0x12) /* method: the popup window lost activation. Internal */
@@ -258,6 +259,7 @@ enum { UPV_Button_Align_Left, UPV_Button_Align_Centre, UPV_Button_Align_Right };
 #define UPA_Field_EscClose UP_TAG(UP_CLS_FIELD, 0x06)   /* I S BOOL: Esc in the active field sets MUIA_Window_CloseRequest on its window (I1360); the String eats Esc itself, so the window never saw it */
 #define UPA_Field_Error UP_TAG(UP_CLS_FIELD, 0x07)     /* SG BOOL: outline in the ERROR colour (a validation error names this field); a user edit clears it */
 #define UPM_Field_Edited UP_TAG(UP_CLS_FIELD, 0x08)    /* method: the inner String contents changed; clears UPA_Field_Error and repaints. Internal */
+#define UPA_Field_Key UP_TAG(UP_CLS_FIELD, 0x09)        /* G LONG: raw code of the last Up (0x4C), Down (0x4D), Esc (0x45) or Tab (0x42) pressed in the active field; notifies on every press, the key still reaches the String */
 /* the string length limit is MUIA_String_MaxLen */
 
 /* UP-Panel */
