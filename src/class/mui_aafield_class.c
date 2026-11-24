@@ -34,6 +34,7 @@ typedef struct aafield_data {
     const char* placeholder;
     aa_ctx aa;
     int esc_close; /* I1360: Esc in the active String requests the window close */
+    LONG key; /* UPA_Field_Key: last Up, Down, Esc or Tab raw code */
     int pens_logged; /* the old String pens went to stderr once (I667n evidence) */
     struct MUI_EventHandlerNode ehn; /* I731: pointer and key events for the flat tooltip only; it never eats one */
     aatip_slot tip;
@@ -214,6 +215,10 @@ static ULONG aafield_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
     struct IntuiMessage* im = msg->imsg;
     if (im != NULL) {
         aatip_event(obj, &d->tip, im, aa_inside(&d->aa, obj, im));
+        if (im->Class == IDCMP_RAWKEY && (im->Code == 0x4Cu || im->Code == 0x4Du || im->Code == 0x45u || im->Code == 0x42u) && aafield_focus(obj, d)) {
+            d->key = (LONG)im->Code;
+            SetAttrs(obj, UPA_Field_Key, (ULONG)d->key, TAG_DONE); /* notify only; the key still goes on to the String */
+        }
         if (d->esc_close && im->Class == IDCMP_RAWKEY && (im->Code & 0x80) == 0 && (im->Code & 0x7Fu) == 0x45u /* Esc; raw code, so the standalone UP-*.mcc libraries need no Selecta symbol */) {
             ULONG active = 0;
             GetAttr(MUIA_Window_ActiveObject, _win(obj), &active);
@@ -230,6 +235,10 @@ static ULONG aafield_get(struct IClass* cl, Object* obj, struct opGet* msg) {
     aafield_data* d = INST_DATA(cl, obj);
     if (msg->opg_AttrID == MUIA_String_Contents && d->str != NULL) {
         return GetAttr(MUIA_String_Contents, d->str, msg->opg_Storage);
+    }
+    if (msg->opg_AttrID == UPA_Field_Key) {
+        *msg->opg_Storage = (ULONG)d->key;
+        return TRUE;
     }
     if (msg->opg_AttrID == UPA_Field_String) {
         *msg->opg_Storage = (ULONG)(uintptr_t)d->str;
