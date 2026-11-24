@@ -1,7 +1,7 @@
 /* Selecta_AAPanel (I667e, design section 3.8). MUI 3.8: MUI_CreateCustomClass on Group, same dispatcher pattern as
  * mui_aatext_class.c. The group carries the role colour as its MUIA_Background (children without a background of their own
  * inherit it). The Group super fills every gap between the children with that background, the square face included, so the class
- * paints after the super: only the corner wedges outside mui_aa_panel_radius, in the window BACKGROUND, through aa_round_corners;
+ * paints after the super: only the corner wedges outside mui_aa_panel_radius, in the colour it sits on (bg_rgb), through aa_round_corners;
  * on truecolour it first paints the face in exact RGB around the inner group (I685w). No hardcoded colour, no ObtainBestPen. */
 #include "mui_aapanel_class.h"
 #include "mui_aa_class.h"
@@ -222,9 +222,9 @@ static ULONG aapanel_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
                                     mui_aa_panel_rgb(d->aa.tok, d->role), holes, n);
             }
         }
-        aa_round_corners(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad, d->aa.tok[SEL_GUI_TOKEN_BACKGROUND]); /* I676c: read at draw, a live THEME changes both */
+        aa_round_corners(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad, d->aa.bg_rgb); /* the face the panel sits on (a card on a SURFACE panel: SURFACE, not BACKGROUND); a retheme resets it */
         aa_low_outline(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad);
-        if (d->flat_tl && rad > 0) { /* square the top left: the face over the wedge the round corner left in the window colour */
+        if (d->flat_tl && rad > 0) { /* square the top left: the face over the wedge the round corner left in the parent colour */
             aa_rect(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mleft(obj) + rad - 1, _mtop(obj) + mui_aa_rows(rad, d->aa.aspect_q8) - 1,
                     mui_aa_panel_rgb(d->aa.tok, d->role));
         }

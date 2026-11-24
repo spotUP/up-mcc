@@ -1,6 +1,6 @@
 /* Selecta_AAField (I667h, design section 3.4). Same dispatcher pattern as mui_aapanel_class.c. Colours, outline and radius come from
  * map/mui_aa.c (mui_aa_field_*); drawing goes through aa_round_fill with held pens; no colour literal, no ObtainBestPen. The group has
- * MUIA_FillArea FALSE, so the corners keep the parent panel's face; the inner stock String keeps the MUI prefs font and pens. */
+ * MUIA_FillArea FALSE, so the corners keep the parent panel's face; the inner stock String keeps the MUI prefs font, its pens are the theme's. */
 #include "mui_aafield_class.h"
 #include "mui_aa_class.h"
 
@@ -69,6 +69,7 @@ static ULONG aafield_setup(struct IClass* cl, Object* obj, Msg msg) {
             aa_hold(&d->aa, ops[n].rgb);
         }
     }
+    aa_hold(&d->aa, mui_aa_field_string_fg(d->aa.tok));
     DoMethod(_win(obj), MUIM_Notify, MUIA_Window_ActiveObject, MUIV_EveryTime, (ULONG)obj, 1, UPM_Field_Redraw);
     DoMethod(d->str, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime, (ULONG)obj, 1, UPM_Field_Edited); /* I733: the placeholder shows and hides with the contents; an edit clears the error mark */
     d->ehn.ehn_Priority = 1; /* above the String's own handler, which eats Esc (I1360); every other key still passes */
@@ -98,6 +99,15 @@ static ULONG aafield_askminmax(struct IClass* cl, Object* obj, struct MUIP_AskMi
     ch = msg->MinMaxInfo->MinHeight - 2 * (d->m.pad_y + d->m.outline);
     h = mui_aa_field_height(&d->m, ch);
     msg->MinMaxInfo->MinHeight = msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MaxHeight = h;
+    if (d->placeholder != NULL) { /* the placeholder is the field's label: a row may not squeeze it into "..." */
+        int pw = mui_aa_field_min_width(&d->m, aa_text_width(&d->aa, obj, d->placeholder));
+        if (msg->MinMaxInfo->MinWidth < pw) {
+            msg->MinMaxInfo->MinWidth = pw;
+        }
+        if (msg->MinMaxInfo->DefWidth < msg->MinMaxInfo->MinWidth) {
+            msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
+        }
+    }
     if (d->max_w > 0 && msg->MinMaxInfo->MaxWidth > d->max_w) {
         msg->MinMaxInfo->MaxWidth = d->max_w;
         if (msg->MinMaxInfo->DefWidth > d->max_w) {
@@ -109,11 +119,12 @@ static ULONG aafield_askminmax(struct IClass* cl, Object* obj, struct MUIP_AskMi
 
 /* I667n: MUI 3.8 String renders through an Intuition string gadget that fills its whole box with the StringExtend pens (MUI prefs
  * string colours, the window pen 121214 on the rig), so MUIA_Background never shows inside it. The face pen goes into the background
- * slot of both pen pairs; the text pens stay the user's. Runs before every draw: MUI may rebuild the gadget on setup. */
+ * slot of both pen pairs, the theme TEXT into the text slot (the MUI prefs text pen was black on a dark face). Runs before every draw:
+ * MUI may rebuild the gadget on setup. */
 static void aafield_string_pens(aafield_data* d) {
     struct Gadget* g = NULL;
     struct StringInfo* si;
-    LONG pen[2];
+    LONG pen[2], fg;
     int k;
     if (d->str == NULL || !GetAttr(MUIA_Gadget_Gadget, d->str, (ULONG*)&g) || g == NULL || !mui_aa_field_string_gadget(g->GadgetType)) {
         return;
@@ -129,6 +140,11 @@ static void aafield_string_pens(aafield_data* d) {
         aa_log("up-mcc: field string pens %u/%u active %u/%u -> background %ld/%ld\n", (unsigned)si->Extension->Pens[0],
                 (unsigned)si->Extension->Pens[1], (unsigned)si->Extension->ActivePens[0], (unsigned)si->Extension->ActivePens[1], (long)pen[0], (long)pen[1]);
         d->pens_logged = 1;
+    }
+    fg = aa_nearest_pen(&d->aa, mui_aa_field_string_fg(d->aa.tok));
+    if (fg >= 0) {
+        si->Extension->Pens[0] = (UBYTE)fg;
+        si->Extension->ActivePens[0] = (UBYTE)fg;
     }
     if (pen[0] >= 0) {
         si->Extension->Pens[1] = (UBYTE)pen[0];

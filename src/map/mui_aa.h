@@ -132,6 +132,9 @@ enum { MUI_AA_PANEL_PANEL = UPV_Panel_Role_Panel, MUI_AA_PANEL_SURFACE = UPV_Pan
        MUI_AA_PANEL_ROLES = UPV_Panel_Role_Count };
 int mui_aa_panel_token(int role);
 uint32_t mui_aa_panel_rgb(const uint32_t* token, int role);
+/* What an object (a panel's corner wedges included) sits on: the role colour of the nearest UP-Panel ancestor, parent_role < 0 when
+ * there is none (the window BACKGROUND). A raised card on a SURFACE panel rounds its corners in SURFACE, not in BACKGROUND. */
+uint32_t mui_aa_parent_rgb(const uint32_t* token, int parent_role);
 int mui_aa_panel_radius(const uint32_t* token, int font_px);
 int mui_aa_panel_spacing(const uint32_t* token);
 /* I949e2: group inner padding and spacing across (pad_x) and down (pad_y) for a screen of aspect_q8. 256 gives SPACING both ways. */
@@ -214,6 +217,12 @@ int mui_aa_field_plan(const uint32_t* token, const mui_aa_field_t* m, int focus,
 /* I667n: background of the inner String gadget in a focus state: the face of the plan (op 1). MUI 3.8 String fills its box with the
  * gadget's StringExtend background pen (Pens[1], ActivePens[1] when active), not with MUIA_Background, so the class sets that pen. */
 uint32_t mui_aa_field_string_bg(const uint32_t* token, int focus);
+/* Text of the inner String gadget (Pens[0], ActivePens[0]): the theme TEXT. The MUI prefs string pens (black by default) were
+ * unreadable on a dark theme face. */
+uint32_t mui_aa_field_string_fg(const uint32_t* token);
+/* Smallest field width that shows the placeholder (ink width pw) uncut: the text fit margin (4) plus the inner pad on both sides.
+ * 0 when there is no placeholder. */
+int mui_aa_field_min_width(const mui_aa_field_t* m, int pw);
 /* I667n: the gadget MUIA_Gadget_Gadget hands back carries a StringInfo with the pens: a classic GTYP_STRGADGET, or the
  * GTYP_CUSTOMGADGET (strgclass) MUI 3.8 String really makes (rig 2: GadgetType 0005). */
 int mui_aa_field_string_gadget(unsigned gadget_type);

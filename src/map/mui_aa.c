@@ -321,6 +321,10 @@ uint32_t mui_aa_panel_rgb(const uint32_t* token, int role) {
     return token[mui_aa_panel_token(role)];
 }
 
+uint32_t mui_aa_parent_rgb(const uint32_t* token, int parent_role) {
+    return parent_role < 0 ? token[SEL_GUI_TOKEN_BACKGROUND] : mui_aa_panel_rgb(token, parent_role);
+}
+
 int mui_aa_panel_radius(const uint32_t* token, int font_px) {
     int r = (int)token[SEL_GUI_TOKEN_RADIUS_LARGE];
     return font_px <= 0 ? r / 2 : r;
@@ -590,6 +594,14 @@ uint32_t mui_aa_field_string_bg(const uint32_t* token, int focus) {
     (void)focus; /* focus moves the outline only (op 0); the face stays */
     g_field_calls++;
     return token[MUI_AA_FIELD_FACE];
+}
+
+uint32_t mui_aa_field_string_fg(const uint32_t* token) {
+    return token[SEL_GUI_TOKEN_TEXT];
+}
+
+int mui_aa_field_min_width(const mui_aa_field_t* m, int pw) {
+    return pw > 0 ? pw + 4 + 2 * m->pad_x : 0;
 }
 
 int mui_aa_field_string_gadget(unsigned gadget_type) {
