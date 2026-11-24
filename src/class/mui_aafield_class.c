@@ -176,8 +176,19 @@ static ULONG aafield_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
     /* The Group super fills the padding around the inner String with the parent background, so the face and outline go on after
      * it, around the String's box, which the super has drawn by then. */
     ULONG r;
+    LONG fg = aa_nearest_pen(&d->aa, mui_aa_field_string_fg(d->aa.tok)), text = -1;
     aafield_string_pens(d);
+    /* MUI 3.8 String rewrites the gadget's text pen from the window's MPEN_TEXT while it draws (prefs black), so the theme TEXT pen
+     * stands in for it during the super and goes back into the gadget after it, for the renders Intuition does on its own (typing). */
+    if (fg >= 0 && muiRenderInfo(obj) != NULL) {
+        text = (LONG)_pens(obj)[MPEN_TEXT];
+        _pens(obj)[MPEN_TEXT] = (UWORD)fg;
+    }
     r = DoSuperMethodA(cl, obj, (Msg)msg);
+    if (text >= 0) {
+        _pens(obj)[MPEN_TEXT] = (UWORD)text;
+    }
+    aafield_string_pens(d);
     if (msg->flags & MADF_DRAWOBJECT) {
         mui_aa_check_op_t ops[MUI_AA_FIELD_OPS];
         struct RastPort* rp = _rp(obj);
