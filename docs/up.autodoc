@@ -883,6 +883,25 @@
 *
 ******/
 
+/****** UP-Button.mcc/UPA_Button_Flat ******
+*
+*   NAME
+*       UPA_Button_Flat -- attribute of UP-Button.mcc
+*
+*   FUNCTION
+*       BOOL: no face in the normal state, so the parent shows through; hover and press draw it. A square fixed size draws a circle. Read once when the object is created
+*
+*   INPUTS
+*       UPA_Button_Flat - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Button.mcc
+*
+******/
+
 /****** UP-Field.mcc/UPM_Field_Redraw ******
 *
 *   NAME
@@ -1106,6 +1125,25 @@
 *
 *   INPUTS
 *       UPA_Panel_FixedHeight - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Panel.mcc
+*
+******/
+
+/****** UP-Panel.mcc/UPA_Panel_FlatTopLeft ******
+*
+*   NAME
+*       UPA_Panel_FlatTopLeft -- attribute of UP-Panel.mcc
+*
+*   FUNCTION
+*       BOOL: square top left corner, so the card sits flush against the first tab. Read once when the object is created
+*
+*   INPUTS
+*       UPA_Panel_FlatTopLeft - access I. Tag value from <mcc/up.h>.
 *
 *   RESULT
 *       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
@@ -1353,16 +1391,6 @@
 *
 *   INPUTS
 *       UPA_Popstring_String - access IG. Tag value from <mcc/up.h>.
-/****** UP-Virtgroup.mcc/UPA_Virtgroup_Left ******
-*
-*   NAME
-*       UPA_Virtgroup_Left -- attribute of UP-Virtgroup.mcc
-*
-*   FUNCTION
-*       LONG: pixels the contents are scrolled left; clamped to the contents at layout
-*
-*   INPUTS
-*       UPA_Virtgroup_Left - access ISG. Tag value from <mcc/up.h>.
 *
 *   RESULT
 *       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
@@ -1382,6 +1410,30 @@
 *
 *   INPUTS
 *       UPA_Popstring_Button - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Virtgroup.mcc/UPA_Virtgroup_Left ******
+*
+*   NAME
+*       UPA_Virtgroup_Left -- attribute of UP-Virtgroup.mcc
+*
+*   FUNCTION
+*       LONG: pixels the contents are shifted left; clamped to the contents
+*
+*   INPUTS
+*       UPA_Virtgroup_Left - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
 *       <mcc/up.h>, UP-Virtgroup.mcc
 *
 ******/
@@ -2053,5 +2105,81 @@
 *   SEE ALSO
 *       <mcc/up.h>, UP-Menu.mcc
 *       <mcc/up.h>, UP-Scrollgroup.mcc
+*
+******/
+
+/****** UP-TextArea.mcc/UPA_TextArea_Text ******
+*
+*   NAME
+*       UPA_TextArea_Text -- attribute of UP-TextArea.mcc
+*
+*   FUNCTION
+*       STRPTR: the text. A set copies the string in (cut at the capacity); a get returns the object's own NUL terminated buffer, valid until the next edit. Notifies on every change: notify with MUIV_EveryTime, the pointer stays the same
+*
+*   INPUTS
+*       UPA_TextArea_Text - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-TextArea.mcc
+*
+******/
+
+/****** UP-TextArea.mcc/UPA_TextArea_MaxLen ******
+*
+*   NAME
+*       UPA_TextArea_MaxLen -- attribute of UP-TextArea.mcc
+*
+*   FUNCTION
+*       LONG: capacity in bytes, default 1024 (a value below 1 gives the default); longer text is cut. Fixed at creation, a get returns the capacity
+*
+*   INPUTS
+*       UPA_TextArea_MaxLen - access IG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-TextArea.mcc
+*
+******/
+
+/****** UP-TextArea.mcc/UPA_TextArea_Placeholder ******
+*
+*   NAME
+*       UPA_TextArea_Placeholder -- attribute of UP-TextArea.mcc
+*
+*   FUNCTION
+*       STRPTR: hint drawn while the text is empty and the object is not active. The string is not copied and must outlive the object
+*
+*   INPUTS
+*       UPA_TextArea_Placeholder - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-TextArea.mcc
+*
+******/
+
+/****** UP-TextArea.mcc/UPM_TextArea_Redraw ******
+*
+*   NAME
+*       UPM_TextArea_Redraw -- method of UP-TextArea.mcc
+*
+*   FUNCTION
+*       Method, internal: the window's active object changed, repaint the outline. The class installs the notify on MUIA_Window_ActiveObject itself; callers do not send it
+*
+*   INPUTS
+*       UPM_TextArea_Redraw - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod; see FUNCTION for the return value.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-TextArea.mcc
 *
 ******/
