@@ -14,6 +14,9 @@ void aa_log(const char* fmt, ...)
 #endif
     ;
 
+/* Redirect aa_log lines (after the gate) to fn instead of stderr; null restores stderr. For tests. */
+void aa_log_set_sink(void (*fn)(const char* line));
+
 /* I625a6: the host's trace sink (a "t_ms phase" line in its --log). Null by default, so the package traces nothing on its own. */
 void aa_trace_set(void (*fn)(const char* phase));
 void aa_trace(const char* phase);

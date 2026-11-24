@@ -9,32 +9,37 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(__amigaos__) || defined(AMIGA)
+#include <proto/dos.h>
+#include <dos/var.h>
+#endif
+
 static int g_fail;
 #define CHECK(c, ...) do { if (!(c)) { g_fail = 1; fprintf(stdout, "FAIL %s:%d: ", __FILE__, __LINE__); fprintf(stdout, __VA_ARGS__); fputc('\n', stdout); } } while (0)
 
-/* Runs aa_log with stderr redirected to a file and returns what it wrote. */
-static size_t capture(const char* path, char* out, size_t cap) {
-    FILE* f;
-    size_t n;
-    if (freopen(path, "w", stderr) == NULL) return (size_t)-1;
-    aa_log("up-mcc: probe %d\n", 42);
-    fflush(stderr);
-    f = fopen(path, "rb");
-    if (f == NULL) return (size_t)-1;
-    n = fread(out, 1, cap - 1, f);
-    out[n] = '\0';
-    fclose(f);
-    remove(path);
-    return n;
+static char g_got[256];
+static void sink(const char* line) {
+    strncat(g_got, line, sizeof g_got - strlen(g_got) - 1);
 }
 
-static void test_gate(int on, const char* path) {
-    char out[256];
-    size_t n;
+/* The Amiga gate reads ENV:UP-MCC/Debug (GetVar), the host reads UP_MCC_DEBUG. Set before the first aa_log: the gate is read once. */
+static void set_gate(int on) {
+#if defined(__amigaos__) || defined(AMIGA)
+    if (on) SetVar((STRPTR) "UP-MCC/Debug", (STRPTR) "1", 1, GVF_LOCAL_ONLY);
+    else DeleteVar((STRPTR) "UP-MCC/Debug", GVF_LOCAL_ONLY);
+#else
     if (on) setenv("UP_MCC_DEBUG", "1", 1); else unsetenv("UP_MCC_DEBUG");
-    n = capture(path, out, sizeof out);
-    if (on) CHECK(n != (size_t)-1 && strcmp(out, "up-mcc: probe 42\n") == 0, "gate on: got '%s'", out);
-    else CHECK(n == 0, "gate off: wrote %lu bytes", (unsigned long)n);
+#endif
+}
+
+/* path is kept for the CLI (ctest passes one) but unused: aa_log is read back through the sink, not a redirected stderr. */
+static void test_gate(int on, const char* path) {
+    (void)path;
+    set_gate(on);
+    aa_log_set_sink(sink);
+    aa_log("up-mcc: probe %d\n", 42);
+    if (on) CHECK(strcmp(g_got, "up-mcc: probe 42\n") == 0, "gate on: got '%s'", g_got);
+    else CHECK(g_got[0] == '\0', "gate off: wrote '%s'", g_got);
 }
 
 static int read_file(const char* path, char* buf, size_t cap) {

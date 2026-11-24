@@ -27,11 +27,23 @@ static int debug_enabled(void) {
     return g_debug;
 }
 
+/* Null means stderr. The test sets a sink to read the line back; m68k libc cannot freopen stderr onto a file. */
+static void (*g_sink)(const char*);
+void aa_log_set_sink(void (*fn)(const char* line)) {
+    g_sink = fn;
+}
+
 void aa_log(const char* fmt, ...) {
     va_list ap;
     if (!debug_enabled()) return;
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    if (g_sink != NULL) {
+        char line[512];
+        vsnprintf(line, sizeof line, fmt, ap);
+        g_sink(line);
+    } else {
+        vfprintf(stderr, fmt, ap);
+    }
     va_end(ap);
 }
 
