@@ -377,8 +377,12 @@ static ULONG ta_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* 
                 d->caret += off;
                 ta_edited(obj, d);
             }
+        } else if (code == 0x09) {
+            /* Asking for VANILLAKEY makes Intuition deliver Tab only as vanilla 0x09 (no RAWKEY 0x42), so MUI's own forward
+             * cycle never sees it; Shift+Tab has no vanilla code and still arrives as RAWKEY. Cycle here; never insert a TAB. */
+            set(_win(obj), MUIA_Window_ActiveObject, (ULONG)MUIV_Window_ActiveObject_Next);
         } else {
-            return 0; /* Tab, Esc and the rest stay with the window */
+            return 0; /* Esc and the rest stay with the window */
         }
         return MUI_EventHandlerRC_Eat;
     }
