@@ -30,6 +30,7 @@ typedef struct aapop_data {
     const char* const* entries;
     struct Hook *open_hook, *close_hook;
     struct Hook row_hook; /* UPA_List_RowHook of the Poplist popup: the entry text (h_Data is this data) */
+    struct MUI_EventHandlerNode ehn; /* owner window IDCMP_INACTIVEWINDOW: closes a NoActivate popup, which never gets its own Deactivated */
     mui_aa_pop_t pop;
 } aapop_data;
 
@@ -178,10 +179,42 @@ static void aapop_set_active(Object* obj, aapop_data* d, int v) {
     set(d->str, MUIA_String_Contents, (ULONG)(v >= 0 ? d->entries[v] : ""));
 }
 
+static ULONG aapop_setup(struct IClass* cl, Object* obj, Msg msg) {
+    aapop_data* d = INST_DATA(cl, obj);
+    if (!DoSuperMethodA(cl, obj, msg)) {
+        return FALSE;
+    }
+    d->ehn.ehn_Priority = 0;
+    d->ehn.ehn_Flags = 0;
+    d->ehn.ehn_Object = obj;
+    d->ehn.ehn_Class = cl;
+    d->ehn.ehn_Events = IDCMP_INACTIVEWINDOW;
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (ULONG)&d->ehn);
+    return TRUE;
+}
+
 static ULONG aapop_cleanup(struct IClass* cl, Object* obj, Msg msg) {
     aapop_data* d = INST_DATA(cl, obj);
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (ULONG)&d->ehn);
     aapop_drop(obj, d);
     return DoSuperMethodA(cl, obj, msg);
+}
+
+/* The owner window went inactive. A NoActivate popup closes unless the popup itself took the activation (a click into it):
+ * Intuition sets WFLG_WINDOWACTIVE before either window's message is read, so the flag is already right here. */
+static ULONG aapop_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* msg) {
+    aapop_data* d = INST_DATA(cl, obj);
+    struct Window* pw = NULL;
+    if (msg->imsg == NULL || msg->imsg->Class != IDCMP_INACTIVEWINDOW || !d->no_activate || !d->pop.open || d->popup == NULL) {
+        return 0;
+    }
+    GetAttr(MUIA_Window_Window, d->popup, (ULONG*)&pw);
+    if (pw != NULL && (pw->Flags & WFLG_WINDOWACTIVE)) {
+        return 0;
+    }
+    d->deact = 1;
+    aapop_close(d);
+    return 0; /* not eaten: other handlers of the owner window still see the deactivation */
 }
 
 static ULONG aapop_dispose(struct IClass* cl, Object* obj, Msg msg) {
@@ -324,8 +357,16 @@ static ULONG aapop_dispatch_c(struct IClass* cl, Object* obj, Msg msg, int is_li
         return aapop_set(cl, obj, (struct opSet*)msg);
     case OM_GET:
         return aapop_get(cl, obj, (struct opGet*)msg);
+    case MUIM_Setup:
+        return aapop_setup(cl, obj, msg);
     case MUIM_Cleanup:
         return aapop_cleanup(cl, obj, msg);
+    case MUIM_HandleEvent:
+        return aapop_handle(cl, obj, (struct MUIP_HandleEvent*)msg);
+    case MUIM_Hide:
+        /* a hidden popstring (page switch, ShowMe FALSE, window close) never leaves its popup floating over other gadgets */
+        aapop_close(INST_DATA(cl, obj));
+        break;
     case UPM_Popstring_Click:
         d = INST_DATA(cl, obj);
         {
