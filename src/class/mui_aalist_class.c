@@ -545,6 +545,10 @@ Object* UP_NewList(const struct TagItem* tags, Object** list_out) {
     }
     d = INST_DATA(g_list_class->mcc_Class, list);
     d->scroller = scroller;
+    if (d->count <= d->max_rows) {
+        /* Every row fits (popup lists): no scroller, else its 4-thumb minimum height stretches a short list and draws empty rows */
+        SetAttrs(scroller, MUIA_ShowMe, FALSE, TAG_DONE);
+    }
     DoMethod(scroller, MUIM_Notify, UPA_Scroller_First, MUIV_EveryTime, list, 3, MUIM_Set, UPA_List_First, MUIV_TriggerValue);
     g_list_made++;
     if (list_out != NULL) {
