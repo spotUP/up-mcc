@@ -37,14 +37,18 @@ static ULONG aascrollgroup_layout(struct Hook* hook, Object* obj, struct MUI_Lay
         return (ULONG)MUILM_UNKNOWN;
     }
     switch (lm->lm_Type) {
-    case MUILM_MINMAX:
-        lm->lm_MinMax.MinWidth = (WORD)(_minwidth(d->virt) + SCRGRP_BAR_W);
+    case MUILM_MINMAX: {
+        ULONG cw = 0;
+        /* vertical bar only: the contents' own minimum width holds (the virtgroup's is a stub), else a narrow window clips them */
+        GetAttr(UPA_Virtgroup_Width, d->virt, &cw);
+        lm->lm_MinMax.MinWidth = (WORD)(cw + SCRGRP_BAR_W);
         lm->lm_MinMax.MinHeight = (WORD)_minheight(d->virt);
         lm->lm_MinMax.DefWidth = (WORD)(_defwidth(d->virt) + SCRGRP_BAR_W);
         lm->lm_MinMax.DefHeight = (WORD)_defheight(d->virt);
         lm->lm_MinMax.MaxWidth = MUI_MAXMAX;
         lm->lm_MinMax.MaxHeight = MUI_MAXMAX;
         return 0;
+    }
     case MUILM_LAYOUT: {
         int w = lm->lm_Layout.Width, h = lm->lm_Layout.Height, need, vw;
         ULONG ch = 0, top = 0;
