@@ -77,6 +77,7 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_PALETTE 0x14    /* UP-Palette */
 #define UP_CLS_IMAGE 0x15   /* UP-Image */
 #define UP_CLS_MENU 0x16    /* UP-Menu */
+#define UP_CLS_TEXTAREA 0x17 /* UP-TextArea */
 #define UP_CLS_SCROLLGROUP 0x0E
 #define UP_CLS_VIRTGROUP 0x10
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
@@ -173,6 +174,12 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPM_Menu_Click UP_TAG(UP_CLS_MENU, 0x10)  /* method: the title button was pressed. Internal */
 #define UPM_Menu_Closed UP_TAG(UP_CLS_MENU, 0x11) /* method: the popup window closed. Internal */
 #define UPM_Menu_Deactivated UP_TAG(UP_CLS_MENU, 0x12) /* method: the popup window lost activation. Internal */
+
+/* UP-TextArea: a minimal multi-line text editor (word wrap, caret, vertical scroll; no selection or clipboard yet). Click or the cycle chain focuses it. */
+#define UPA_TextArea_Text UP_TAG(UP_CLS_TEXTAREA, 0x01)        /* ISG STRPTR: the text, copied in on set; get returns the object's own NUL terminated buffer (valid until the next edit). Notifies on every change: notify with MUIV_EveryTime, the pointer stays the same */
+#define UPA_TextArea_MaxLen UP_TAG(UP_CLS_TEXTAREA, 0x02)      /* IG LONG: capacity in bytes, default 1024; longer text is cut */
+#define UPA_TextArea_Placeholder UP_TAG(UP_CLS_TEXTAREA, 0x03) /* I STRPTR hint while empty and not active; must outlive the object */
+#define UPM_TextArea_Redraw UP_TAG(UP_CLS_TEXTAREA, 0x10)      /* method: the window's active object changed, repaint. Internal */
 
 /* UP-Tabs */
 #define UPA_Tabs_Active UP_TAG(UP_CLS_TABS, 0x01)   /* ISG LONG: index of the active tab (notifies) */
@@ -291,6 +298,7 @@ Object* UP_NewColorfield(const struct TagItem* tags);
 Object* UP_NewPalette(const struct TagItem* tags);
 Object* UP_NewImage(const struct TagItem* tags);
 Object* UP_NewMenu(const struct TagItem* tags);
+Object* UP_NewTextArea(const struct TagItem* tags);
 Object* UP_NewPanel(const struct TagItem* tags);
 Object* UP_NewBalance(const struct TagItem* tags);
 Object* UP_NewCheckmark(const struct TagItem* tags);
