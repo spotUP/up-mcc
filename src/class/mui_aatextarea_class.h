@@ -1,4 +1,4 @@
-/* UP-TextArea: a minimal multi-line text editor (Area subclass). Word wrap, caret, vertical scroll; no selection or clipboard yet. Amiga only. */
+/* UP-TextArea: a minimal multi-line text editor (Area subclass). Word wrap, caret, vertical scroll, selection (Shift+arrows, drag), clipboard (Ctrl or Amiga + C, X, V). Amiga only. */
 #ifndef MUI_AATEXTAREA_CLASS_H
 #define MUI_AATEXTAREA_CLASS_H
 

@@ -1,7 +1,8 @@
 /* UP-TextArea: a minimal multi-line text editor. Area subclass; the look is UP-Field's (face, outline, placeholder, tooltip from
  * map/mui_aa.c and mui_aatip.c). All line, caret and edit maths is mui_text_lines.c (mtl_*): this file is glue between those helpers,
  * the aa_* draw calls and the MUI events. Keys: the arrows, Home, End and the wheel come as RAWKEY; characters, Backspace, Delete and
- * Return come as IDCMP_VANILLAKEY, so no keymap library is needed. */
+ * Return come as IDCMP_VANILLAKEY, so no keymap library is needed. Selection is anchor..caret (empty when equal); the clipboard is
+ * clipboard.device unit 0 holding FORM FTXT (mui_ftxt.c does the IFF bytes). */
 #include "mui_aatextarea_class.h"
 #include "mui_aa_class.h"
 
@@ -11,6 +12,7 @@
 
 #include <clib/alib_protos.h>
 #include <clib/muimaster_protos.h>
+#include <devices/clipboard.h>
 #include <devices/inputevent.h>
 #include <intuition/intuition.h>
 #include <proto/exec.h>
@@ -22,6 +24,7 @@
 #include "map/mui_aa.h"
 #include "mui_aa_draw.h"
 #include "mui_aatip.h"
+#include "mui_ftxt.h"
 #include "mui_text_lines.h"
 
 extern struct Library* MUIMasterBase;
@@ -34,7 +37,8 @@ extern struct Library* MUIMasterBase;
 
 typedef struct ta_data {
     char* buf; /* cap bytes, NUL terminated, caller-visible through UPA_TextArea_Text */
-    int cap, len, caret, pref_x, top;
+    int cap, len, caret, anchor, pref_x, top;
+    int dragging; /* left button held after a click inside: mouse moves extend the selection */
     MtlLine* lines;
     int nlines, line_cap, wrap_w;
     int dirty;  /* text changed: wrap again */
@@ -146,15 +150,18 @@ static int ta_set_text(ta_data* d, const char* s) {
     }
     memmove(d->buf, s, (size_t)n);
     d->buf[n] = '\0';
-    d->len = d->caret = n;
+    d->len = d->caret = d->anchor = n;
     d->pref_x = -1;
     d->top = 0;
     d->dirty = d->reveal = 1;
     return 1;
 }
 
-static void ta_moved(Object* obj, ta_data* d, int off, int keep_pref) {
+static void ta_moved(Object* obj, ta_data* d, int off, int keep_pref, int extend) {
     d->caret = off;
+    if (!extend) {
+        d->anchor = off;
+    }
     if (!keep_pref) {
         d->pref_x = -1;
     }
@@ -164,10 +171,147 @@ static void ta_moved(Object* obj, ta_data* d, int off, int keep_pref) {
 
 /* After an edit of the buffer: wrap again, show the caret, and announce the text (set notifies; the pointer is the buffer, so no copy). */
 static void ta_edited(Object* obj, ta_data* d) {
+    d->anchor = d->caret;
     d->dirty = d->reveal = 1;
     d->pref_x = -1;
     ta_redraw(obj);
     set(obj, UPA_TextArea_Text, (ULONG)(uintptr_t)d->buf);
+}
+
+static int ta_selection(const ta_data* d, int* lo, int* hi) {
+    return mtl_sel_range(d->anchor, d->caret, d->len, lo, hi);
+}
+
+/* Replace the selection (or insert at the caret) by s. Returns 1 when the text changed. */
+static int ta_put(ta_data* d, const char* s, int slen) {
+    int lo, hi, removed, put;
+    if (!ta_selection(d, &lo, &hi)) {
+        lo = hi = d->caret;
+    }
+    removed = hi - lo;
+    put = mtl_replace(d->buf, d->cap, &d->len, lo, hi, s, slen);
+    d->caret = lo + put;
+    return removed > 0 || put > 0;
+}
+
+/* Clipboard: one request on a private port per call. Failure (no device, no memory) is silent: copy and paste do nothing. */
+static struct IOClipReq* ta_clip_open(struct MsgPort** port) {
+    struct IOClipReq* io;
+    *port = CreateMsgPort();
+    if (*port == NULL) {
+        return NULL;
+    }
+    io = (struct IOClipReq*)CreateIORequest(*port, sizeof(struct IOClipReq));
+    if (io != NULL && OpenDevice((STRPTR) "clipboard.device", 0, (struct IORequest*)io, 0) != 0) {
+        DeleteIORequest((struct IORequest*)io);
+        io = NULL;
+    }
+    if (io == NULL) {
+        DeleteMsgPort(*port);
+    }
+    return io;
+}
+
+static void ta_clip_close(struct IOClipReq* io, struct MsgPort* port) {
+    CloseDevice((struct IORequest*)io);
+    DeleteIORequest((struct IORequest*)io);
+    DeleteMsgPort(port);
+}
+
+static void ta_clip_put(const char* s, int n) {
+    struct MsgPort* port;
+    struct IOClipReq* io;
+    unsigned char* b;
+    int total = ftxt_size(n);
+    if (n <= 0 || (b = (unsigned char*)AllocVec((ULONG)total, MEMF_ANY)) == NULL) {
+        return;
+    }
+    ftxt_encode(s, n, b, total);
+    io = ta_clip_open(&port);
+    if (io != NULL) {
+        io->io_Data = (STRPTR)b;
+        io->io_Length = (ULONG)total;
+        io->io_Offset = 0;
+        io->io_ClipID = 0;
+        io->io_Command = CMD_WRITE;
+        DoIO((struct IORequest*)io);
+        io->io_Command = CMD_UPDATE;
+        DoIO((struct IORequest*)io);
+        ta_clip_close(io, port);
+    }
+    FreeVec(b);
+}
+
+/* Reads the clip into out (cap bytes, NUL terminated). Returns the text length, 0 when empty or not text. At most cap*2+64 raw bytes
+ * are kept; the rest is read and thrown away because a clip read must run to its end to be released. */
+static int ta_clip_get(char* out, int cap) {
+    struct MsgPort* port;
+    struct IOClipReq* io;
+    unsigned char *b, chunk[256];
+    int raw = cap * 2 + 64, have = 0, n = 0;
+    if (cap < 2 || (b = (unsigned char*)AllocVec((ULONG)raw, MEMF_ANY)) == NULL) {
+        return 0;
+    }
+    io = ta_clip_open(&port);
+    if (io != NULL) {
+        io->io_Offset = 0;
+        io->io_ClipID = 0;
+        for (;;) {
+            io->io_Command = CMD_READ;
+            io->io_Data = (STRPTR)chunk;
+            io->io_Length = sizeof chunk;
+            if (DoIO((struct IORequest*)io) != 0 || io->io_Actual == 0) {
+                break;
+            }
+            if (have < raw) {
+                int take = (int)io->io_Actual < raw - have ? (int)io->io_Actual : raw - have;
+                memcpy(b + have, chunk, (size_t)take);
+                have += take;
+            }
+        }
+        ta_clip_close(io, port);
+        n = ftxt_decode(b, have, out, cap);
+    }
+    FreeVec(b);
+    return n < 0 ? 0 : n;
+}
+
+/* Ctrl or Amiga + C/X/V. Returns 1 when the key was a clipboard command (handled). */
+static int ta_clipboard_key(Object* obj, ta_data* d, int code, int qual) {
+    int lo, hi, edited = 0;
+    int cmd = qual & (IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND);
+    int key = code;
+    if (!cmd && !(code == 0x03 || code == 0x18 || code == 0x16)) {
+        return 0;
+    }
+    if (cmd) {
+        key = code | 0x20; /* a letter with or without Shift */
+    } else {
+        key = code == 0x03 ? 'c' : code == 0x18 ? 'x' : 'v';
+    }
+    if (key == 'c' || key == 'x') {
+        if (ta_selection(d, &lo, &hi)) {
+            ta_clip_put(d->buf + lo, hi - lo);
+            if (key == 'x') {
+                edited = ta_put(d, "", 0);
+            }
+        }
+    } else if (key == 'v') {
+        char* t = (char*)AllocVec((ULONG)d->cap, MEMF_ANY);
+        if (t != NULL) {
+            int n = ta_clip_get(t, d->cap);
+            if (n > 0) {
+                edited = ta_put(d, t, n);
+            }
+            FreeVec(t);
+        }
+    } else {
+        return 0;
+    }
+    if (edited) {
+        ta_edited(obj, d);
+    }
+    return 1;
 }
 
 static ULONG ta_setup(struct IClass* cl, Object* obj, Msg msg) {
@@ -185,6 +329,8 @@ static ULONG ta_setup(struct IClass* cl, Object* obj, Msg msg) {
             aa_hold(&d->aa, ops[n].rgb);
         }
     }
+    aa_hold(&d->aa, d->aa.tok[SEL_GUI_TOKEN_ACCENT]);
+    aa_hold(&d->aa, d->aa.tok[SEL_GUI_TOKEN_ACCENT_TEXT]);
     aa_hold(&d->aa, d->aa.tok[SEL_GUI_TOKEN_TEXT]);
     aa_hold(&d->aa, d->aa.tok[SEL_GUI_TOKEN_TEXT_MUTED]);
     DoMethod(_win(obj), MUIM_Notify, MUIA_Window_ActiveObject, MUIV_EveryTime, (ULONG)obj, 1, UPM_TextArea_Redraw);
@@ -229,7 +375,7 @@ static ULONG ta_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     ta_geom g;
     ta_fit f;
     int focus, n, k, i, maxtop;
-    int l, t, w, h;
+    int l, t, w, h, has_sel, sel_lo, sel_hi;
     DoSuperMethodA(cl, obj, (Msg)msg);
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) {
         return 0;
@@ -265,13 +411,39 @@ static ULONG ta_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
             aa_text(&d->aa, obj, rp, g.x, g.y, fit, rgb, d->aa.tok[MUI_AA_FIELD_FACE]);
         }
     }
+    has_sel = ta_selection(d, &sel_lo, &sel_hi);
     for (i = d->top; i < d->nlines && i < d->top + g.vis; i++) {
         char ln[TA_LINE_BUF];
         int len = d->lines[i].len < TA_LINE_BUF - 1 ? d->lines[i].len : TA_LINE_BUF - 1;
+        int ly = g.y + (i - d->top) * g.lh;
         if (len > 0) {
             memcpy(ln, d->buf + d->lines[i].start, (size_t)len);
             ln[len] = '\0';
-            aa_text(&d->aa, obj, rp, g.x, g.y + (i - d->top) * g.lh, ln, d->aa.tok[SEL_GUI_TOKEN_TEXT], d->aa.tok[MUI_AA_FIELD_FACE]);
+            aa_text(&d->aa, obj, rp, g.x, ly, ln, d->aa.tok[SEL_GUI_TOKEN_TEXT], d->aa.tok[MUI_AA_FIELD_FACE]);
+        }
+        if (has_sel) {
+            /* selected bytes of this line; a selected newline also covers one blank cell */
+            int ls = d->lines[i].start, a = sel_lo > ls ? sel_lo - ls : 0, b = sel_hi < ls + len ? sel_hi - ls : len;
+            int past = i + 1 < d->nlines && d->lines[i + 1].start > ls + d->lines[i].len && sel_lo <= ls + d->lines[i].len && sel_hi > ls + d->lines[i].len;
+            if (b > a || past) {
+                int x0 = g.x + mtl_x_of(d->buf, d->lines, i, a, ta_width, &f);
+                int x1 = g.x + mtl_x_of(d->buf, d->lines, i, b, ta_width, &f);
+                if (past) {
+                    x1 += d->aa.font_px / 2 > 2 ? d->aa.font_px / 2 : 2;
+                }
+                if (x1 > g.x + g.w) {
+                    x1 = g.x + g.w;
+                }
+                if (x1 > x0) {
+                    aa_rect(&d->aa, rp, x0, ly, x1 - 1, ly + g.lh - 1, d->aa.tok[SEL_GUI_TOKEN_ACCENT]);
+                    if (b > a) {
+                        char seg[TA_LINE_BUF];
+                        memcpy(seg, ln + a, (size_t)(b - a));
+                        seg[b - a] = '\0';
+                        aa_text(&d->aa, obj, rp, x0, ly, seg, d->aa.tok[SEL_GUI_TOKEN_ACCENT_TEXT], d->aa.tok[SEL_GUI_TOKEN_ACCENT]);
+                    }
+                }
+            }
         }
     }
     if (focus) {
@@ -294,7 +466,7 @@ static ULONG ta_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* 
     struct IntuiMessage* im = msg->imsg;
     ta_geom g;
     ta_fit f;
-    int in, off, code;
+    int in, off, code, shift, has_sel, lo, hi;
     if (im == NULL) {
         return 0;
     }
@@ -312,9 +484,25 @@ static ULONG ta_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* 
             line = d->top + (im->MouseY - g.y) / g.lh;
             line = line < d->top ? d->top : line;
             off = mtl_offset_at(d->buf, d->len, d->lines, d->nlines, line, im->MouseX - g.x, ta_width, &f);
-            ta_moved(obj, d, off, 0);
+            ta_moved(obj, d, off, 0, im->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
             d->reveal = 0; /* a click inside the view must not scroll it */
+            d->dragging = 1;
             return MUI_EventHandlerRC_Eat;
+        }
+        if (im->Code == (SELECTDOWN | IECODE_UP_PREFIX)) {
+            d->dragging = 0;
+        }
+        return 0;
+    }
+    if (im->Class == IDCMP_MOUSEMOVE) {
+        if (d->dragging) {
+            int line;
+            ta_ensure(obj, d, &g);
+            line = d->top + (im->MouseY - g.y) / g.lh;
+            line = im->MouseY < g.y ? d->top - 1 : line; /* above the view: one line up per move, the draw scrolls it into view */
+            line = line < 0 ? 0 : line;
+            off = mtl_offset_at(d->buf, d->len, d->lines, d->nlines, line, im->MouseX - g.x, ta_width, &f);
+            ta_moved(obj, d, off, 0, 1);
         }
         return 0;
     }
@@ -336,45 +524,53 @@ static ULONG ta_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* 
             return 0;
         }
         ta_ensure(obj, d, &g);
+        shift = im->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT);
+        has_sel = ta_selection(d, &lo, &hi);
         switch (code) {
         case 0x4C: /* up */
         case 0x4D: /* down */
             off = mtl_move_vertical(d->buf, d->len, d->lines, d->nlines, d->caret, code == 0x4C ? -1 : 1, &d->pref_x, ta_width, &f);
-            ta_moved(obj, d, off, 1);
+            ta_moved(obj, d, off, 1, shift);
             return MUI_EventHandlerRC_Eat;
-        case 0x4E: /* right */
-            ta_moved(obj, d, d->caret < d->len ? d->caret + 1 : d->caret, 0);
+        case 0x4E: /* right: without Shift a selection collapses to its end */
+            ta_moved(obj, d, !shift && has_sel ? hi : d->caret < d->len ? d->caret + 1 : d->caret, 0, shift);
             return MUI_EventHandlerRC_Eat;
-        case 0x4F: /* left */
-            ta_moved(obj, d, d->caret > 0 ? d->caret - 1 : 0, 0);
+        case 0x4F: /* left: ... or to its start */
+            ta_moved(obj, d, !shift && has_sel ? lo : d->caret > 0 ? d->caret - 1 : 0, 0, shift);
             return MUI_EventHandlerRC_Eat;
         case 0x70: /* Home, as aalist */
-            ta_moved(obj, d, mtl_line_home(d->lines, d->nlines, d->caret), 0);
+            ta_moved(obj, d, mtl_line_home(d->lines, d->nlines, d->caret), 0, shift);
             return MUI_EventHandlerRC_Eat;
         case 0x71: /* End */
-            ta_moved(obj, d, mtl_line_end(d->buf, d->len, d->lines, d->nlines, d->caret), 0);
+            ta_moved(obj, d, mtl_line_end(d->buf, d->len, d->lines, d->nlines, d->caret), 0, shift);
             return MUI_EventHandlerRC_Eat;
         }
         return 0;
     }
     if (im->Class == IDCMP_VANILLAKEY && ta_focus(obj)) {
         char c = (char)code;
-        if (code == 0x08) { /* Backspace */
-            if (d->caret > 0) {
+        if (ta_clipboard_key(obj, d, code, im->Qualifier)) {
+            return MUI_EventHandlerRC_Eat;
+        }
+        if (im->Qualifier & (IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND)) {
+            return 0; /* other Amiga-key shortcuts stay with the window */
+        }
+        has_sel = ta_selection(d, &lo, &hi);
+        if (code == 0x08 || code == 0x7F) { /* Backspace, Delete: a selection goes whole, else one byte */
+            if (has_sel) {
+                ta_put(d, "", 0);
+                ta_edited(obj, d);
+            } else if (code == 0x08 && d->caret > 0) {
                 d->caret = mtl_backspace(d->buf, &d->len, d->caret);
                 ta_edited(obj, d);
-            }
-        } else if (code == 0x7F) { /* Delete */
-            if (mtl_delete(d->buf, &d->len, d->caret)) {
+            } else if (code == 0x7F && mtl_delete(d->buf, &d->len, d->caret)) {
                 ta_edited(obj, d);
             }
         } else if (code == 0x0D || (code >= 0x20 && code <= 0x7E) || (code >= 0xA0 && code <= 0xFF)) {
             if (code == 0x0D) {
                 c = '\n';
             }
-            off = mtl_insert(d->buf, d->cap, &d->len, d->caret, &c, 1);
-            if (off > 0) {
-                d->caret += off;
+            if (ta_put(d, &c, 1)) {
                 ta_edited(obj, d);
             }
         } else if (code == 0x09) {

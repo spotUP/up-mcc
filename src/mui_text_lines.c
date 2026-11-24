@@ -125,3 +125,24 @@ int mtl_scroll_top(int caret_line, int visible, int top, int nlines) {
     maxtop = nlines - visible;
     return clampi(top, 0, maxtop < 0 ? 0 : maxtop);
 }
+
+int mtl_sel_range(int anchor, int caret, int n, int *lo, int *hi) {
+    int a = anchor < 0 ? 0 : anchor > n ? n : anchor, c = caret < 0 ? 0 : caret > n ? n : caret;
+    *lo = a < c ? a : c;
+    *hi = a < c ? c : a;
+    return *lo < *hi;
+}
+
+int mtl_delete_range(char *buf, int *len, int lo, int hi) {
+    int n = *len;
+    lo = lo < 0 ? 0 : lo > n ? n : lo;
+    hi = hi < lo ? lo : hi > n ? n : hi;
+    memmove(buf + lo, buf + hi, (size_t)(n - hi + 1)); /* +1 keeps the NUL */
+    *len = n - (hi - lo);
+    return hi - lo;
+}
+
+int mtl_replace(char *buf, int cap, int *len, int lo, int hi, const char *s, int slen) {
+    mtl_delete_range(buf, len, lo, hi);
+    return mtl_insert(buf, cap, len, lo, s, slen);
+}

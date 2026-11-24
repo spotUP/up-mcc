@@ -88,6 +88,26 @@ int main(void) {
     for (i = 6; i > 0; i--) mtl_backspace(buf, &len, i);
     assert(len == 0 && buf[0] == 0);
 
+    /* selection */
+    { int lo, hi;
+      assert(mtl_sel_range(5, 2, 10, &lo, &hi) == 1 && lo == 2 && hi == 5);
+      assert(mtl_sel_range(2, 5, 10, &lo, &hi) == 1 && lo == 2 && hi == 5);
+      assert(mtl_sel_range(4, 4, 10, &lo, &hi) == 0);
+      assert(mtl_sel_range(-3, 99, 10, &lo, &hi) == 1 && lo == 0 && hi == 10); /* clamped */
+      len = 6; strcpy(buf, "abcdef");
+      assert(mtl_delete_range(buf, &len, 1, 3) == 2 && len == 4 && !strcmp(buf, "adef"));
+      assert(mtl_delete_range(buf, &len, 2, 99) == 2 && len == 2 && !strcmp(buf, "ad"));
+      assert(mtl_delete_range(buf, &len, 1, 1) == 0 && !strcmp(buf, "ad"));
+      len = 6; strcpy(buf, "abcdef"); /* cap 8: room for 7 bytes */
+      assert(mtl_replace(buf, 8, &len, 1, 3, "XY", 2) == 2 && !strcmp(buf, "aXYdef") && len == 6);
+    }
+    len = 6; strcpy(buf, "abcdef");
+    assert(mtl_replace(buf, 8, &len, 1, 3, "12345", 5) == 3 && len == 7 && !strcmp(buf, "a123def")); /* deleted 2, so room for 3 */
+    len = 6; strcpy(buf, "abcdef");
+    assert(mtl_replace(buf, 8, &len, 0, 0, "12345", 5) == 1 && len == 7);                          /* nothing deleted: only 1 fits */
+    len = 6; strcpy(buf, "abcdef");
+    assert(mtl_replace(buf, 8, &len, 0, 6, "", 0) == 0 && len == 0 && buf[0] == 0);
+
     /* scroll */
     assert(mtl_scroll_top(0, 5, 0, 20) == 0);
     assert(mtl_scroll_top(4, 5, 0, 20) == 0);    /* last visible line: no move */

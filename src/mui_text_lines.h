@@ -48,6 +48,14 @@ int mtl_backspace(char *buf, int *len, int off);
 /* Delete the byte at off. Returns 1 if a byte was deleted, 0 at the end of text. */
 int mtl_delete(char *buf, int *len, int off);
 
+/* Selection: anchor and caret are offsets; the selection is the bytes between them (empty when equal). */
+/* Normalised range lo <= hi, clamped to [0, n]. Returns 1 when non-empty. */
+int mtl_sel_range(int anchor, int caret, int n, int *lo, int *hi);
+/* Delete the bytes [lo, hi) (clamped). Returns the number of bytes removed. */
+int mtl_delete_range(char *buf, int *len, int lo, int hi);
+/* Replace [lo, hi) by s[0..slen): the range goes first, then as much of s as fits in cap. Returns the number of bytes inserted. */
+int mtl_replace(char *buf, int cap, int *len, int lo, int hi, const char *s, int slen);
+
 /* New top line so caret_line is inside [top, top+visible), moving as little as possible, with top kept in [0, nlines-visible]. */
 int mtl_scroll_top(int caret_line, int visible, int top, int nlines);
 

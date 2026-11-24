@@ -25,7 +25,7 @@ set(MCC_AMIGA_SOURCES src/mui_aa_draw.c src/mui_aatip.c
   src/class/mui_aacolorfield_class.c src/class/mui_aapalette_class.c
   src/class/mui_aaimage_class.c src/class/mui_aamenu_class.c
   src/class/mui_aavirtgroup_class.c src/class/mui_aascrollgroup_class.c
-  src/class/mui_aatextarea_class.c src/mui_text_lines.c)
+  src/class/mui_aatextarea_class.c src/mui_text_lines.c src/mui_ftxt.c)
 # I685i: the eleven UP-<Name>.mcc libraries (section 3.2/3.3), one row each: name | class source | description symbol of the file.
 # Slider and Progress both come from mui_aaslider_class.c. The class sources of the libraries must be the class sources of
 # sel_mcc_static (ctest mcc-classlibs-source; the Amiga part below also checks every library's SOURCES).
