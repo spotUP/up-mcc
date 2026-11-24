@@ -70,6 +70,7 @@ static ULONG aafield_setup(struct IClass* cl, Object* obj, Msg msg) {
         }
     }
     aa_hold(&d->aa, mui_aa_field_string_fg(d->aa.tok));
+    aa_hold(&d->aa, d->aa.tok[SEL_GUI_TOKEN_TEXT_MUTED]); /* placeholder pen, as UP-Textarea holds it */
     DoMethod(_win(obj), MUIM_Notify, MUIA_Window_ActiveObject, MUIV_EveryTime, (ULONG)obj, 1, UPM_Field_Redraw);
     DoMethod(d->str, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime, (ULONG)obj, 1, UPM_Field_Edited); /* I733: the placeholder shows and hides with the contents; an edit clears the error mark */
     d->ehn.ehn_Priority = 1; /* above the String's own handler, which eats Esc (I1360); every other key still passes */
@@ -121,17 +122,17 @@ static ULONG aafield_askminmax(struct IClass* cl, Object* obj, struct MUIP_AskMi
  * string colours, the window pen 121214 on the rig), so MUIA_Background never shows inside it. The face pen goes into the background
  * slot of both pen pairs, the theme TEXT into the text slot (the MUI prefs text pen was black on a dark face). Runs before every draw:
  * MUI may rebuild the gadget on setup. */
-static void aafield_string_pens(aafield_data* d) {
+static struct Gadget* aafield_string_pens(aafield_data* d) {
     struct Gadget* g = NULL;
     struct StringInfo* si;
     LONG pen[2], fg;
     int k;
     if (d->str == NULL || !GetAttr(MUIA_Gadget_Gadget, d->str, (ULONG*)&g) || g == NULL || !mui_aa_field_string_gadget(g->GadgetType)) {
-        return;
+        return NULL;
     }
     si = (struct StringInfo*)g->SpecialInfo;
     if (si == NULL || si->Extension == NULL) {
-        return;
+        return NULL;
     }
     for (k = 0; k < 2; k++) {
         pen[k] = aa_nearest_pen(&d->aa, mui_aa_field_string_bg(d->aa.tok, k));
@@ -152,6 +153,7 @@ static void aafield_string_pens(aafield_data* d) {
     if (pen[1] >= 0) {
         si->Extension->ActivePens[1] = (UBYTE)pen[1];
     }
+    return g;
 }
 
 /* I1479: width callback of mui_aa_text_fit (as aabtn_width): ink width of the first len bytes in the field's font. */
@@ -188,7 +190,14 @@ static ULONG aafield_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
     if (text >= 0) {
         _pens(obj)[MPEN_TEXT] = (UWORD)text;
     }
-    aafield_string_pens(d);
+    {
+        /* D3: the String's own draw still put the text in its prefs pen (a set contents such as the prefilled date stayed black;
+         * only typing, which Intuition renders from the gadget pens, was light). Render the gadget again from the theme pens. */
+        struct Gadget* g = aafield_string_pens(d);
+        if (g != NULL && (msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)) && _window(obj) != NULL) {
+            RefreshGList(g, _window(obj), NULL, 1);
+        }
+    }
     if (msg->flags & MADF_DRAWOBJECT) {
         mui_aa_check_op_t ops[MUI_AA_FIELD_OPS];
         struct RastPort* rp = _rp(obj);

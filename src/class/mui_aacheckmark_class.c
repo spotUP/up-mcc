@@ -106,6 +106,9 @@ static ULONG aacheckmark_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* 
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) {
         return 0;
     }
+    if (d->aa.tc) { /* as UP-Text: MUI filled the box with the snapped window pen; the label sits on the parent face (bg_rgb) */
+        aa_erase(&d->aa, obj, _left(obj), _top(obj), _width(obj), _height(obj));
+    }
     rp = _rp(obj);
     l = _mleft(obj);
     t = _mtop(obj);

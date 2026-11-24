@@ -136,7 +136,7 @@ static ULONG aatext_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) 
     w = _mwidth(obj);
     h = _mheight(obj);
     tw = aa_text_width(&d->aa, obj, d->text);
-    if (d->ellipsis && tw > w) {
+    if (tw > w) { /* a text set after layout may outgrow its box: cut it with "..." there, never drawn over the neighbour (ellipsis or not) */
         mui_aa_text_fit(d->text, w, aatext_width, d, fit, (int)sizeof fit);
         shown = fit;
         tw = aa_text_width(&d->aa, obj, fit);
