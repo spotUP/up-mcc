@@ -15,6 +15,8 @@
 #include <proto/exec.h>
 #include "mui_gfxbase.h"
 #include <proto/intuition.h>
+#define LayersBase aapanel_LayersBase /* own name, as mui_gfxbase.h does for GfxBase: opened only for a grip drag */
+#include <proto/layers.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
 
@@ -24,6 +26,7 @@
 #include "map/mui_aascr.h"
 
 extern struct Library* MUIMasterBase;
+struct Library* LayersBase;
 
 typedef struct aapanel_data {
     int role;
@@ -33,8 +36,9 @@ typedef struct aapanel_data {
     Object* inner;  /* I685e5: the plain vertical group that holds the program's children */
     int grip;       /* UPA_Panel_SizeGrip: the root of a borderless window draws a size grip in its bottom right corner */
     int shown;      /* MUIM_Show seen, MUIM_Hide not yet (AA_SHOWN_CASES); outside aa_ctx, whose ABI 2 layout is frozen */
-    int drag;       /* the grip is held: sx, sy the mouse and sw, sh the window size at the press; rw, rh the last size asked */
-    int sx, sy, sw, sh, rw, rh;
+    int drag;       /* the grip is held: sx, sy the mouse at the press; ox, oy the window on the screen; rw, rh the outline drawn */
+    int sx, sy, ox, oy, rw, rh;
+    struct Screen* scr; /* the screen the outline is drawn on */
     struct MUI_EventHandlerNode ehn;
     aa_ctx aa;
 } aapanel_data;
@@ -154,44 +158,92 @@ static void aapanel_grip_paint(aapanel_data* d, Object* obj) {
     }
 }
 
-/* Drag of the grip: the window follows the mouse, kept in the root object's MUI limits plus the window margin, and on screen. MUI
- * relays the window out on IDCMP_NEWSIZE. A new size is asked only when the window took the last one, so a fast drag on a slow
- * machine does not queue up a relayout per mouse move. */
+/* The drag outline: a one px frame of the new window box, complemented on the screen's own RastPort (a copy, so the screen's
+ * draw mode stays as it is), as Intuition's size gadget draws it. Four strips that do not overlap, so drawing it twice erases it.
+ * shortcut: the layers are locked only while one frame is drawn, not across the drag (the input.device task must stay free to
+ * deliver the release); a window of another task that repaints under the frame mid-drag can leave a trace. */
+static void aapanel_outline(aapanel_data* d) {
+    struct RastPort rp;
+    int x0 = d->ox, y0 = d->oy, x1 = d->ox + d->rw - 1, y1 = d->oy + d->rh - 1;
+    rp = d->scr->RastPort;
+    SetDrMd(&rp, COMPLEMENT);
+    if (LayersBase != NULL) {
+        LockLayers(&d->scr->LayerInfo);
+    }
+    RectFill(&rp, x0, y0, x1, y0);
+    RectFill(&rp, x0, y1, x1, y1);
+    if (y1 - y0 > 1) {
+        RectFill(&rp, x0, y0 + 1, x0, y1 - 1);
+        RectFill(&rp, x1, y0 + 1, x1, y1 - 1);
+    }
+    if (LayersBase != NULL) {
+        UnlockLayers(&d->scr->LayerInfo);
+    }
+}
+
+/* End of a drag: the outline erased, then the window takes the outline's size when w is given (the release) and differs. */
+static void aapanel_drag_end(aapanel_data* d, struct Window* w) {
+    if (!d->drag) {
+        return;
+    }
+    d->drag = 0;
+    aapanel_outline(d);
+    if (LayersBase != NULL) {
+        CloseLibrary(LayersBase);
+        LayersBase = NULL;
+    }
+    if (w != NULL && (d->rw != w->Width || d->rh != w->Height)) {
+        ChangeWindowBox(w, w->LeftEdge, w->TopEdge, d->rw, d->rh);
+    }
+}
+
+/* Drag of the grip: an outline of the new box follows the mouse, kept in the root object's MUI limits plus the window margin, and
+ * on screen; the window is resized once, on the release, and MUI lays it out again on IDCMP_NEWSIZE. Esc, the menu button or the
+ * window going inactive cancels. */
 static ULONG aapanel_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* msg) {
     aapanel_data* d = INST_DATA(cl, obj);
     struct IntuiMessage* im = msg->imsg;
     struct Window* w;
     int x0, y0, x1, y1;
     if (im == NULL || !aapanel_grip_box(d, obj, &w, &x0, &y0, &x1, &y1)) {
-        d->drag = 0;
+        aapanel_drag_end(d, NULL);
         return 0;
     }
     if (im->Class == IDCMP_INACTIVEWINDOW) {
-        d->drag = 0;
+        aapanel_drag_end(d, NULL);
         return 0;
     }
     if (im->Class == IDCMP_MOUSEBUTTONS) {
-        if (im->Code == SELECTDOWN && im->MouseX >= x0 && im->MouseX <= x1 && im->MouseY >= y0 && im->MouseY <= y1) {
+        if (im->Code == SELECTDOWN && !d->drag && im->MouseX >= x0 && im->MouseX <= x1 && im->MouseY >= y0 && im->MouseY <= y1) {
             d->drag = 1;
             d->sx = im->MouseX, d->sy = im->MouseY;
-            d->sw = d->rw = w->Width, d->sh = d->rh = w->Height;
+            d->ox = w->LeftEdge, d->oy = w->TopEdge;
+            d->rw = w->Width, d->rh = w->Height;
+            d->scr = w->WScreen;
+            LayersBase = OpenLibrary((CONST_STRPTR) "layers.library", 39);
+            aapanel_outline(d);
             return MUI_EventHandlerRC_Eat;
         }
-        if (im->Code == SELECTUP && d->drag) {
-            d->drag = 0;
+        if (d->drag && (im->Code == SELECTUP || im->Code == MENUDOWN)) {
+            aapanel_drag_end(d, im->Code == SELECTUP ? w : NULL);
             return MUI_EventHandlerRC_Eat;
         }
         return 0;
     }
+    if (im->Class == IDCMP_RAWKEY && d->drag && im->Code == 0x45u /* Esc down */) {
+        aapanel_drag_end(d, NULL);
+        return MUI_EventHandlerRC_Eat;
+    }
     if (im->Class == IDCMP_MOUSEMOVE && d->drag) {
         int ew = w->Width - _width(obj), eh = w->Height - _height(obj); /* the window margin around the root object */
-        int nw = mui_aa_grip_size(d->sw, im->MouseX - d->sx, _minwidth(obj) + ew, _maxwidth(obj) >= MUI_MAXMAX ? 32767 : _maxwidth(obj) + ew,
+        int nw = mui_aa_grip_size(w->Width, im->MouseX - d->sx, _minwidth(obj) + ew, _maxwidth(obj) >= MUI_MAXMAX ? 32767 : _maxwidth(obj) + ew,
                                   w->WScreen->Width - w->LeftEdge);
-        int nh = mui_aa_grip_size(d->sh, im->MouseY - d->sy, _minheight(obj) + eh, _maxheight(obj) >= MUI_MAXMAX ? 32767 : _maxheight(obj) + eh,
+        int nh = mui_aa_grip_size(w->Height, im->MouseY - d->sy, _minheight(obj) + eh, _maxheight(obj) >= MUI_MAXMAX ? 32767 : _maxheight(obj) + eh,
                                   w->WScreen->Height - w->TopEdge);
-        if ((nw != w->Width || nh != w->Height) && w->Width == d->rw && w->Height == d->rh) {
+        if (nw != d->rw || nh != d->rh) {
+            aapanel_outline(d);
             d->rw = nw, d->rh = nh;
-            ChangeWindowBox(w, w->LeftEdge, w->TopEdge, nw, nh);
+            aapanel_outline(d);
         }
         return MUI_EventHandlerRC_Eat;
     }
@@ -216,7 +268,7 @@ static ULONG aapanel_setup(struct IClass* cl, Object* obj, Msg msg) {
         d->ehn.ehn_Flags = 0;
         d->ehn.ehn_Object = obj;
         d->ehn.ehn_Class = cl;
-        d->ehn.ehn_Events = IDCMP_MOUSEMOVE | IDCMP_MOUSEBUTTONS | IDCMP_INACTIVEWINDOW;
+        d->ehn.ehn_Events = IDCMP_MOUSEMOVE | IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_INACTIVEWINDOW;
         DoMethod(_win(obj), MUIM_Window_AddEventHandler, (ULONG)&d->ehn);
     }
     return TRUE;
@@ -226,7 +278,7 @@ static ULONG aapanel_cleanup(struct IClass* cl, Object* obj, Msg msg) {
     aapanel_data* d = INST_DATA(cl, obj);
     if (d->grip) {
         DoMethod(_win(obj), MUIM_Window_RemEventHandler, (ULONG)&d->ehn);
-        d->drag = 0;
+        aapanel_drag_end(d, NULL);
     }
     aa_cleanup(&d->aa);
     return DoSuperMethodA(cl, obj, msg);

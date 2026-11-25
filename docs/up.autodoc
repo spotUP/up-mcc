@@ -1813,8 +1813,9 @@
 *
 *   FUNCTION
 *       BOOL: on the root of a borderless window: a size grip in the bottom right corner that resizes the window. The grip is a
-*       triangle of dots in the muted text colour of the theme, in a 12 px square inside the window margin. Dragging it resizes
-*       the window within the MUI minimum and maximum of the root object and the screen; MUI then lays the window out again.
+*       triangle of dots in the muted text colour of the theme, in a 12 px square inside the window margin. Dragging it draws an
+*       outline of the new window box, kept within the MUI minimum and maximum of the root object and the screen; the window takes
+*       that size on the release and MUI lays it out once. Esc or the right mouse button cancels the drag.
 *       Read once when the object is created
 *
 *   INPUTS
