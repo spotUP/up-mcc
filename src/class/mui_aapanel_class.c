@@ -39,6 +39,8 @@ typedef struct aapanel_data {
     int drag;       /* the grip is held: sx, sy the mouse at the press; ox, oy the window on the screen; rw, rh the outline drawn */
     int sx, sy, ox, oy, rw, rh;
     struct Screen* scr; /* the screen the outline is drawn on */
+    int hooked;         /* fill is the window layer's backfill hook, old the one it replaced (LAYERS_BACKFILL is NULL) */
+    struct Hook fill, *old;
     struct MUI_EventHandlerNode ehn;
     aa_ctx aa;
 } aapanel_data;
@@ -188,10 +190,6 @@ static void aapanel_drag_end(aapanel_data* d, struct Window* w) {
     }
     d->drag = 0;
     aapanel_outline(d);
-    if (LayersBase != NULL) {
-        CloseLibrary(LayersBase);
-        LayersBase = NULL;
-    }
     if (w != NULL && (d->rw != w->Width || d->rh != w->Height)) {
         ChangeWindowBox(w, w->LeftEdge, w->TopEdge, d->rw, d->rh);
     }
@@ -220,7 +218,6 @@ static ULONG aapanel_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
             d->ox = w->LeftEdge, d->oy = w->TopEdge;
             d->rw = w->Width, d->rh = w->Height;
             d->scr = w->WScreen;
-            LayersBase = OpenLibrary((CONST_STRPTR) "layers.library", 39);
             aapanel_outline(d);
             return MUI_EventHandlerRC_Eat;
         }
@@ -250,6 +247,37 @@ static ULONG aapanel_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
     return 0;
 }
 
+/* The window layer's backfill: the area a resize exposes is filled with the face at once. Layers' default fills it with pen 0,
+ * which showed until MUI's relayout reached the new strip: the flash on the grip's release. Called by layers in the task that
+ * sizes the window (input.device for ChangeWindowBox), rp without a layer, bounds in rp's bitmap. */
+struct aapanel_fill_msg {
+    struct Layer* layer;
+    struct Rectangle bounds;
+    LONG ox, oy;
+};
+static ULONG aapanel_fill(struct Hook* h, struct RastPort* rp, struct aapanel_fill_msg* m) {
+    aapanel_data* d = (aapanel_data*)h->h_Data;
+    aa_rect(&d->aa, rp, m->bounds.MinX, m->bounds.MinY, m->bounds.MaxX, m->bounds.MaxY, mui_aa_panel_rgb(d->aa.tok, d->role));
+    return 0;
+}
+
+/* MUIM_Show installs the hook on the open window's layer, MUIM_Hide (the window still open) puts the old one back. */
+static void aapanel_show(aapanel_data* d, Object* obj, int show) {
+    d->shown = show;
+    if (!d->grip || LayersBase == NULL || _window(obj) == NULL || show == d->hooked) {
+        return;
+    }
+    if (show) {
+        d->fill.h_Entry = (__typeof__(d->fill.h_Entry))(void (*)(void))HookEntry;
+        d->fill.h_SubEntry = (__typeof__(d->fill.h_SubEntry))(void (*)(void))aapanel_fill;
+        d->fill.h_Data = d;
+        d->old = InstallLayerHook(_window(obj)->WLayer, &d->fill);
+    } else {
+        InstallLayerHook(_window(obj)->WLayer, d->old);
+    }
+    d->hooked = show;
+}
+
 static ULONG aapanel_setup(struct IClass* cl, Object* obj, Msg msg) {
     aapanel_data* d = INST_DATA(cl, obj);
     if (!DoSuperMethodA(cl, obj, msg)) {
@@ -263,6 +291,10 @@ static ULONG aapanel_setup(struct IClass* cl, Object* obj, Msg msg) {
     }
     if (d->grip) {
         aa_hold(&d->aa, d->aa.tok[SEL_GUI_TOKEN_TEXT_MUTED]);
+        aa_hold(&d->aa, mui_aa_panel_rgb(d->aa.tok, d->role)); /* the backfill hook's face on a palette screen */
+        if (LayersBase == NULL) { /* the outline locks the screen's layers; the backfill hook is installed on the window's layer */
+            LayersBase = OpenLibrary((CONST_STRPTR) "layers.library", 39);
+        }
         d->drag = 0;
         d->ehn.ehn_Priority = 0;
         d->ehn.ehn_Flags = 0;
@@ -279,6 +311,10 @@ static ULONG aapanel_cleanup(struct IClass* cl, Object* obj, Msg msg) {
     if (d->grip) {
         DoMethod(_win(obj), MUIM_Window_RemEventHandler, (ULONG)&d->ehn);
         aapanel_drag_end(d, NULL);
+        if (LayersBase != NULL) {
+            CloseLibrary(LayersBase);
+            LayersBase = NULL;
+        }
     }
     aa_cleanup(&d->aa);
     return DoSuperMethodA(cl, obj, msg);
@@ -343,9 +379,11 @@ static int aapanel_holes(Object* grp, int* holes, int n, int depth, int max_dept
 
 static ULONG aapanel_paint(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     aapanel_data* d = INST_DATA(cl, obj);
-    ULONG r = DoSuperMethodA(cl, obj, (Msg)msg);
+    int rad = d->popup ? 0 : mui_aa_panel_radius(d->aa.tok, d->aa.font_px); /* I1349: a popup window is a rectangle */
+    ULONG r;
+    /* The face first, around the children's new boxes (the super fills nothing: FillArea FALSE): painted after them, the gaps and
+     * the margin ring kept the old layout's pixels for the whole child pass of a relayout, a flicker on every resize. */
     if (msg->flags & MADF_DRAWOBJECT) {
-        int rad = d->popup ? 0 : mui_aa_panel_radius(d->aa.tok, d->aa.font_px); /* I1349: a popup window is a rectangle */
         if (d->aa.tc) { /* I685w: MUI's background spec snaps to a pen; paint the face in exact RGB around the children, whatever MUI filled */
             int holes[MUI_AA_PAINT_MAX_HOLES * 4], n = 0, full = 0;
             Object* grp = d->inner != NULL ? d->inner : obj;
@@ -383,6 +421,9 @@ static ULONG aapanel_paint(struct IClass* cl, Object* obj, struct MUIP_Draw* msg
                                     mui_aa_panel_rgb(d->aa.tok, d->role), holes, n);
             }
         }
+    }
+    r = DoSuperMethodA(cl, obj, (Msg)msg);
+    if (msg->flags & MADF_DRAWOBJECT) {
         aa_round_corners(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad, d->aa.bg_rgb); /* the face the panel sits on (a card on a SURFACE panel: SURFACE, not BACKGROUND); a retheme resets it */
         aa_low_outline(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad);
         if (d->flat_tl && rad > 0) { /* square the top left: the face over the wedge the round corner left in the parent colour */
@@ -522,7 +563,10 @@ static ULONG __attribute__((used)) aapanel_dispatch_c(struct IClass* cl, Object*
         return aapanel_draw(cl, obj, (struct MUIP_Draw*)msg);
     case MUIM_HandleEvent:
         return aapanel_handle(cl, obj, (struct MUIP_HandleEvent*)msg);
-    AA_SHOWN_CASES(aapanel_data)
+    case MUIM_Show:
+    case MUIM_Hide:
+        aapanel_show(INST_DATA(cl, obj), obj, msg->MethodID == MUIM_Show);
+        break;
     case OM_ADDMEMBER:
     case OM_REMMEMBER: {
         aapanel_data* d = INST_DATA(cl, obj);
