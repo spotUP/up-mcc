@@ -344,6 +344,50 @@ int mui_aa_palette_move(int active, int n, int cols, int dx, int dy);
 /* UP-Image (host test mui-image-fit). Size of an sw x sh picture shown in a bw x bh box: fit=0 the picture size, fit=1 scaled to the box
  * keeping the aspect (never below 1 pixel); the offsets centre it in the box (may be negative when the picture is larger). */
 void mui_aa_image_fit(int sw, int sh, int bw, int bh, int fit, int* dw, int* dh, int* ox, int* oy);
+/* UP-Image body (host test mui-image-body). Unpack an ILBM BODY of w x h, depth planes (compression 0 none, 1 ByteRun1) into planes[p]
+ * rows of bpr bytes. has_mask: a mask plane follows each row's planes; it goes to mask (rows of mbpr bytes) or is skipped when mask is NULL.
+ * Returns 0 for an unknown compression or bad sizes. ByteRun1 reads no length: the body must hold all rows. */
+int mui_aa_body_unpack(const unsigned char* body, int compression, int w, int h, int depth, int has_mask, unsigned char* const* planes, int bpr,
+                       unsigned char* mask, int mbpr);
+
+/* UP-Menu check state (host test mui-menu-check). Mask of checked items after item i (0..31) is picked: no checkit = unchanged; unchecked
+ * = checked and the exclude items cleared; checked = unchecked with toggle, else unchanged. */
+unsigned long mui_aa_menu_pick(unsigned long checked, int i, int checkit, int toggle, unsigned long exclude);
+
+/* UP-Knob / UP-Levelmeter dial maths (host test mui-dial). Angles are whole degrees, 0 = right, counter clockwise positive; a dial
+ * starts at start_deg for lo and turns clockwise through sweep_deg to hi. Knob: 225 / 270 (lower left round to lower right);
+ * Levelmeter: 180 / 180 (left through top to right). mui_aa_dial_point gives the screen offset (y down) of radius r at deg. */
+#define MUI_AA_KNOB_START 225
+#define MUI_AA_KNOB_SWEEP 270
+#define MUI_AA_METER_START 180
+#define MUI_AA_METER_SWEEP 180
+int mui_aa_dial_sin_q14(int deg); /* sin(deg) * 16384, any deg */
+int mui_aa_dial_deg(long v, long lo, long hi, int start_deg, int sweep_deg);
+void mui_aa_dial_point(int deg, int r, int* dx, int* dy);
+/* Knob keys: raw code 0x4C up / 0x4E right add one, 0x4D down / 0x4F left take one; with shift a tenth of the range (at least one).
+ * Returns the new clamped value, or v unchanged (and *used 0) for any other key. */
+long mui_aa_knob_key(long v, long lo, long hi, int code, int shift, int* used);
+
+/* UP-Popasl string <-> ASL requester mapping, pure (host test mui-popasl). No dos.library: the class libraries do not open it.
+ * File: drawer/file split and join as PathPart/FilePart/AddPart do ("Work:a/b" <-> "Work:a" + "b", "RAM:" + "x" -> "RAM:x").
+ * Font: MUI's "name/size" spec without ".font"; parse puts ".font" back for ASLFO_InitialName (size 0 when absent).
+ * Screen mode: the display ID as "0x%08lX". Every writer NUL-terminates and returns 0 when the text was cut. */
+int mui_aa_path_split(const char* path, char* drawer, int dcap, char* file, int fcap);
+int mui_aa_path_join(const char* drawer, const char* file, char* out, int cap);
+int mui_aa_font_spec(const char* name, long size, char* out, int cap);
+int mui_aa_font_parse(const char* spec, char* name, int cap, long* size);
+int mui_aa_hex_text(uint32_t v, char* out, int cap);
+uint32_t mui_aa_hex_parse(const char* s); /* "0x..." or bare hex; stops at the first non-hex digit */
+
+/* UP-Dirlist sort order (MUIA_Dirlist_SortType / SortDirs / SortHighLow), pure (host test mui-dirlist). type 0 name (case blind), 1 date,
+ * 2 size; dirs 0 drawers first, 1 drawers last, 2 mixed; high_low reverses the key, never the drawer grouping. Ties fall back to the name. */
+typedef struct mui_aa_dirkey {
+    const char* name;
+    long size, days, mins, ticks;
+    int dir;
+} mui_aa_dirkey;
+int mui_aa_dir_cmp(const mui_aa_dirkey* a, const mui_aa_dirkey* b, int type, int dirs, int high_low);
+int mui_aa_icon_name(const char* name); /* the name ends in ".info" (any case): MUIA_Dirlist_RejectIcons drops it */
 
 #ifdef __cplusplus
 }

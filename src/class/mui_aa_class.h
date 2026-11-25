@@ -31,6 +31,14 @@ struct aa_class_desc {
 extern const struct aa_class_desc aabtn_class_desc, aatext_class_desc, aapanel_class_desc, aatabs_class_desc, aabal_class_desc,
     aaslider_class_desc, aaprogress_class_desc, aacycle_class_desc, aafield_class_desc, aascroller_class_desc, aalist_class_desc, aacheckmark_class_desc, aaradio_class_desc,
     aapopstring_class_desc, aapoplist_class_desc, aanumeric_class_desc, aascale_class_desc, aacolorfield_class_desc, aapalette_class_desc, aaimage_class_desc, aamenu_class_desc,
-    aavirtgroup_class_desc, aascrollgroup_class_desc, aatextarea_class_desc;
+    aavirtgroup_class_desc, aascrollgroup_class_desc, aatextarea_class_desc,
+    aarect_class_desc, aafloattext_class_desc;
+extern const struct aa_class_desc aaknob_class_desc, aalevelmeter_class_desc,
+    aapopobject_class_desc, aapopasl_class_desc, aapopscreen_class_desc;
+extern const struct aa_class_desc aapendisplay_class_desc, aapoppen_class_desc, aapenadjust_class_desc; /* MUI gap D */
+/* MUI gap E */
+extern const struct aa_class_desc aaimagedisplay_class_desc, aaframedisplay_class_desc, aapopimage_class_desc, aapopframe_class_desc,
+    aaimageadjust_class_desc, aaframeadjust_class_desc,
+    aadirlist_class_desc, aavolumelist_class_desc, aascrmodelist_class_desc;
 
 #endif

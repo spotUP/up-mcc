@@ -81,9 +81,19 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_IMAGE 0x15   /* UP-Image */
 #define UP_CLS_MENU 0x16    /* UP-Menu */
 #define UP_CLS_TEXTAREA 0x17 /* UP-TextArea */
+#define UP_CLS_RECTANGLE 0x18 /* UP-Rectangle */
+#define UP_CLS_FLOATTEXT 0x19 /* UP-Floattext */
+#define UP_CLS_POPOBJECT 0x1C /* UP-Popobject */
+#define UP_CLS_POPASL 0x1D    /* UP-Popasl */
+#define UP_CLS_POPSCREEN 0x1E /* UP-Popscreen (no own attributes) */
 #define UP_CLS_SCROLLGROUP 0x0E
 #define UP_CLS_VIRTGROUP 0x10
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
+#define UP_CLS_KNOB 0x1A       /* UP-Knob: MUIA_Numeric_* tags and methods, no own tags */
+#define UP_CLS_LEVELMETER 0x1B /* UP-Levelmeter: MUIA_Numeric_* plus MUIA_Levelmeter_Label (ISG STRPTR, must outlive the object) */
+#define UP_CLS_DIRLIST 0x24     /* UP-Dirlist */
+#define UP_CLS_VOLUMELIST 0x25  /* UP-Volumelist (no own attributes) */
+#define UP_CLS_SCRMODELIST 0x26 /* UP-Scrmodelist */
 
 /* ---- Attributes (UPA_), methods (UPM_) and enumeration values (UPV_) of every class (design 8.3). The numbers are written here
  * and nowhere else. I/S/G: settable at construction / later / readable. ---- */
@@ -142,6 +152,26 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_Poplist_Active UP_TAG(UP_CLS_POPLIST, 0x02)  /* ISG LONG: chosen entry, -1 none (default); setting it fills the string; notifies */
 /* Poplist also takes UPA_Popstring_String, _Button, _OpenHook, _CloseHook, _Open. */
 
+/* UP-Popobject (MUIC_Popobject): a Popstring with any object as popup. Every UP-Pop* class also takes the MUI 3.8 ids of its own and of
+ * MUIC_Popstring (MUIA_Popobject_*, MUIA_Popasl_*, MUIA_Popstring_String/_Button/_OpenHook/_CloseHook) and the methods MUIM_Popstring_Open
+ * and MUIM_Popstring_Close (result TRUE runs the ObjStrHook). Hooks take the MUI order: object = the popup object, message = the string. */
+#define UPA_Popobject_Object UP_TAG(UP_CLS_POPOBJECT, 0x01)     /* IG Object*: the popup object (as UPA_Popstring_Popup) */
+#define UPA_Popobject_StrObjHook UP_TAG(UP_CLS_POPOBJECT, 0x02) /* ISG struct Hook*: before the popup opens (string to object); FALSE refuses the open */
+#define UPA_Popobject_ObjStrHook UP_TAG(UP_CLS_POPOBJECT, 0x03) /* ISG struct Hook*: after a successful close, MUIM_Popstring_Close TRUE (object to string) */
+#define UPA_Popobject_WindowHook UP_TAG(UP_CLS_POPOBJECT, 0x04) /* ISG struct Hook*: before every open, object = the popup object, message = the popup window */
+#define UPA_Popobject_Follow UP_TAG(UP_CLS_POPOBJECT, 0x05)     /* ISG BOOL: stored for MUI compatibility (default TRUE); the popup is placed under the object at every open */
+#define UPA_Popobject_Light UP_TAG(UP_CLS_POPOBJECT, 0x06)      /* ISG BOOL: stored for MUI compatibility (default FALSE); the popup window is always borderless */
+#define UPA_Popobject_Volatile UP_TAG(UP_CLS_POPOBJECT, 0x07)   /* ISG BOOL: stored for MUI compatibility (default TRUE); a hidden object always closes its popup */
+
+/* UP-Popasl (MUIC_Popasl): the button opens an ASL file, font or screen mode requester; ASL tags in the creation list go to the
+ * requester. Without a StopHook the result is written into the string: the path, "name/size", or the display ID as 0x%08lX. */
+#define UPA_Popasl_Type UP_TAG(UP_CLS_POPASL, 0x01)      /* IG ULONG: ASL_FileRequest (default), ASL_FontRequest or ASL_ScreenModeRequest */
+#define UPA_Popasl_Active UP_TAG(UP_CLS_POPASL, 0x02)    /* G BOOL: the requester is open (notifies) */
+#define UPA_Popasl_StartHook UP_TAG(UP_CLS_POPASL, 0x03) /* ISG struct Hook*: object = the Popasl, message = the requester tag list (may be changed); FALSE cancels */
+#define UPA_Popasl_StopHook UP_TAG(UP_CLS_POPASL, 0x04)  /* ISG struct Hook*: after a successful request, object = the Popasl, message = the requester; replaces the string fill */
+
+/* UP-Popscreen (MUIC_Popscreen): a Poplist whose entries are the public screen names, read again at every open. */
+
 /* UP-Numericbutton (MUIC_Numericbutton equivalent): a button showing the number; a click opens a small popup slider under it, a
  * horizontal drag over the button changes the value directly (two button widths sweep the range). */
 #define UPA_Numeric_Min UP_TAG(UP_CLS_NUMERIC, 0x01)   /* ISG LONG: lowest value (default 0) */
@@ -169,6 +199,20 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_Image_File UP_TAG(UP_CLS_IMAGE, 0x01)   /* IS STRPTR: path of the picture, copied (at most 255 characters); set reloads and redraws */
 #define UPA_Image_Bitmap UP_TAG(UP_CLS_IMAGE, 0x02) /* IS struct BitMap*: caller bitmap shown instead of a file; NOT copied, must stay valid; wins over the file */
 #define UPA_Image_Fit UP_TAG(UP_CLS_IMAGE, 0x03)    /* I BOOL: scale to the box keeping the aspect (the box then stretches); default FALSE = the picture size */
+/* MUIC_Bitmap / MUIC_Bodychunk attributes (MUI 3.8 semantics). Remapping (SourceColors or MappingTable) and masks apply to UPA_Image_Bitmap and
+ * UPA_Image_Body, not to a file (picture.datatype remaps that itself). A set of any of them rebuilds the picture when shown. */
+#define UPA_Image_Width UP_TAG(UP_CLS_IMAGE, 0x04)          /* IS LONG: pixels of the bitmap shown (MUIA_Bitmap_Width); required with a body; default the bitmap width */
+#define UPA_Image_Height UP_TAG(UP_CLS_IMAGE, 0x05)         /* IS LONG: rows shown (MUIA_Bitmap_Height); required with a body */
+#define UPA_Image_SourceColors UP_TAG(UP_CLS_IMAGE, 0x06)   /* IS ULONG*: 32-bit R,G,B triplets of the source colours; each gets the best screen pen. Must stay valid */
+#define UPA_Image_MappingTable UP_TAG(UP_CLS_IMAGE, 0x07)   /* IS UBYTE*: source colour -> screen pen; wins over SourceColors. Must stay valid */
+#define UPA_Image_Precision UP_TAG(UP_CLS_IMAGE, 0x08)      /* IS LONG: ObtainBestPen OBP_Precision for SourceColors (default PRECISION_GUI) */
+#define UPA_Image_Transparent UP_TAG(UP_CLS_IMAGE, 0x09)    /* IS LONG: source colour drawn transparent (-1 none, default); unscaled only */
+#define UPA_Image_UseFriend UP_TAG(UP_CLS_IMAGE, 0x0A)      /* I BOOL: the remapped bitmap is a friend of the screen bitmap (default FALSE) */
+#define UPA_Image_RemappedBitmap UP_TAG(UP_CLS_IMAGE, 0x0B) /* G struct BitMap*: the bitmap drawn (remapped copy or the source), valid between Setup and Cleanup */
+#define UPA_Image_Body UP_TAG(UP_CLS_IMAGE, 0x0C)           /* IS UBYTE*: ILBM BODY data (MUIA_Bodychunk_Body), unpacked into an own bitmap at Setup. Must stay valid */
+#define UPA_Image_Compression UP_TAG(UP_CLS_IMAGE, 0x0D)    /* IS LONG: 0 none, 1 ByteRun1 (cmpByteRun1) */
+#define UPA_Image_Depth UP_TAG(UP_CLS_IMAGE, 0x0E)          /* IS LONG: planes in the body, 1..8 */
+#define UPA_Image_Masking UP_TAG(UP_CLS_IMAGE, 0x0F)        /* IS LONG: 0 none, 1 a mask plane follows each row's planes (mskHasMask, used as the mask), 2 UPA_Image_Transparent */
 
 /* UP-Menu (MUIC_Menustrip-like, one menu): a UP-Button caption that opens a dark popup list of items under it. Several UP-Menu objects side by
  * side in a horizontal group make a menu strip. One popup window, created at the first open and reused (as UP-Poplist). */
@@ -176,6 +220,24 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_Menu_Items UP_TAG(UP_CLS_MENU, 0x02)  /* I char**: NULL terminated item texts, "-" is a separator row; must outlive the object */
 #define UPA_Menu_Chosen UP_TAG(UP_CLS_MENU, 0x03) /* ISG LONG: index of the item last chosen, -1 before any (notifies on every pick, also the same item again) */
 #define UPA_Menu_Open UP_TAG(UP_CLS_MENU, 0x04)   /* ISG BOOL: the popup is open; set TRUE opens, FALSE closes */
+/* MUIC_Menuitem / MUIC_Menu attributes: a richer item array instead of UPA_Menu_Items, at most UP_MENU_MAXITEMS items (item i = bit i of
+ * the masks below). Checked items show "*" left of the title, shortcuts show right of it. Menuitem_Trigger is UPA_Menu_Chosen. */
+#define UPA_Menu_Entries UP_TAG(UP_CLS_MENU, 0x05)  /* I UP_MenuItem*: array ended by a NULL title; wins over UPA_Menu_Items; must outlive the object */
+#define UPA_Menu_Enabled UP_TAG(UP_CLS_MENU, 0x06)  /* ISG BOOL: the whole menu can open (MUIA_Menu_Enabled; same as MUIA_Disabled inverted), default TRUE */
+#define UPA_Menu_Checked UP_TAG(UP_CLS_MENU, 0x07)  /* ISG ULONG: bit i = item i checked (MUIA_Menuitem_Checked); a pick updates it per Checkit/Toggle/Exclude (notifies) */
+#define UPA_Menu_Disabled UP_TAG(UP_CLS_MENU, 0x08) /* ISG ULONG: bit i = item i cannot be picked (MUIA_Menuitem_Enabled inverted) */
+#define UP_MENU_MAXITEMS 32
+#define UPV_MenuItem_Checkit 0x01       /* the item has a check state (MUIA_Menuitem_Checkit) */
+#define UPV_MenuItem_Toggle 0x02        /* a pick of a checked item unchecks it (MUIA_Menuitem_Toggle) */
+#define UPV_MenuItem_Checked 0x04       /* checked at creation */
+#define UPV_MenuItem_Disabled 0x08      /* disabled at creation */
+#define UPV_MenuItem_CommandString 0x10 /* the shortcut is shown as written and is no key (MUIA_Menuitem_CommandString) */
+typedef struct UP_MenuItem {
+    const char* title;    /* "-" is a separator; NULL ends the array */
+    const char* shortcut; /* NULL none; one character = Amiga + that key picks the item while the window is active (shown "Amiga+X") */
+    ULONG flags;          /* UPV_MenuItem_* */
+    ULONG exclude;        /* bit j = item j is unchecked when this one gets checked (MUIA_Menuitem_Exclude) */
+} UP_MenuItem;
 #define UPM_Menu_Click UP_TAG(UP_CLS_MENU, 0x10)  /* method: the title button was pressed. Internal */
 #define UPM_Menu_Closed UP_TAG(UP_CLS_MENU, 0x11) /* method: the popup window closed. Internal */
 #define UPM_Menu_Deactivated UP_TAG(UP_CLS_MENU, 0x12) /* method: the popup window lost activation. Internal */
@@ -187,6 +249,23 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_TextArea_Error UP_TAG(UP_CLS_TEXTAREA, 0x04) /* SG BOOL: outline in the ERROR colour (a validation error names this field); a user edit clears it */
 /* UP-Textarea and MUIA_Font: a MUIA_Font given at OM_NEW (an open struct TextFont *, e.g. topaz 8 for NFO art) draws the text in that bitmap font instead of the TTF. */
 #define UPM_TextArea_Redraw UP_TAG(UP_CLS_TEXTAREA, 0x10)      /* method: the window's active object changed, repaint. Internal */
+
+/* UP-Rectangle: MUIC_Rectangle (spacer, divider bar, bar title). It takes the MUI tags MUIA_Rectangle_HBar, _VBar and _BarTitle (I, readable with get); no UPA_ tags of its own. */
+
+/* UP-Floattext: MUIC_Floattext (read-only word-wrapped text, wheel and scroller scrolling). It takes the MUI tags MUIA_Floattext_Text (ISG, copied), _Justify (ISG), _SkipChars and _TabSize (IS, applied when the text is next set). */
+#define UPA_Floattext_First UP_TAG(UP_CLS_FLOATTEXT, 0x01)    /* ISG LONG: top visible line, clamped to the text (notifies) */
+#define UPA_Floattext_Scroller UP_TAG(UP_CLS_FLOATTEXT, 0x02) /* I Object*: the UP-Scroller kept in step (UP_NewFloattext sets it itself; a by-name builder passes it) */
+
+/* UP-Dirlist, UP-Volumelist, UP-Scrmodelist (MUIC_Dirlist, MUIC_Volumelist, MUIC_Scrmodelist): a group around a UP-List and its scroller.
+ * All three answer the MUI 3.8 list ids MUIA_List_Active (ISG, notifies), MUIA_List_Entries (G), MUIA_Listview_DoubleClick (G, notifies on
+ * a double click or Return) and MUIM_List_GetEntry. An entry is a struct FileInfoBlock* (Dirlist), the "Name:" STRPTR of a volume or
+ * assign (Volumelist), or a struct UP_Scrmode* (Scrmodelist). UP-Dirlist takes the MUI 3.8 MUIA_Dirlist_* ids and MUIM_Dirlist_ReRead;
+ * a set of any of them reads the directory again, synchronously (Status goes Reading, then Valid). */
+#define UPA_Scrmodelist_ModeID UP_TAG(UP_CLS_SCRMODELIST, 0x01) /* ISG ULONG: display ID of the active mode; set picks its row (INVALID_ID = none) */
+typedef struct UP_Scrmode {
+    ULONG id;
+    char name[32];
+} UP_Scrmode;
 
 /* UP-Tabs */
 #define UPA_Tabs_Active UP_TAG(UP_CLS_TABS, 0x01)   /* ISG LONG: index of the active tab (notifies) */
@@ -218,6 +297,29 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
  * the method returns TRUE when the row exists and sets: text = the cell texts joined by two spaces (truncated to cap), x/y/w/h =
  * the row's box in window coordinates (all 0 when scrolled out of view or not shown), selected = 1 on the active row. */
 #define UPM_List_GetRow UP_TAG(UP_CLS_LIST, 0x10)
+/* MUI 3.8 MUIC_Listview counterparts (G1). 0x10 is taken twice already (UPA_List_Scroller, UPM_List_GetRow: ledger row 490); new numbers start at 0x11. */
+#define UPA_List_MultiSelect UP_TAG(UP_CLS_LIST, 0x11)  /* IG LONG UPV_List_MultiSelect_* (MUIA_Listview_MultiSelect); Default acts as Shifted */
+#define UPA_List_DoubleClick UP_TAG(UP_CLS_LIST, 0x12)  /* G BOOL: set TRUE on every double click or Return (MUIA_Listview_DoubleClick; notifies every time) */
+#define UPA_List_ClickColumn UP_TAG(UP_CLS_LIST, 0x13)  /* G LONG: column of the last click; Return gives UPA_List_DefClickColumn */
+#define UPA_List_DefClickColumn UP_TAG(UP_CLS_LIST, 0x14) /* ISG LONG: ClickColumn of a Return pick (default 0) */
+#define UPA_List_DragType UP_TAG(UP_CLS_LIST, 0x15)     /* ISG LONG UPV_List_DragType_*: accepted and stored only, the list starts no drag */
+#define UPA_List_Input UP_TAG(UP_CLS_LIST, 0x16)        /* ISG BOOL: rows can be hovered and selected (default TRUE); FALSE = UPA_List_NoSelect */
+#define UPM_List_Select UP_TAG(UP_CLS_LIST, 0x17)       /* method UP_ListSelect (MUIM_List_Select): pos row or UPV_List_Select_Active/All; seltype Off/On/Toggle/Ask; *state (may be NULL) = the row's state, for All the selected count. Multi-select lists only (else state 0) */
+#define UPM_List_NextSelected UP_TAG(UP_CLS_LIST, 0x18) /* method UP_ListNextSelected (MUIM_List_NextSelected): *pos from UPV_List_NextSelected_Start to the next selected row, -1 at the end; with none selected the active row once */
+#define UPV_List_MultiSelect_None 0
+#define UPV_List_MultiSelect_Default 1
+#define UPV_List_MultiSelect_Shifted 2 /* Shift+click toggles a row, a plain click selects that row alone */
+#define UPV_List_MultiSelect_Always 3  /* every click toggles a row */
+#define UPV_List_DragType_None 0
+#define UPV_List_DragType_Immediate 1
+#define UPV_List_Select_Off 0
+#define UPV_List_Select_On 1
+#define UPV_List_Select_Toggle 2
+#define UPV_List_Select_Ask 3
+#define UPV_List_Select_Active (-1)
+#define UPV_List_Select_All (-2)
+#define UPV_List_NextSelected_Start (-1)
+#define UPV_List_NextSelected_End (-1)
 #define UP_LIST_COLS 5
 typedef struct UP_ListColumns { /* weight > 0 shares the free width by weight, weight 0 is as wide as sample[k] (NULL = empty) */
     int n;
@@ -235,6 +337,15 @@ typedef struct UP_ListGetRow {
     LONG x, y, w, h;
     LONG selected;
 } UP_ListGetRow;
+typedef struct UP_ListSelect { /* same layout as struct MUIP_List_Select */
+    ULONG MethodID; /* UPM_List_Select */
+    LONG pos, seltype;
+    LONG* state;
+} UP_ListSelect;
+typedef struct UP_ListNextSelected { /* same layout as struct MUIP_List_NextSelected */
+    ULONG MethodID; /* UPM_List_NextSelected */
+    LONG* pos;
+} UP_ListNextSelected;
 
 /* UP-Button */
 #define UPA_Button_Caption UP_TAG(UP_CLS_BUTTON, 0x01)     /* ISG STRPTR shown text; a set relayouts the parent (a fit button grows) and updates the tooltip; copied, up to 47 bytes */
@@ -305,6 +416,10 @@ enum { UPV_Panel_Role_Panel, UPV_Panel_Role_Surface, UPV_Panel_Role_Raised, UPV_
 #define MUIC_UP_Field "UP-Field.mcc"
 #define MUIC_UP_Panel "UP-Panel.mcc"
 #define MUIC_UP_Balance "UP-Balance.mcc"
+#define MUIC_UP_Rectangle "UP-Rectangle.mcc"
+#define MUIC_UP_Floattext "UP-Floattext.mcc"
+#define MUIC_UP_Knob "UP-Knob.mcc"
+#define MUIC_UP_Levelmeter "UP-Levelmeter.mcc"
 
 /* ---- Constructors: the tag list is the whole interface. Defaults a caller does not give (no frame, cycle chain) are the class's. ----
  * A client gets inlines over MUI_NewObjectA: the class library loads from MUI:Libs/mui, no class code is linked in. The class build
@@ -321,6 +436,9 @@ Object* UP_NewScroller(const struct TagItem* tags);
 Object* UP_NewField(const struct TagItem* tags);
 Object* UP_NewPopstring(const struct TagItem* tags);
 Object* UP_NewPoplist(const struct TagItem* tags);
+Object* UP_NewPopobject(const struct TagItem* tags);
+Object* UP_NewPopasl(const struct TagItem* tags);
+Object* UP_NewPopscreen(const struct TagItem* tags);
 Object* UP_NewNumericbutton(const struct TagItem* tags);
 Object* UP_NewScale(const struct TagItem* tags);
 Object* UP_NewColorfield(const struct TagItem* tags);
@@ -334,7 +452,14 @@ Object* UP_NewCheckmark(const struct TagItem* tags);
 Object* UP_NewRadio(const struct TagItem* tags);
 Object* UP_NewVirtgroup(const struct TagItem* tags);   /* MUIA_Group_Child / MUIA_Group_Horiz describe the contents */
 Object* UP_NewScrollgroup(const struct TagItem* tags); /* MUIA_Group_Child / MUIA_Group_Horiz describe the contents */
+Object* UP_NewKnob(const struct TagItem* tags);       /* MUIC_Knob: Numeric subclass, drag or cursor keys */
+Object* UP_NewLevelmeter(const struct TagItem* tags); /* MUIC_Levelmeter: Numeric subclass, MUIA_Levelmeter_Label */
 Object* UP_NewList(const struct TagItem* tags, Object** list_out); /* returns the list+scroller group; *list_out the list */
+Object* UP_NewRectangle(const struct TagItem* tags);
+Object* UP_NewFloattext(const struct TagItem* tags, Object** ft_out); /* returns the text+scroller group; *ft_out the text */
+Object* UP_NewDirlist(const struct TagItem* tags);
+Object* UP_NewVolumelist(const struct TagItem* tags);
+Object* UP_NewScrmodelist(const struct TagItem* tags);
 #else
 #include <libraries/mui.h>
 #include <proto/muimaster.h>
@@ -350,6 +475,9 @@ UP_CLIENT_CTOR(UP_NewScroller, MUIC_UP_Scroller)
 UP_CLIENT_CTOR(UP_NewField, MUIC_UP_Field)
 UP_CLIENT_CTOR(UP_NewPanel, MUIC_UP_Panel)
 UP_CLIENT_CTOR(UP_NewBalance, MUIC_UP_Balance)
+UP_CLIENT_CTOR(UP_NewRectangle, MUIC_UP_Rectangle)
+UP_CLIENT_CTOR(UP_NewKnob, MUIC_UP_Knob)
+UP_CLIENT_CTOR(UP_NewLevelmeter, MUIC_UP_Levelmeter)
 #undef UP_CLIENT_CTOR
 /* The list is a UP-List and a UP-Scroller in a horizontal group; the scroller follows the list through UPA_List_First. Returns the group; *list_out the list. */
 static inline Object* UP_NewList(const struct TagItem* tags, Object** list_out) {
@@ -373,6 +501,60 @@ static inline Object* UP_NewList(const struct TagItem* tags, Object** list_out) 
     return group;
 }
 #endif
+#endif
+
+/* ---- MUI gap D: UP-Pendisplay (MUIC_Pendisplay), UP-Poppen (MUIC_Poppen), UP-Penadjust (MUIC_Penadjust and MUIC_Coloradjust). ----
+ * They answer the MUI 3.8 attributes and methods of the classes they replace (MUIA_Pendisplay_*, MUIM_Pendisplay_*, MUIA_Penadjust_PSIMode,
+ * MUIA_Coloradjust_*), so the tag values are those of <libraries/mui.h>; only the extras below are UP tags. UP-Poppen is a UP-Pendisplay
+ * that opens a UP-Penadjust in a popup on a click. UP-Penadjust also answers MUIA_Pendisplay_Spec (ISG, notifies). */
+#define UP_CLS_PENDISPLAY 0x1F /* UP-Pendisplay */
+#define UP_CLS_POPPEN 0x20     /* UP-Poppen */
+#define UP_CLS_PENADJUST 0x21  /* UP-Penadjust (+ Coloradjust mode) */
+#define UPM_Poppen_Click UP_TAG(UP_CLS_POPPEN, 0x10)       /* method: the swatch was pressed (toggle). Internal */
+#define UPM_Poppen_Closed UP_TAG(UP_CLS_POPPEN, 0x11)      /* method: the popup window closed. Internal */
+#define UPM_Poppen_Deactivated UP_TAG(UP_CLS_POPPEN, 0x12) /* method: the popup window lost activation. Internal */
+#define UPA_Penadjust_Coloradjust UP_TAG(UP_CLS_PENADJUST, 0x01) /* I BOOL: RGB sliders only, no pen kind choice (MUIC_Coloradjust); default FALSE */
+#define UPM_Penadjust_Changed UP_TAG(UP_CLS_PENADJUST, 0x10)     /* method: a child gadget changed. Internal */
+#define MUIC_UP_Pendisplay "UP-Pendisplay.mcc"
+#define MUIC_UP_Poppen "UP-Poppen.mcc"
+#define MUIC_UP_Penadjust "UP-Penadjust.mcc"
+#if (defined(__amigaos__) || defined(AMIGA)) && (defined(UP_MCC_LIBRARY) || defined(UP_MCC_STATIC_CTORS))
+Object* UP_NewPendisplay(const struct TagItem* tags);
+Object* UP_NewPoppen(const struct TagItem* tags);
+Object* UP_NewPenadjust(const struct TagItem* tags);
+#endif
+
+/* MUI gap E: UP-Imagedisplay, UP-Popimage, UP-Imageadjust (0x22) and UP-Framedisplay, UP-Popframe, UP-Frameadjust (0x23), the MUI 3.8
+ * classes of those names. The spec is a string: image "<d>:<value>", frame "TSLRTB" (src/map/up_specs.h). The MUI 3.8 mui.h keeps these
+ * classes private and names no attribute; the ids below are the ones MUI uses (as published by Zune), not checked against MUI 3.8 itself. */
+#define UP_CLS_IMAGEDISPLAY 0x22
+#define UP_CLS_FRAMEDISPLAY 0x23
+#ifndef MUIA_Imagedisplay_Spec
+#define MUIA_Imagedisplay_Spec 0x8042a547UL /* ISG char*: image spec; Imagedisplay, Popimage, Imageadjust. A value <= 0xFFFF on display/pop is an MUII_ number */
+#endif
+#ifndef MUIA_Framedisplay_Spec
+#define MUIA_Framedisplay_Spec 0x80421794UL /* ISG char*: frame spec; Framedisplay, Popframe, Frameadjust */
+#endif
+#ifndef MUIA_Imageadjust_Type
+#define MUIA_Imageadjust_Type 0x80422f2bUL /* I ULONG: MUIV_Imageadjust_Type_All / _Image / _Background / _Pen, the kinds offered */
+#endif
+#define UPM_Imageadjust_Changed UP_TAG(UP_CLS_IMAGEDISPLAY, 0x10) /* method: a child changed. Internal */
+#define UPM_Popimage_Changed UP_TAG(UP_CLS_IMAGEDISPLAY, 0x11)    /* method: the popup's spec changed. Internal */
+#define UPM_Frameadjust_Changed UP_TAG(UP_CLS_FRAMEDISPLAY, 0x10) /* method: a child changed. Internal */
+#define UPM_Popframe_Changed UP_TAG(UP_CLS_FRAMEDISPLAY, 0x11)    /* method: the popup's spec changed. Internal */
+#define MUIC_UP_Imagedisplay "UP-Imagedisplay.mcc"
+#define MUIC_UP_Popimage "UP-Popimage.mcc"
+#define MUIC_UP_Imageadjust "UP-Imageadjust.mcc"
+#define MUIC_UP_Framedisplay "UP-Framedisplay.mcc"
+#define MUIC_UP_Popframe "UP-Popframe.mcc"
+#define MUIC_UP_Frameadjust "UP-Frameadjust.mcc"
+#if (defined(__amigaos__) || defined(AMIGA)) && (defined(UP_MCC_LIBRARY) || defined(UP_MCC_STATIC_CTORS))
+Object* UP_NewImagedisplay(const struct TagItem* tags);
+Object* UP_NewPopimage(const struct TagItem* tags);
+Object* UP_NewImageadjust(const struct TagItem* tags);
+Object* UP_NewFramedisplay(const struct TagItem* tags);
+Object* UP_NewPopframe(const struct TagItem* tags);
+Object* UP_NewFrameadjust(const struct TagItem* tags);
 #endif
 
 /* Theme token names (I685d2): UPTOK_<id> equals SEL_GUI_TOKEN_<id> for every token of the SEL_GUI_TOKENS list in

@@ -73,4 +73,13 @@ int mtl_scroll_x(int cx, int cw, int w, int scroll, int tw);
  * ends at the last byte whose right edge is inside scroll+w. They draw at view x measure(c0) - scroll. */
 void mtl_visible_cols(const char *text, int n, int scroll, int w, MtlMeasure measure, void *ctx, int *c0, int *c1);
 
+/* Read-only text (UP-Floattext, MUIA_Floattext_*). */
+/* Copy src to dst dropping every byte found in skip (NULL or "" = none) and expanding each TAB with spaces to the next multiple of
+ * tabsize columns (tabsize < 1 = 8); the column restarts after a LF. Writes at most cap-1 bytes plus a NUL; dst may be NULL (cap 0)
+ * to count. Returns the full length the result needs, without the NUL. */
+int mtl_float_prep(const char *src, const char *skip, int tabsize, char *dst, int cap);
+/* Justify: pixels to add after space number i (0-based) of a line with gaps spaces and extra spare pixels, spread so the sum over
+ * all gaps is exactly extra and no two gaps differ by more than one. 0 when gaps < 1. */
+int mtl_justify_gap(int extra, int gaps, int i);
+
 #endif

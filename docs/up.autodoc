@@ -598,6 +598,158 @@
 *
 ******/
 
+/****** UP-List.mcc/UPA_List_MultiSelect ******
+*
+*   NAME
+*       UPA_List_MultiSelect -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       LONG UPV_List_MultiSelect_None/Default/Shifted/Always, as MUIA_Listview_MultiSelect. Shifted (and Default, which acts as Shifted): a plain click selects that row alone, Shift+click toggles it. Always: every click toggles the row. Selected rows draw like the active row. Read the selection with UPM_List_NextSelected, change it with UPM_List_Select. Keys move only the active row.
+*
+*   INPUTS
+*       UPA_List_MultiSelect - access I G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPA_List_DoubleClick ******
+*
+*   NAME
+*       UPA_List_DoubleClick -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       BOOL, as MUIA_Listview_DoubleClick: set TRUE on every double click on a row and on Return over the active row; notify with MUIV_EveryTime or TRUE. UPA_List_DoublePick still controls UPA_List_Picked.
+*
+*   INPUTS
+*       UPA_List_DoubleClick - access G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPA_List_ClickColumn ******
+*
+*   NAME
+*       UPA_List_ClickColumn -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       LONG, as MUIA_Listview_ClickColumn: the UPA_List_Columns column under the last click (0 for a single-column list); a Return pick gives UPA_List_DefClickColumn.
+*
+*   INPUTS
+*       UPA_List_ClickColumn - access G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPA_List_DefClickColumn ******
+*
+*   NAME
+*       UPA_List_DefClickColumn -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       LONG, as MUIA_Listview_DefClickColumn: the UPA_List_ClickColumn value of a Return pick (default 0).
+*
+*   INPUTS
+*       UPA_List_DefClickColumn - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPA_List_DragType ******
+*
+*   NAME
+*       UPA_List_DragType -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       LONG UPV_List_DragType_None/Immediate, as MUIA_Listview_DragType. Accepted and stored only: the list starts no drag and its rows are not drag sources.
+*
+*   INPUTS
+*       UPA_List_DragType - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPA_List_Input ******
+*
+*   NAME
+*       UPA_List_Input -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       BOOL, as MUIA_Listview_Input (default TRUE). FALSE is UPA_List_NoSelect: no hover, no selection, wheel only; may change while the list is shown.
+*
+*   INPUTS
+*       UPA_List_Input - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPM_List_Select ******
+*
+*   NAME
+*       UPM_List_Select -- method of UP-List.mcc
+*
+*   FUNCTION
+*       struct UP_ListSelect {MethodID, pos, seltype, state}, the layout of MUIM_List_Select. pos: a row, UPV_List_Select_Active or UPV_List_Select_All. seltype: UPV_List_Select_Off/On/Toggle/Ask. state (may be NULL) receives the row state, for All the number of selected rows. Acts on a list with UPA_List_MultiSelect other than None only (else state 0). Redraws unless seltype is Ask.
+*
+*   INPUTS
+*       UPM_List_Select - method ID from <mcc/up.h>; DoMethodA(list, (Msg)&msg).
+*
+*   RESULT
+*       0; the answer is written through the message pointers.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPM_List_NextSelected ******
+*
+*   NAME
+*       UPM_List_NextSelected -- method of UP-List.mcc
+*
+*   FUNCTION
+*       struct UP_ListNextSelected {MethodID, pos}, the layout of MUIM_List_NextSelected. Start with *pos = UPV_List_NextSelected_Start; each call sets *pos to the next selected row, UPV_List_NextSelected_End (-1) after the last. With no row selected the first call gives the active row (-1 if none).
+*
+*   INPUTS
+*       UPM_List_NextSelected - method ID from <mcc/up.h>; DoMethodA(list, (Msg)&msg).
+*
+*   RESULT
+*       0; the answer is written through the message pointers.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
 /****** UP-List.mcc/UPM_List_GetRow ******
 *
 *   NAME
@@ -2152,6 +2304,215 @@
 *
 ******/
 
+/****** UP-Popobject.mcc/UPA_Popobject_Object ******
+*
+*   NAME
+*       UPA_Popobject_Object -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       Object*: the popup object (as UPA_Popstring_Popup). The MUI 3.8 id MUIA_Popobject_Object is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_Object - access IG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popobject.mcc/UPA_Popobject_StrObjHook ******
+*
+*   NAME
+*       UPA_Popobject_StrObjHook -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       struct Hook*: before the popup opens (string to object); FALSE refuses the open. The MUI 3.8 id MUIA_Popobject_StrObjHook is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_StrObjHook - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popobject.mcc/UPA_Popobject_ObjStrHook ******
+*
+*   NAME
+*       UPA_Popobject_ObjStrHook -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       struct Hook*: after a successful close, MUIM_Popstring_Close TRUE (object to string). The MUI 3.8 id MUIA_Popobject_ObjStrHook is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_ObjStrHook - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popobject.mcc/UPA_Popobject_WindowHook ******
+*
+*   NAME
+*       UPA_Popobject_WindowHook -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       struct Hook*: before every open, object = the popup object, message = the popup window. The MUI 3.8 id MUIA_Popobject_WindowHook is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_WindowHook - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popobject.mcc/UPA_Popobject_Follow ******
+*
+*   NAME
+*       UPA_Popobject_Follow -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       BOOL: stored for MUI compatibility (default TRUE); the popup is placed under the object at every open. The MUI 3.8 id MUIA_Popobject_Follow is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_Follow - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popobject.mcc/UPA_Popobject_Light ******
+*
+*   NAME
+*       UPA_Popobject_Light -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       BOOL: stored for MUI compatibility (default FALSE); the popup window is always borderless. The MUI 3.8 id MUIA_Popobject_Light is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_Light - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popobject.mcc/UPA_Popobject_Volatile ******
+*
+*   NAME
+*       UPA_Popobject_Volatile -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       BOOL: stored for MUI compatibility (default TRUE); a hidden object always closes its popup. The MUI 3.8 id MUIA_Popobject_Volatile is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_Volatile - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popasl.mcc/UPA_Popasl_Type ******
+*
+*   NAME
+*       UPA_Popasl_Type -- attribute of UP-Popasl.mcc
+*
+*   FUNCTION
+*       ULONG: ASL_FileRequest (default), ASL_FontRequest or ASL_ScreenModeRequest. The MUI 3.8 id MUIA_Popasl_Type is accepted as well.
+*
+*   INPUTS
+*       UPA_Popasl_Type - access IG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popasl.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popasl.mcc/UPA_Popasl_Active ******
+*
+*   NAME
+*       UPA_Popasl_Active -- attribute of UP-Popasl.mcc
+*
+*   FUNCTION
+*       BOOL: the requester is open (notifies). The MUI 3.8 id MUIA_Popasl_Active is accepted as well.
+*
+*   INPUTS
+*       UPA_Popasl_Active - access G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popasl.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popasl.mcc/UPA_Popasl_StartHook ******
+*
+*   NAME
+*       UPA_Popasl_StartHook -- attribute of UP-Popasl.mcc
+*
+*   FUNCTION
+*       struct Hook*: object = the Popasl, message = the requester tag list (may be changed); FALSE cancels. The MUI 3.8 id MUIA_Popasl_StartHook is accepted as well.
+*
+*   INPUTS
+*       UPA_Popasl_StartHook - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popasl.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popasl.mcc/UPA_Popasl_StopHook ******
+*
+*   NAME
+*       UPA_Popasl_StopHook -- attribute of UP-Popasl.mcc
+*
+*   FUNCTION
+*       struct Hook*: after a successful request, object = the Popasl, message = the requester; replaces the string fill. The MUI 3.8 id MUIA_Popasl_StopHook is accepted as well.
+*
+*   INPUTS
+*       UPA_Popasl_StopHook - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popasl.mcc, UP-Popstring.mcc
+*
+******/
+
 /****** UP-Numericbutton.mcc/UPA_Numeric_Min ******
 *
 *   NAME
@@ -2282,6 +2643,82 @@
 *
 *   SEE ALSO
 *       <mcc/up.h>, UP-Colorfield.mcc
+*
+******/
+
+/****** UP-Pendisplay.mcc/MUIA_Pendisplay_Spec ******
+*
+*   NAME
+*       MUIA_Pendisplay_Spec -- attribute of UP-Pendisplay.mcc
+*
+*   FUNCTION
+*       struct MUI_PenSpec*: the pen shown, MUI 3.8 format ("rRRRRRRRR,GGGGGGGG,BBBBBBBB" RGB, "pN" colormap pen, "mN" MUI pen; default "m5"). Notifies. Replaces MUIC_Pendisplay; also MUIA_Pendisplay_Pen (G, the screen pen or -1 for RGB), MUIA_Pendisplay_Reference (ISG, follows another Pendisplay) and MUIA_Pendisplay_RGBcolor (ISG struct MUI_RGBcolor*).
+*
+*   INPUTS
+*       MUIA_Pendisplay_Spec - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Pendisplay.mcc
+*
+******/
+
+/****** UP-Pendisplay.mcc/MUIM_Pendisplay_SetRGB ******
+*
+*   NAME
+*       MUIM_Pendisplay_SetRGB -- method of UP-Pendisplay.mcc
+*
+*   FUNCTION
+*       MUIM_Pendisplay_SetRGB(red, green, blue), MUIM_Pendisplay_SetColormap(colormap) and MUIM_Pendisplay_SetMUIPen(muipen) set MUIA_Pendisplay_Spec (which notifies), as in MUI 3.8. Guns are 32 bit.
+*
+*   INPUTS
+*       MUIM_Pendisplay_SetRGB - method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Pendisplay.mcc
+*
+******/
+
+/****** UP-Poppen.mcc/UPM_Poppen_Click ******
+*
+*   NAME
+*       UPM_Poppen_Click -- method of UP-Poppen.mcc
+*
+*   FUNCTION
+*       UP-Poppen replaces MUIC_Poppen: a UP-Pendisplay (all its attributes and methods) that is a button. A click opens a UP-Penadjust in a popup window under the swatch; its changes set MUIA_Pendisplay_Spec. Leaving the popup closes it. UPM_Poppen_Click, UPM_Poppen_Closed and UPM_Poppen_Deactivated are internal.
+*
+*   INPUTS
+*       UPM_Poppen_Click - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Poppen.mcc
+*
+******/
+
+/****** UP-Penadjust.mcc/UPA_Penadjust_Coloradjust ******
+*
+*   NAME
+*       UPA_Penadjust_Coloradjust -- attribute of UP-Penadjust.mcc
+*
+*   FUNCTION
+*       BOOL: TRUE makes the object a MUIC_Coloradjust (RGB sliders only, no kind cycle). Otherwise it is a MUIC_Penadjust (cycle RGB / Colormap / MUI pen; MUIA_Penadjust_PSIMode TRUE leaves out MUI pen). Both modes answer MUIA_Pendisplay_Spec (ISG, notifies) and MUIA_Coloradjust_Red/Green/Blue (ISG ULONG 32 bit), MUIA_Coloradjust_RGB (ISG ULONG*[3]) and MUIA_Coloradjust_ModeID (ISG, stored only).
+*
+*   INPUTS
+*       UPA_Penadjust_Coloradjust - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Penadjust.mcc
 *
 ******/
 
@@ -2456,6 +2893,234 @@
 *
 ******/
 
+/****** UP-Image.mcc/UPA_Image_Width ******
+*
+*   NAME
+*       UPA_Image_Width -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bitmap_Width; the drawn width of the bitmap or body (0 = the bitmap width)
+*
+*   INPUTS
+*       UPA_Image_Width - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Height ******
+*
+*   NAME
+*       UPA_Image_Height -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bitmap_Height; the drawn height of the bitmap or body (0 = the bitmap height)
+*
+*   INPUTS
+*       UPA_Image_Height - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_SourceColors ******
+*
+*   NAME
+*       UPA_Image_SourceColors -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       ULONG*: MUIA_Bitmap_SourceColors; 32-bit R,G,B triplets per source colour; the picture is remapped to the best screen pens at Setup
+*
+*   INPUTS
+*       UPA_Image_SourceColors - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_MappingTable ******
+*
+*   NAME
+*       UPA_Image_MappingTable -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       UBYTE*: MUIA_Bitmap_MappingTable; source colour to screen pen, wins over SourceColors; no pens are obtained
+*
+*   INPUTS
+*       UPA_Image_MappingTable - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Precision ******
+*
+*   NAME
+*       UPA_Image_Precision -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bitmap_Precision; ObtainBestPen OBP_Precision for SourceColors (default PRECISION_GUI)
+*
+*   INPUTS
+*       UPA_Image_Precision - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Transparent ******
+*
+*   NAME
+*       UPA_Image_Transparent -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bitmap_Transparent; this source colour is not drawn (-1 = none, the default); not applied to a Fit-scaled picture
+*
+*   INPUTS
+*       UPA_Image_Transparent - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_UseFriend ******
+*
+*   NAME
+*       UPA_Image_UseFriend -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       BOOL: MUIA_Bitmap_UseFriend; the remapped bitmap is a friend of the screen bitmap
+*
+*   INPUTS
+*       UPA_Image_UseFriend - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_RemappedBitmap ******
+*
+*   NAME
+*       UPA_Image_RemappedBitmap -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       struct BitMap*: MUIA_Bitmap_RemappedBitmap; the bitmap drawn after Setup (remapped copy, unpacked body or the caller bitmap), NULL before Setup
+*
+*   INPUTS
+*       UPA_Image_RemappedBitmap - access G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Body ******
+*
+*   NAME
+*       UPA_Image_Body -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       UBYTE*: MUIA_Bodychunk_Body; an ILBM BODY, needs Width, Height and Depth; usually with SourceColors
+*
+*   INPUTS
+*       UPA_Image_Body - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Compression ******
+*
+*   NAME
+*       UPA_Image_Compression -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bodychunk_Compression; 0 none, 1 ByteRun1; anything else draws an empty box
+*
+*   INPUTS
+*       UPA_Image_Compression - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Depth ******
+*
+*   NAME
+*       UPA_Image_Depth -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bodychunk_Depth; body planes 1..8
+*
+*   INPUTS
+*       UPA_Image_Depth - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Masking ******
+*
+*   NAME
+*       UPA_Image_Masking -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bodychunk_Masking; 0 none, 1 the body has a mask plane (used as the draw mask), 2 transparent colour (UPA_Image_Transparent)
+*
+*   INPUTS
+*       UPA_Image_Masking - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
 /****** UP-Menu.mcc/UPA_Menu_Title ******
 *
 *   NAME
@@ -2523,6 +3188,82 @@
 *
 *   INPUTS
 *       UPA_Menu_Open - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Entries ******
+*
+*   NAME
+*       UPA_Menu_Entries -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       UP_MenuItem*: the rich item array (MUIC_Menuitem model), ended by a NULL title, at most UP_MENU_MAXITEMS; wins over UPA_Menu_Items. Per item: title ("-" = separator), shortcut (one character = Amiga+key, shown "Amiga+X"; with UPV_MenuItem_CommandString shown as is), flags UPV_MenuItem_Checkit / Toggle / Checked / Disabled / CommandString, exclude bitmask (MUIA_Menuitem_Exclude). A checked item shows "*" left of its title. UPA_Menu_Chosen stands for MUIA_Menuitem_Trigger.
+*
+*   INPUTS
+*       UPA_Menu_Entries - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Enabled ******
+*
+*   NAME
+*       UPA_Menu_Enabled -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       BOOL: MUIA_Menu_Enabled; FALSE disables the whole menu (MUIA_Disabled)
+*
+*   INPUTS
+*       UPA_Menu_Enabled - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Checked ******
+*
+*   NAME
+*       UPA_Menu_Checked -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       ULONG: bit i = item i is checked (MUIA_Menuitem_Checked); a pick updates it through Checkit / Toggle / Exclude and notifies
+*
+*   INPUTS
+*       UPA_Menu_Checked - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Disabled ******
+*
+*   NAME
+*       UPA_Menu_Disabled -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       ULONG: bit i = item i is disabled (MUIA_Menuitem_Enabled inverted); a disabled item cannot be chosen; not drawn grey
+*
+*   INPUTS
+*       UPA_Menu_Disabled - access ISG. Tag value from <mcc/up.h>.
 *
 *   RESULT
 *       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
@@ -2742,5 +3483,407 @@
 *
 *   SEE ALSO
 *       <mcc/up.h>, UP-Field.mcc
+*
+******/
+
+/****** UP-Floattext.mcc/UPA_Floattext_First ******
+*
+*   NAME
+*       UPA_Floattext_First -- attribute of UP-Floattext.mcc
+*
+*   FUNCTION
+*       LONG: index of the first visible wrapped line. Clamped to the
+*       scrollable range. Setting MUIA_Floattext_Text resets it to 0. The
+*       paired scroller and the mouse wheel set it; it notifies on change.
+*       The MUI 3.8 attributes MUIA_Floattext_Text, _Justify, _SkipChars and
+*       _TabSize are accepted as well. SkipChars and TabSize apply at the
+*       next Text set. MUI text escape codes are not interpreted.
+*
+*   INPUTS
+*       UPA_Floattext_First - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Floattext.mcc, UP-Scroller.mcc
+*
+******/
+
+/****** UP-Floattext.mcc/UPA_Floattext_Scroller ******
+*
+*   NAME
+*       UPA_Floattext_Scroller -- attribute of UP-Floattext.mcc
+*
+*   FUNCTION
+*       Object *: UP-Scroller the text view keeps in step (Visible, Entries,
+*       First). UP_NewFloattext() builds the text view and this scroller in
+*       one group and wires both directions.
+*
+*   INPUTS
+*       UPA_Floattext_Scroller - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Floattext.mcc, UP-Scroller.mcc
+*
+******/
+
+/****** UP-Rectangle.mcc/UP-Rectangle.mcc ******
+*
+*   NAME
+*       UP-Rectangle.mcc -- MUI class, themed spacer and separator bar
+*
+*   FUNCTION
+*       The class has no UPA_ attributes of its own: it is used like the MUI
+*       Rectangle class. With no tags it is an invisible spacer that takes
+*       the free space. It accepts the MUI 3.8 attributes
+*       MUIA_Rectangle_HBar and MUIA_Rectangle_VBar (a 1 pixel line in the
+*       DIVIDER token colour) and MUIA_Rectangle_BarTitle (a horizontal bar
+*       with the title centred in TEXT_MUTED; implies HBar), all access IG.
+*       Create it with MUI_NewObject("UP-Rectangle.mcc", ...) or
+*       UP_NewRectangle.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP_NewRectangle
+*
+******/
+
+/****** UP-Knob.mcc/UP-Knob.mcc ******
+*
+*   NAME
+*       UP-Knob.mcc -- MUI class, themed rotary knob (replaces MUIC_Knob)
+*
+*   FUNCTION
+*       A Numeric subclass like MUIC_Knob: MUIA_Numeric_Min, MUIA_Numeric_Max, MUIA_Numeric_Value, MUIA_Numeric_Default, MUIA_Numeric_Format and the MUIM_Numeric_* methods are the stock Numeric class's, value notifications included. The class has no UPA_ attributes of its own. A drag changes the value (right or up adds; two knob widths of travel sweep the range); when the knob is the active object the cursor keys step by 1, with shift by a tenth of the range. The dial sweeps 270 degrees. Default: no frame, on the cycle chain. Create it with MUI_NewObject("UP-Knob.mcc", ...) or UP_NewKnob.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP_NewKnob, UP-Slider.mcc
+*
+******/
+
+/****** UP-Levelmeter.mcc/UP-Levelmeter.mcc ******
+*
+*   NAME
+*       UP-Levelmeter.mcc -- MUI class, themed half-dial level meter (replaces MUIC_Levelmeter)
+*
+*   FUNCTION
+*       A Numeric subclass like MUIC_Levelmeter: the needle shows MUIA_Numeric_Value between MUIA_Numeric_Min and MUIA_Numeric_Max over 180 degrees; the MUIM_Numeric_* methods are the stock Numeric class's. MUIA_Levelmeter_Label (ISG STRPTR, must outlive the object) is drawn under the dial. Display only: it takes no input. Default: no frame. Create it with MUI_NewObject("UP-Levelmeter.mcc", ...) or UP_NewLevelmeter.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP_NewLevelmeter, UP-Knob.mcc
+*
+******/
+
+/****** UP-Imagedisplay.mcc/MUIA_Imagedisplay_Spec ******
+*
+*   NAME
+*       MUIA_Imagedisplay_Spec -- attribute of UP-Imagedisplay.mcc
+*
+*   FUNCTION
+*       char*: the image spec "<d>:<value>": 0 pattern, 1 vector image, 2 pen spec (r<8 hex>,<8 hex>,<8 hex> / pN / mN), 3 image class, 4 brush file, 5 picture file, 6 preset (MUII_ number). A value 0xFFFF or less is taken as an MUII_ number. UP-Popimage and UP-Imageadjust take it too, and notify it on a change. The preview shows the colour of a pen spec, a raised fill for a pattern or preset, and the file or class name for the rest (the image itself is not drawn).
+*
+*   INPUTS
+*       MUIA_Imagedisplay_Spec - access ISG. Tag value from <mcc/up.h> (the MUI id; MUI 3.8's mui.h keeps the class private).
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popimage.mcc, UP-Imageadjust.mcc
+*
+******/
+
+/****** UP-Framedisplay.mcc/MUIA_Framedisplay_Spec ******
+*
+*   NAME
+*       MUIA_Framedisplay_Spec -- attribute of UP-Framedisplay.mcc
+*
+*   FUNCTION
+*       char*: the frame spec "TSLRTB", one hex digit each: frame type (0 none), state (1 recessed), inner spacing left, right, top, bottom. UP-Popframe and UP-Frameadjust take it too, and notify it on a change. The preview is a themed frame, raised or recessed, with the spacing shown as an inner accent rectangle.
+*
+*   INPUTS
+*       MUIA_Framedisplay_Spec - access ISG. Tag value from <mcc/up.h> (the MUI id; MUI 3.8's mui.h keeps the class private).
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popframe.mcc, UP-Frameadjust.mcc
+*
+******/
+
+/****** UP-Imageadjust.mcc/MUIA_Imageadjust_Type ******
+*
+*   NAME
+*       MUIA_Imageadjust_Type -- attribute of UP-Imageadjust.mcc
+*
+*   FUNCTION
+*       ULONG: the spec kinds the kind cycle offers: MUIV_Imageadjust_Type_All (default), _Image (vector, class, brush, picture, preset), _Background (pattern, pen, picture), _Pen (pen spec only). The value after "<d>:" is edited in a UP-Field.
+*
+*   INPUTS
+*       MUIA_Imageadjust_Type - access I. Tag value from <mcc/up.h> (the MUI id; MUI 3.8's mui.h keeps the class private).
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Imagedisplay.mcc, UP-Popimage.mcc
+*
+******/
+
+/****** UP-Scrmodelist.mcc/UPA_Scrmodelist_ModeID ******
+*
+*   NAME
+*       UPA_Scrmodelist_ModeID -- attribute of UP-Scrmodelist.mcc
+*
+*   FUNCTION
+*       ULONG: the display ID of the active mode. A set picks the row of that mode (INVALID_ID or an unknown ID: no row); a get returns INVALID_ID while no row is active. UP-Scrmodelist, UP-Volumelist and UP-Dirlist also answer the MUI 3.8 ids MUIA_List_Active (ISG, notifies), MUIA_List_Entries (G), MUIA_Listview_DoubleClick (G, notifies on a double click or Return) and MUIM_List_GetEntry; an entry is a struct UP_Scrmode*, a "Name:" STRPTR or a struct FileInfoBlock*. UP-Dirlist takes the MUIA_Dirlist_* ids and MUIM_Dirlist_ReRead and reads synchronously
+*
+*   INPUTS
+*       UPA_Scrmodelist_ModeID - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Scrmodelist.mcc, UP-Dirlist.mcc, UP-Volumelist.mcc
+*
+******/
+
+/****** UP-Dirlist.mcc/--background-- ******
+*
+*   NAME
+*       UP-Dirlist.mcc -- MUIC_Dirlist equivalent: the entries of one directory
+*
+*   FUNCTION
+*       A group around a UP-List and its scroller. Takes the MUI 3.8 ids MUIA_Dirlist_AcceptPattern, Directory (ISG), DrawersOnly, FilesOnly, FilterDrawers, FilterHook (called with a struct ExAllData*), MultiSelDirs (stored only), RejectIcons, RejectPattern, SortDirs, SortHighLow, SortType (IS) and NumBytes, NumDrawers, NumFiles, Path, Status (G), and the method MUIM_Dirlist_ReRead. A set of any read-affecting id reads the directory again, synchronously: Status is Valid (or Invalid) when the set returns. Patterns filter drawers only with FilterDrawers. Answers MUIA_List_Active (ISG, notifies), MUIA_List_Entries (G), MUIA_Listview_DoubleClick (G, notifies) and MUIM_List_GetEntry; an entry is a struct FileInfoBlock*. Drawers show with a " (Drawer)" suffix in one column
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc, UP-Volumelist.mcc
+*
+******/
+
+/****** UP-Volumelist.mcc/--background-- ******
+*
+*   NAME
+*       UP-Volumelist.mcc -- MUIC_Volumelist equivalent: the mounted volumes and assigns
+*
+*   FUNCTION
+*       A group around a UP-List and its scroller, filled from the DOS list when created. No attributes of its own. Answers MUIA_List_Active (ISG, notifies), MUIA_List_Entries (G), MUIA_Listview_DoubleClick (G, notifies) and MUIM_List_GetEntry; an entry is a "Name:" STRPTR
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc, UP-Dirlist.mcc
+*
+******/
+
+/****** UP-Poppen.mcc/UPM_Poppen_Closed ******
+*
+*   NAME
+*       UPM_Poppen_Closed -- method of UP-Poppen.mcc
+*
+*   FUNCTION
+*       The popup window of a UP-Poppen closed (its MUIA_Window_Open went FALSE, through a click, a deactivation or a dispose). Records whether the close came from losing activation, so the click that follows on the swatch does not reopen it at once. Internal, run by the popup window notify.
+*
+*   INPUTS
+*       UPM_Poppen_Closed - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Poppen.mcc
+*
+******/
+
+/****** UP-Poppen.mcc/UPM_Poppen_Deactivated ******
+*
+*   NAME
+*       UPM_Poppen_Deactivated -- method of UP-Poppen.mcc
+*
+*   FUNCTION
+*       The popup window of a UP-Poppen lost activation (the user clicked elsewhere). Marks the close as caused by deactivation and closes the popup. Internal, run by the popup window notify.
+*
+*   INPUTS
+*       UPM_Poppen_Deactivated - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Poppen.mcc
+*
+******/
+
+/****** UP-Penadjust.mcc/UPM_Penadjust_Changed ******
+*
+*   NAME
+*       UPM_Penadjust_Changed -- method of UP-Penadjust.mcc
+*
+*   FUNCTION
+*       A child gadget of a UP-Penadjust changed (an RGB slider or the kind cycle). Builds the pen spec from the children and sets MUIA_Pendisplay_Spec and the MUIA_Coloradjust_* attributes on the object, so both notify. Internal, run by the child notifies.
+*
+*   INPUTS
+*       UPM_Penadjust_Changed - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Penadjust.mcc
+*
+******/
+
+/****** UP-Imageadjust.mcc/UPM_Imageadjust_Changed ******
+*
+*   NAME
+*       UPM_Imageadjust_Changed -- method of UP-Imageadjust.mcc
+*
+*   FUNCTION
+*       The kind cycle or the value field of a UP-Imageadjust changed. Builds the image spec "<d>:<value>" from them, shows it in the preview without notifying, and sets MUIA_Imagedisplay_Spec on the object, so it notifies. Internal, run by the child notifies.
+*
+*   INPUTS
+*       UPM_Imageadjust_Changed - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Imageadjust.mcc
+*
+******/
+
+/****** UP-Frameadjust.mcc/UPM_Frameadjust_Changed ******
+*
+*   NAME
+*       UPM_Frameadjust_Changed -- method of UP-Frameadjust.mcc
+*
+*   FUNCTION
+*       The recessed checkmark or one of the type and spacing sliders of a UP-Frameadjust changed. Builds the frame spec "TSLRTB" from them, shows it in the preview without notifying, and sets MUIA_Framedisplay_Spec on the object, so it notifies. Internal, run by the child notifies.
+*
+*   INPUTS
+*       UPM_Frameadjust_Changed - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Frameadjust.mcc
+*
+******/
+
+/****** UP-Popimage.mcc/UPM_Popimage_Changed ******
+*
+*   NAME
+*       UPM_Popimage_Changed -- method of UP-Popimage.mcc
+*
+*   FUNCTION
+*       The UP-Imageadjust popup of a UP-Popimage changed its spec. Shows the spec in the display and sets MUIA_Imagedisplay_Spec on the pop, so it notifies. Does nothing while no popup exists. Internal, run by the popup notify.
+*
+*   INPUTS
+*       UPM_Popimage_Changed - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popimage.mcc
+*
+******/
+
+/****** UP-Popframe.mcc/UPM_Popframe_Changed ******
+*
+*   NAME
+*       UPM_Popframe_Changed -- method of UP-Popframe.mcc
+*
+*   FUNCTION
+*       The UP-Frameadjust popup of a UP-Popframe changed its spec. Shows the spec in the display and sets MUIA_Framedisplay_Spec on the pop, so it notifies. Does nothing while no popup exists. Internal, run by the popup notify.
+*
+*   INPUTS
+*       UPM_Popframe_Changed - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popframe.mcc
+*
+******/
+
+/****** UP-Popscreen.mcc/UP-Popscreen ******
+*
+*   NAME
+*       UP-Popscreen -- class of UP-Popscreen.mcc
+*
+*   FUNCTION
+*       UP-Popscreen replaces MUIC_Popscreen: a UP-Poplist (a UP-Popstring whose popup is a list) whose entries are the public screen names. The names are read under LockPubScreenList before each open, so the list follows screens that opened or closed since; at most 32 names are shown. The class has no attributes or methods of its own; use those of UP-Poplist and UP-Popstring.
+*
+*   INPUTS
+*       Create with MUI_NewObject("UP-Popscreen.mcc", ...) or UP_NewPopscreen() from <mcc/up.h>.
+*
+*   RESULT
+*       An object of the class, or NULL.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popscreen.mcc
+*
+******/
+
+/****** UP-Popimage.mcc/UP-Popimage ******
+*
+*   NAME
+*       UP-Popimage -- class of UP-Popimage.mcc
+*
+*   FUNCTION
+*       UP-Popimage replaces MUIC_Popimage: a UP-Popstring whose string is a UP-Imagedisplay preview and whose popup is a UP-Imageadjust. MUIA_Imagedisplay_Spec (ISG, notifies) is the image spec "<d>:<value>"; a value of 0xFFFF or less is taken as an MUII_ number. The popup is built at the first open. UPM_Popimage_Changed is internal.
+*
+*   INPUTS
+*       Create with MUI_NewObject("UP-Popimage.mcc", ...) or UP_NewPopimage() from <mcc/up.h>.
+*
+*   RESULT
+*       An object of the class, or NULL.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popimage.mcc
+*
+******/
+
+/****** UP-Popframe.mcc/UP-Popframe ******
+*
+*   NAME
+*       UP-Popframe -- class of UP-Popframe.mcc
+*
+*   FUNCTION
+*       UP-Popframe replaces MUIC_Popframe: a UP-Popstring whose string is a UP-Framedisplay preview and whose popup is a UP-Frameadjust. MUIA_Framedisplay_Spec (ISG, notifies) is the frame spec "TSLRTB". The popup is built at the first open. UPM_Popframe_Changed is internal.
+*
+*   INPUTS
+*       Create with MUI_NewObject("UP-Popframe.mcc", ...) or UP_NewPopframe() from <mcc/up.h>.
+*
+*   RESULT
+*       An object of the class, or NULL.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popframe.mcc
+*
+******/
+
+/****** UP-Frameadjust.mcc/UP-Frameadjust ******
+*
+*   NAME
+*       UP-Frameadjust -- class of UP-Frameadjust.mcc
+*
+*   FUNCTION
+*       UP-Frameadjust replaces MUIC_Frameadjust: a UP-Framedisplay preview, a UP-Checkmark for recessed and UP-Text / UP-Slider rows for the frame type and the four inner spacings. MUIA_Framedisplay_Spec (ISG, notifies) is the frame spec "TSLRTB"; setting it updates the controls without notifying them. UPM_Frameadjust_Changed is internal.
+*
+*   INPUTS
+*       Create with MUI_NewObject("UP-Frameadjust.mcc", ...) or UP_NewFrameadjust() from <mcc/up.h>.
+*
+*   RESULT
+*       An object of the class, or NULL.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Frameadjust.mcc
 *
 ******/

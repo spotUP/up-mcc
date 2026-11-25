@@ -1011,3 +1011,246 @@ void mui_aa_image_fit(int sw, int sh, int bw, int bh, int fit, int* dw, int* dh,
     }
     *dw = w, *dh = h, *ox = (bw - w) / 2, *oy = (bh - h) / 2;
 }
+
+/* UP-Knob / UP-Levelmeter dial maths (mui_aa.h). Integer only: the m68k class libraries link no float code. */
+static const short g_dial_sin[91] = {
+    0, 286, 572, 857, 1143, 1428, 1713, 1997, 2280, 2563, 2845, 3126, 3406,
+    3686, 3964, 4240, 4516, 4790, 5063, 5334, 5604, 5872, 6138, 6402, 6664, 6924,
+    7182, 7438, 7692, 7943, 8192, 8438, 8682, 8923, 9162, 9397, 9630, 9860, 10087,
+    10311, 10531, 10749, 10963, 11174, 11381, 11585, 11786, 11982, 12176, 12365, 12551, 12733,
+    12911, 13085, 13255, 13421, 13583, 13741, 13894, 14044, 14189, 14330, 14466, 14598, 14726,
+    14849, 14968, 15082, 15191, 15296, 15396, 15491, 15582, 15668, 15749, 15826, 15897, 15964,
+    16026, 16083, 16135, 16182, 16225, 16262, 16294, 16322, 16344, 16362, 16374, 16382, 16384};
+
+int mui_aa_dial_sin_q14(int deg) {
+    deg %= 360;
+    if (deg < 0) {
+        deg += 360;
+    }
+    if (deg <= 90) {
+        return g_dial_sin[deg];
+    }
+    if (deg <= 180) {
+        return g_dial_sin[180 - deg];
+    }
+    return deg <= 270 ? -g_dial_sin[deg - 180] : -g_dial_sin[360 - deg];
+}
+
+int mui_aa_dial_deg(long v, long lo, long hi, int start_deg, int sweep_deg) {
+    long span = hi - lo;
+    if (span <= 0) {
+        return start_deg;
+    }
+    v = mui_aa_numeric_clamp(v, lo, hi);
+    /* shortcut: (v - lo) * sweep overflows past a span of about 2^31 / 360; Numeric ranges in MUI GUIs are far smaller */
+    return start_deg - (int)((v - lo) * sweep_deg / span);
+}
+
+void mui_aa_dial_point(int deg, int r, int* dx, int* dy) {
+    long c = mui_aa_dial_sin_q14(deg + 90), s = mui_aa_dial_sin_q14(deg);
+    *dx = (int)((c * r + (c < 0 ? -8192 : 8192)) / 16384); /* rounded to the nearest pixel */
+    *dy = (int)-((s * r + (s < 0 ? -8192 : 8192)) / 16384);
+}
+
+long mui_aa_knob_key(long v, long lo, long hi, int code, int shift, int* used) {
+    long step = shift ? (hi - lo) / 10 : 1;
+    if (step < 1) {
+        step = 1;
+    }
+    *used = 1;
+    if (code == 0x4C || code == 0x4E) {
+        return mui_aa_numeric_clamp(v + step, lo, hi);
+    }
+    if (code == 0x4D || code == 0x4F) {
+        return mui_aa_numeric_clamp(v - step, lo, hi);
+    }
+    *used = 0;
+    return v;
+}
+
+/* Copy n bytes of src into out (cap bytes), NUL-terminated; 0 when cut. */
+static int aa_put(char* out, int cap, int at, const char* src, int n) {
+    int ok = 1;
+    if (cap <= 0) {
+        return 0;
+    }
+    if (at + n >= cap) {
+        n = cap - 1 - at;
+        ok = 0;
+    }
+    if (n > 0) {
+        memcpy(out + at, src, (size_t)n);
+        at += n;
+    }
+    out[at < cap ? at : cap - 1] = '\0';
+    return ok;
+}
+
+int mui_aa_path_split(const char* path, char* drawer, int dcap, char* file, int fcap) {
+    int len = (int)strlen(path), cut = len;
+    while (cut > 0 && path[cut - 1] != '/' && path[cut - 1] != ':') {
+        cut--;
+    }
+    /* "a/b": the drawer is "a" (no trailing slash, as PathPart); "Work:b" keeps the colon */
+    int dlen = cut > 0 && path[cut - 1] == '/' ? cut - 1 : cut;
+    int ok = aa_put(drawer, dcap, 0, path, dlen);
+    return aa_put(file, fcap, 0, path + cut, len - cut) && ok;
+}
+
+int mui_aa_path_join(const char* drawer, const char* file, char* out, int cap) {
+    int dl = (int)strlen(drawer), ok = aa_put(out, cap, 0, drawer, dl), at = (int)strlen(out);
+    if (*file == '\0') {
+        return ok;
+    }
+    if (dl > 0 && drawer[dl - 1] != ':' && drawer[dl - 1] != '/') {
+        ok = aa_put(out, cap, at, "/", 1) && ok;
+        at = (int)strlen(out);
+    }
+    return aa_put(out, cap, at, file, (int)strlen(file)) && ok;
+}
+
+int mui_aa_font_spec(const char* name, long size, char* out, int cap) {
+    char num[12];
+    int nl = (int)strlen(name), at, ok;
+    if (nl >= 5 && strcmp(name + nl - 5, ".font") == 0) {
+        nl -= 5;
+    }
+    ok = aa_put(out, cap, 0, name, nl);
+    at = (int)strlen(out);
+    ok = aa_put(out, cap, at, "/", 1) && ok;
+    at = (int)strlen(out);
+    ok = mui_aa_numeric_text(size, num, (int)sizeof num) > 0 && ok;
+    return aa_put(out, cap, at, num, (int)strlen(num)) && ok;
+}
+
+int mui_aa_font_parse(const char* spec, char* name, int cap, long* size) {
+    const char* slash = strrchr(spec, '/');
+    int nl = slash != NULL ? (int)(slash - spec) : (int)strlen(spec), ok;
+    long v = 0;
+    ok = aa_put(name, cap, 0, spec, nl);
+    if (nl > 0 && !(nl >= 5 && strncmp(spec + nl - 5, ".font", 5) == 0)) {
+        ok = aa_put(name, cap, (int)strlen(name), ".font", 5) && ok;
+    }
+    for (slash = slash != NULL ? slash + 1 : ""; *slash >= '0' && *slash <= '9'; slash++) {
+        v = v * 10 + (*slash - '0');
+    }
+    *size = v;
+    return ok;
+}
+
+int mui_aa_hex_text(uint32_t v, char* out, int cap) {
+    char t[11] = "0x";
+    int i;
+    for (i = 0; i < 8; i++) {
+        t[2 + i] = "0123456789ABCDEF"[(v >> (28 - 4 * i)) & 15];
+    }
+    return aa_put(out, cap, 0, t, 10);
+}
+
+uint32_t mui_aa_hex_parse(const char* s) {
+    uint32_t v = 0;
+    if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) {
+        s += 2;
+    }
+    for (;; s++) {
+        int c = *s, d = c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
+        if (d < 0) {
+            return v;
+        }
+        v = v * 16 + (uint32_t)d;
+    }
+}
+
+static int aa_lower(int c) {
+    return c >= 'A' && c <= 'Z' ? c + 32 : c;
+}
+
+static int aa_stricmp(const char* a, const char* b) {
+    while (*a != 0 && aa_lower((unsigned char)*a) == aa_lower((unsigned char)*b)) {
+        a++, b++;
+    }
+    return aa_lower((unsigned char)*a) - aa_lower((unsigned char)*b);
+}
+
+int mui_aa_dir_cmp(const mui_aa_dirkey* a, const mui_aa_dirkey* b, int type, int dirs, int high_low) {
+    long c = 0;
+    if (dirs != 2 && a->dir != b->dir) {
+        return (a->dir ? -1 : 1) * (dirs == 1 ? -1 : 1);
+    }
+    if (type == 1) {
+        c = a->days != b->days ? a->days - b->days : a->mins != b->mins ? a->mins - b->mins : a->ticks - b->ticks;
+    } else if (type == 2) {
+        c = a->size - b->size;
+    }
+    if (c == 0) {
+        c = aa_stricmp(a->name, b->name);
+    }
+    c = c < 0 ? -1 : c > 0;
+    return high_low ? (int)-c : (int)c;
+}
+
+int mui_aa_icon_name(const char* name) {
+    size_t n = strlen(name);
+    return n >= 5 && aa_stricmp(name + n - 5, ".info") == 0;
+}
+
+/* One body row of n bytes into dst (NULL = skip). ByteRun1: n >= 0 copies n+1 bytes, -127..-1 repeats the next byte 1-n times, -128 is a
+ * no-op. A run past the row end is cut there (well formed ILBM never crosses rows). */
+static const unsigned char* mui_aa_body_row(const unsigned char* s, int compression, unsigned char* dst, int n) {
+    int o = 0;
+    if (compression == 0) {
+        if (dst != NULL) {
+            memcpy(dst, s, (size_t)n);
+        }
+        return s + n;
+    }
+    while (o < n) {
+        int c = (signed char)*s++, k;
+        if (c >= 0) {
+            for (k = 0; k <= c; k++, s++) {
+                if (o < n && dst != NULL) {
+                    dst[o] = *s;
+                }
+                o++;
+            }
+        } else if (c != -128) {
+            for (k = 0; k <= -c; k++, o++) {
+                if (o < n && dst != NULL) {
+                    dst[o] = *s;
+                }
+            }
+            s++;
+        }
+    }
+    return s;
+}
+
+int mui_aa_body_unpack(const unsigned char* body, int compression, int w, int h, int depth, int has_mask, unsigned char* const* planes, int bpr,
+                       unsigned char* mask, int mbpr) {
+    int rb = ((w + 15) >> 4) << 1, y, p;
+    if (body == NULL || (compression != 0 && compression != 1) || w <= 0 || h <= 0 || depth < 1 || depth > 8 || bpr < rb ||
+        (mask != NULL && mbpr < rb)) {
+        return 0;
+    }
+    for (y = 0; y < h; y++) {
+        for (p = 0; p < depth; p++) {
+            body = mui_aa_body_row(body, compression, planes[p] + (long)y * bpr, rb);
+        }
+        if (has_mask) {
+            body = mui_aa_body_row(body, compression, mask != NULL ? mask + (long)y * mbpr : NULL, rb);
+        }
+    }
+    return 1;
+}
+
+unsigned long mui_aa_menu_pick(unsigned long checked, int i, int checkit, int toggle, unsigned long exclude) {
+    unsigned long bit;
+    if (!checkit || i < 0 || i > 31) {
+        return checked;
+    }
+    bit = 1UL << i;
+    if (checked & bit) {
+        return toggle ? checked & ~bit : checked;
+    }
+    return (checked | bit) & ~(exclude & ~bit);
+}
