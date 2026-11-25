@@ -151,3 +151,21 @@ int mtl_replace(char *buf, int cap, int *len, int lo, int hi, const char *s, int
     mtl_delete_range(buf, len, lo, hi);
     return mtl_insert(buf, cap, len, lo, s, slen);
 }
+
+int mtl_scroll_x(int cx, int cw, int w, int scroll, int tw) {
+    int max;
+    if (w < 1) w = 1;
+    if (cx < scroll) scroll = cx;
+    else if (cx + cw > scroll + w) scroll = cx + cw - w;
+    max = tw + cw - w;
+    return clampi(scroll, 0, max < 0 ? 0 : max);
+}
+
+void mtl_visible_cols(const char *text, int n, int scroll, int w, MtlMeasure measure, void *ctx, int *c0, int *c1) {
+    int a = 0, b;
+    while (a < n && measure(ctx, text, a) < scroll) a++;
+    b = a;
+    while (b < n && measure(ctx, text, b + 1) - scroll <= w) b++;
+    *c0 = a;
+    *c1 = b;
+}

@@ -1,6 +1,8 @@
 /* Selecta_AAField (I667h, design section 3.4). Same dispatcher pattern as mui_aapanel_class.c. Colours, outline and radius come from
  * map/mui_aa.c (mui_aa_field_*); drawing goes through aa_round_fill with held pens; no colour literal, no ObtainBestPen. The group has
- * MUIA_FillArea FALSE, so the corners keep the parent panel's face; the inner stock String keeps the MUI prefs font, its pens are the theme's. */
+ * MUIA_FillArea FALSE, so the corners keep the parent panel's face. The inner stock String does all input and editing (keys, clipboard,
+ * undo, hooks); the field paints its text over the String's box, unfocused and focused alike, in the AA font and theme pens (field
+ * own edit text, 2026-11-25: the caret, the scroll and click positions come from the AA font widths, mui_text_lines.c mtl_*). */
 #include "mui_aafield_class.h"
 #include "mui_aa_class.h"
 
@@ -24,6 +26,7 @@
 #include "mui_aa_draw.h"
 #include "mui_aatip.h"
 #include "map/mui_log.h"
+#include "mui_text_lines.h"
 
 extern struct Library* MUIMasterBase;
 
@@ -40,9 +43,14 @@ typedef struct aafield_data {
     int pens_logged; /* the old String pens went to stderr once (I667n evidence) */
     struct MUI_EventHandlerNode ehn; /* I731: pointer and key events for the flat tooltip only; it never eats one */
     aatip_slot tip;
+    struct Hook edit_hook; /* MUIA_String_EditHook: repaints the edit text after each key or click, in place of the String's render */
+    struct Task* task;     /* the app task: the hook paints only there (Intuition may call it from input.device) */
+    int scroll;            /* pixels the focused edit text is scrolled left so the caret shows */
+    int hook_foreign;      /* the hook ran outside the app task once (the String rendered its own text then); logged by the next draw */
 } aafield_data;
 
 static struct MUI_CustomClass* g_class;
+static ULONG aafield_edit_hook(struct Hook* h, struct SGWork* sgw, ULONG* cmd);
 static uint32_t g_made;
 static char g_bg_spec[40]; /* MUIA_Background string of the inner String; MUI keeps the pointer, so it lives for the process */
 
@@ -59,7 +67,13 @@ static ULONG aafield_setup(struct IClass* cl, Object* obj, Msg msg) {
     aafield_data* d = INST_DATA(cl, obj);
     mui_aa_check_op_t ops[MUI_AA_FIELD_OPS];
     int k, n;
+    d->task = FindTask(NULL);
+    d->edit_hook.h_Entry = (__typeof__(d->edit_hook.h_Entry))(void (*)(void))HookEntry;
+    d->edit_hook.h_SubEntry = (__typeof__(d->edit_hook.h_SubEntry))(void (*)(void))aafield_edit_hook;
+    d->edit_hook.h_Data = obj;
+    set(d->str, MUIA_String_EditHook, (ULONG)&d->edit_hook); /* before the super: the String may build its gadget in its setup */
     if (!DoSuperMethodA(cl, obj, msg)) {
+        set(d->str, MUIA_String_EditHook, 0UL);
         return FALSE;
     }
     aa_setup(obj, &d->aa, NULL, 0);
@@ -91,7 +105,11 @@ static ULONG aafield_cleanup(struct IClass* cl, Object* obj, Msg msg) {
     d->tip.in = 0;
     aatip_drop(obj);
     aa_cleanup(&d->aa);
-    return DoSuperMethodA(cl, obj, msg);
+    {
+        ULONG r = DoSuperMethodA(cl, obj, msg);
+        set(d->str, MUIA_String_EditHook, 0UL);
+        return r;
+    }
 }
 
 static ULONG aafield_askminmax(struct IClass* cl, Object* obj, struct MUIP_AskMinMax* msg) {
@@ -174,6 +192,84 @@ static int aafield_width(void* ctx, const char* s, int len) {
     return aa_text_width(&f->d->aa, f->self, buf);
 }
 
+static int aafield_measure(void* ctx, const char* s, int len) {
+    return len <= 0 ? 0 : aafield_width(ctx, s, len);
+}
+
+/* The bytes the field shows for text[0..n): a '*' each when secret. Returns the shown length (cut to the buffer). */
+static int aafield_show(const aafield_data* d, const char* text, int n, char* out, int cap) {
+    int k;
+    if (text == NULL || n < 0) {
+        n = 0;
+    }
+    if (n > cap - 1) {
+        n = cap - 1;
+    }
+    for (k = 0; k < n; k++) {
+        out[k] = d->secret ? '*' : text[k];
+    }
+    out[n] = '\0';
+    return n;
+}
+
+/* Caret offset under window x mx in the focused edit text (AA font widths and the field's scroll, not the String's topaz ones). */
+static int aafield_edit_at(Object* obj, aafield_data* d, const char* text, int n, int mx) {
+    char show[160];
+    aafield_fit af;
+    MtlLine line;
+    af.d = d;
+    af.self = obj;
+    line.start = 0;
+    line.len = aafield_show(d, text, n, show, (int)sizeof show);
+    return mtl_offset_at(show, line.len, &line, 1, 0, mx - _left(d->str) + d->scroll, aafield_measure, &af);
+}
+
+/* Field own edit text: the active String's contents text[0..n) with the caret at pos, scrolled so the caret shows, over the String's box. */
+static void aafield_edit_paint(Object* obj, aafield_data* d, struct RastPort* rp, const char* text, int n, int pos) {
+    char show[160], seg[160];
+    aafield_fit af;
+    MtlLine line;
+    int w = (int)_width(d->str) - 4, cw = d->aa.font_px >= 16 ? 2 : 1, th = aa_text_height(&d->aa, obj), x0 = _left(d->str);
+    int y = _top(d->str) + (_height(d->str) - th) / 2, c0, c1, cx;
+    uint32_t fg = mui_aa_field_string_fg(d->aa.tok), face = d->aa.tok[MUI_AA_FIELD_FACE];
+    af.d = d;
+    af.self = obj;
+    line.start = 0;
+    line.len = aafield_show(d, text, n, show, (int)sizeof show);
+    pos = pos < 0 ? 0 : pos > line.len ? line.len : pos;
+    cx = mtl_x_of(show, &line, 0, pos, aafield_measure, &af);
+    d->scroll = mtl_scroll_x(cx, cw, w, d->scroll, aafield_measure(&af, show, line.len));
+    mtl_visible_cols(show, line.len, d->scroll, w, aafield_measure, &af, &c0, &c1);
+    aa_rect(&d->aa, rp, x0, _top(d->str), x0 + _width(d->str) - 1, _top(d->str) + _height(d->str) - 1, face);
+    if (c1 > c0) {
+        memcpy(seg, show + c0, (size_t)(c1 - c0));
+        seg[c1 - c0] = '\0';
+        aa_text(&d->aa, obj, rp, x0 + aafield_measure(&af, show, c0) - d->scroll, y, seg, fg, face);
+    }
+    aa_rect(&d->aa, rp, x0 + cx - d->scroll, y, x0 + cx - d->scroll + cw - 1, y + th - 1, fg);
+}
+
+/* MUIA_String_EditHook (MUI calls it after its own editing): a key or click the String took repaints the edit text here and clears
+ * SGA_REDISPLAY, so Intuition never paints the topaz text over it. A click's caret goes where the AA text is, not the topaz cell.
+ * Outside the app task nothing is drawn (no aa_ctx use off the app task) and the String renders as before. */
+static ULONG aafield_edit_hook(struct Hook* h, struct SGWork* sgw, ULONG* cmd) {
+    Object* obj = (Object*)h->h_Data;
+    aafield_data* d = INST_DATA(g_class->mcc_Class, obj);
+    if ((*cmd != SGH_KEY && *cmd != SGH_CLICK) || !(sgw->Actions & SGA_USE)) {
+        return 0;
+    }
+    if (FindTask(NULL) != d->task || !aa_live(obj) || _window(obj) == NULL) {
+        d->hook_foreign = 1;
+        return ~0UL;
+    }
+    if (*cmd == SGH_CLICK) {
+        sgw->BufferPos = (WORD)aafield_edit_at(obj, d, (const char*)sgw->WorkBuffer, sgw->NumChars, _window(obj)->MouseX);
+    }
+    aafield_edit_paint(obj, d, _rp(obj), (const char*)sgw->WorkBuffer, sgw->NumChars, sgw->BufferPos);
+    sgw->Actions &= ~SGA_REDISPLAY;
+    return ~0UL;
+}
+
 static ULONG aafield_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     aafield_data* d = INST_DATA(cl, obj);
     /* The Group super fills the padding around the inner String with the parent background, so the face and outline go on after
@@ -191,14 +287,17 @@ static ULONG aafield_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
     if (text >= 0) {
         _pens(obj)[MPEN_TEXT] = (UWORD)text;
     }
-    {
-        /* the super rewrote the gadget pens; typing (Intuition renders the active gadget) takes them back. D8: while active the
-         * super's own render left the contents in the prefs pen (black on the face after a click), so the active gadget renders
-         * once more from the theme ActivePens. Inactive contents are the field's own draw below (RefreshGList is still black there, D3). */
-        struct Gadget* g = aafield_string_pens(d);
-        if (g != NULL && (msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)) && _window(obj) != NULL && aafield_focus(obj, d)) {
-            RefreshGList(g, _window(obj), NULL, 1);
-        }
+    aafield_string_pens(d); /* the super rewrote the gadget pens; a render Intuition still does on its own (hook off the app task) takes them back */
+    if (d->hook_foreign == 1) {
+        aa_log("up-mcc: field edit hook ran outside the app task; the String drew its own text there\n");
+        d->hook_foreign = 2;
+    }
+    if ((msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)) && aafield_focus(obj, d)) {
+        /* field own edit text: the super's String render (prefs font and pens) goes under the field's own, in place of a7b147c's RefreshGList */
+        ULONG cont = 0, pos = 0;
+        GetAttr(MUIA_String_Contents, d->str, &cont);
+        GetAttr(MUIA_String_BufferPos, d->str, &pos);
+        aafield_edit_paint(obj, d, _rp(obj), (const char*)cont, cont != 0 ? (int)strlen((const char*)cont) : 0, (int)pos);
     }
     if (msg->flags & MADF_DRAWOBJECT) {
         mui_aa_check_op_t ops[MUI_AA_FIELD_OPS];

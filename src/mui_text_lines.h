@@ -62,4 +62,12 @@ int mtl_replace(char *buf, int cap, int *len, int lo, int hi, const char *s, int
 /* New top line so caret_line is inside [top, top+visible), moving as little as possible, with top kept in [0, nlines-visible]. */
 int mtl_scroll_top(int caret_line, int visible, int top, int nlines);
 
+/* Single-line edit (UP-Field): the text is pixel-scrolled left by scroll. */
+/* New scroll so a caret at text x cx, cw wide, shows inside a view w wide, moving as little as possible; never past the text end
+ * (text width tw plus the caret), never below 0. */
+int mtl_scroll_x(int cx, int cw, int w, int scroll, int tw);
+/* Bytes [*c0, *c1) of text[0..n) that show whole in a view w wide at scroll: c0 is the first byte starting at or right of scroll, c1
+ * ends at the last byte whose right edge is inside scroll+w. They draw at view x measure(c0) - scroll. */
+void mtl_visible_cols(const char *text, int n, int scroll, int w, MtlMeasure measure, void *ctx, int *c0, int *c1);
+
 #endif
