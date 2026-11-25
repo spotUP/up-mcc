@@ -13,6 +13,9 @@ int mui_aa_scr_need(long content, long view);
 void mui_aa_scr_inner(int view_w, int view_h, int min_w, int min_h, int* w, int* h);
 /* Scrollgroup split of its width: the bar takes bar_w when content_h > h, the contents get the rest. */
 void mui_aa_scr_split(int w, int h, int content_h, int bar_w, int* need_bar, int* view_w);
+/* Size grip: one window edge after a drag of delta px from start, kept in min .. max and in room (the screen past the window's
+ * left or top edge). min wins when room is smaller: MUI cannot lay the window out under its minimum. */
+int mui_aa_grip_size(int start, int delta, int min, int max, int room);
 /* Calls of the functions above: the sentinel that the classes (and not a copy) run them. */
 uint32_t mui_aascr_calls(void);
 
