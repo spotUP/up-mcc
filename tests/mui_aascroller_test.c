@@ -14,7 +14,7 @@ int main(void) {
     CHECK(mui_aa_scroller_press(&m, 200, ty + 5, 45, 10, 100, &grab) == 45 && grab == 5); /* on the thumb: drag, no move */
     CHECK(mui_aa_scroller_press(&m, 200, 10, 45, 10, 100, &grab) == 35 && grab == -1);    /* above: one page up */
     CHECK(mui_aa_scroller_press(&m, 200, 190, 45, 10, 100, &grab) == 55 && grab == -1);   /* below: one page down */
-    CHECK(mui_aa_scroller_press(&m, 200, 10, 4, 10, 100, &grab) == 0);                    /* clamped at the top */
+    CHECK(mui_aa_scroller_press(&m, 200, 2, 4, 10, 100, &grab) == 0);                     /* clamped at the top */
     CHECK(mui_aa_scroller_press(&m, 200, 0, 88, 10, 100, &grab) == 78);
     CHECK(mui_aa_scroller_press(&m, 200, 199, 85, 10, 100, &grab) == 90);                 /* clamped at the end */
     CHECK(mui_aa_scroller_press(&m, 200, 50, 0, 10, 8, &grab) == 0 && grab == -1);       /* everything fits: no thumb, nothing moves */
