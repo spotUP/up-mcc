@@ -180,7 +180,7 @@ static int aapanel_holes(Object* grp, int* holes, int n, int depth, int max_dept
     return n;
 }
 
-static ULONG aapanel_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
+static ULONG aapanel_paint(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     aapanel_data* d = INST_DATA(cl, obj);
     ULONG r = DoSuperMethodA(cl, obj, (Msg)msg);
     if (msg->flags & MADF_DRAWOBJECT) {
@@ -229,6 +229,28 @@ static ULONG aapanel_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
                     mui_aa_panel_rgb(d->aa.tok, d->role));
         }
     }
+    return r;
+}
+
+/* A card inside an UP-Virtgroup is taller than the view. After a relayout (the Scrollgroup bar shown or hidden on a page switch)
+ * MUI repaints a moved child directly, past the virtgroup's clipping MUIM_Draw, so the card painted its whole face, rounded bottom
+ * included, over the footer below the view. Clip every draw to the part the parents show, as aa_redraw does for own repaints. */
+static ULONG aapanel_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
+    int x0, y0, x1, y1;
+    APTR clip;
+    ULONG r;
+    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)) || !aa_live(obj)) {
+        return aapanel_paint(cl, obj, msg);
+    }
+    if (!aa_visible(obj, &x0, &y0, &x1, &y1)) {
+        return 0; /* wholly outside the view: the virtgroup paints it when it scrolls in */
+    }
+    if (x0 <= _left(obj) && y0 <= _top(obj) && x1 >= _right(obj) && y1 >= _bottom(obj)) {
+        return aapanel_paint(cl, obj, msg);
+    }
+    clip = MUI_AddClipping(muiRenderInfo(obj), x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+    r = aapanel_paint(cl, obj, msg);
+    MUI_RemoveClipping(muiRenderInfo(obj), clip);
     return r;
 }
 
