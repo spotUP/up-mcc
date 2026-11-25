@@ -49,7 +49,7 @@ int main(void) {
     mtl_visible_cols(t, n, 13, 40, prop, NULL, &c0, &c1);
     CHECK(c0 == 2 && c1 == 7); /* starts at x 15, ends at 51 <= 53 */
     mtl_visible_cols(t, n, 47, 40, prop, NULL, &c0, &c1);
-    CHECK(c0 == 6 && c1 == 12);
+    CHECK(c0 == 7 && c1 == 12); /* byte 6 starts at 44 < 47: cut on the left, not drawn */
     mtl_visible_cols("", 0, 0, 40, prop, NULL, &c0, &c1);
     CHECK(c0 == 0 && c1 == 0);
     /* click: view x plus scroll, nearest caret edge in AA widths (topaz 8 px cells would give column 2 for x 16) */
