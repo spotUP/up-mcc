@@ -634,11 +634,38 @@ void aa_text(aa_ctx* c, Object* obj, struct RastPort* rp, int x, int y, const ch
         return;
     }
     if (!mui_theme_text_uses_token(c->backend == AA_TC, c->backend == AA_PLAIN, fg, bg)) {
-        LONG pen = c->backend == AA_PLAIN ? aa_pen(c, fg) : (LONG)_dri(obj)->dri_Pens[TEXTPEN];
-        struct TextFont* tf = c->backend == AA_PLAIN ? aa_plain_textfont(c, obj) : _font(obj);
+        struct TextFont* tf;
+        if (c->backend != AA_PLAIN) {
+            /* Unreadable theme pair on a pen screen: the TTF that aa_text_width measures, in the MUI text pen, coverage cut at half (no ramp).
+             * Drawing _font(obj) here made wrapped and clipped lines disagree with their measured width and cut words off. */
+            struct TTE_Pixmap* pm = tte_pixmap(c->font, str, (ULONG)len);
+            int py, px;
+            if (pm == NULL) {
+                return;
+            }
+            SetAPen(rp, (LONG)_dri(obj)->dri_Pens[TEXTPEN]);
+            for (py = 0; py < (int)pm->height; py++) {
+                const UBYTE* row = pm->data + (size_t)py * pm->width;
+                for (px = 0; px < (int)pm->width;) {
+                    int run = px + 1;
+                    if (row[px] < 128) {
+                        px++;
+                        continue;
+                    }
+                    while (run < (int)pm->width && row[run] >= 128) {
+                        run++;
+                    }
+                    RectFill(rp, x + px, y + py, x + run - 1, y + py);
+                    px = run;
+                }
+            }
+            tte_free_pixmap(pm);
+            return;
+        }
+        tf = aa_plain_textfont(c, obj);
         SetFont(rp, tf);
-        SetSoftStyle(rp, c->backend == AA_PLAIN && c->plain_bold ? FSF_BOLD : FS_NORMAL, AskSoftStyle(rp));
-        SetAPen(rp, pen);
+        SetSoftStyle(rp, c->plain_bold ? FSF_BOLD : FS_NORMAL, AskSoftStyle(rp));
+        SetAPen(rp, aa_pen(c, fg));
         SetDrMd(rp, JAM1);
         Move(rp, x, y + tf->tf_Baseline);
         Text(rp, (CONST_STRPTR)str, (ULONG)len);
