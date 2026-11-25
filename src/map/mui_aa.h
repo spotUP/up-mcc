@@ -342,6 +342,20 @@ int mui_aa_palette_move(int active, int n, int cols, int dx, int dy);
  * keeping the aspect (never below 1 pixel); the offsets centre it in the box (may be negative when the picture is larger). */
 void mui_aa_image_fit(int sw, int sh, int bw, int bh, int fit, int* dw, int* dh, int* ox, int* oy);
 
+/* UP-Knob / UP-Levelmeter dial maths (host test mui-dial). Angles are whole degrees, 0 = right, counter clockwise positive; a dial
+ * starts at start_deg for lo and turns clockwise through sweep_deg to hi. Knob: 225 / 270 (lower left round to lower right);
+ * Levelmeter: 180 / 180 (left through top to right). mui_aa_dial_point gives the screen offset (y down) of radius r at deg. */
+#define MUI_AA_KNOB_START 225
+#define MUI_AA_KNOB_SWEEP 270
+#define MUI_AA_METER_START 180
+#define MUI_AA_METER_SWEEP 180
+int mui_aa_dial_sin_q14(int deg); /* sin(deg) * 16384, any deg */
+int mui_aa_dial_deg(long v, long lo, long hi, int start_deg, int sweep_deg);
+void mui_aa_dial_point(int deg, int r, int* dx, int* dy);
+/* Knob keys: raw code 0x4C up / 0x4E right add one, 0x4D down / 0x4F left take one; with shift a tenth of the range (at least one).
+ * Returns the new clamped value, or v unchanged (and *used 0) for any other key. */
+long mui_aa_knob_key(long v, long lo, long hi, int code, int shift, int* used);
+
 #ifdef __cplusplus
 }
 #endif

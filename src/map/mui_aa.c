@@ -997,3 +997,59 @@ void mui_aa_image_fit(int sw, int sh, int bw, int bh, int fit, int* dw, int* dh,
     }
     *dw = w, *dh = h, *ox = (bw - w) / 2, *oy = (bh - h) / 2;
 }
+
+/* UP-Knob / UP-Levelmeter dial maths (mui_aa.h). Integer only: the m68k class libraries link no float code. */
+static const short g_dial_sin[91] = {
+    0, 286, 572, 857, 1143, 1428, 1713, 1997, 2280, 2563, 2845, 3126, 3406,
+    3686, 3964, 4240, 4516, 4790, 5063, 5334, 5604, 5872, 6138, 6402, 6664, 6924,
+    7182, 7438, 7692, 7943, 8192, 8438, 8682, 8923, 9162, 9397, 9630, 9860, 10087,
+    10311, 10531, 10749, 10963, 11174, 11381, 11585, 11786, 11982, 12176, 12365, 12551, 12733,
+    12911, 13085, 13255, 13421, 13583, 13741, 13894, 14044, 14189, 14330, 14466, 14598, 14726,
+    14849, 14968, 15082, 15191, 15296, 15396, 15491, 15582, 15668, 15749, 15826, 15897, 15964,
+    16026, 16083, 16135, 16182, 16225, 16262, 16294, 16322, 16344, 16362, 16374, 16382, 16384};
+
+int mui_aa_dial_sin_q14(int deg) {
+    deg %= 360;
+    if (deg < 0) {
+        deg += 360;
+    }
+    if (deg <= 90) {
+        return g_dial_sin[deg];
+    }
+    if (deg <= 180) {
+        return g_dial_sin[180 - deg];
+    }
+    return deg <= 270 ? -g_dial_sin[deg - 180] : -g_dial_sin[360 - deg];
+}
+
+int mui_aa_dial_deg(long v, long lo, long hi, int start_deg, int sweep_deg) {
+    long span = hi - lo;
+    if (span <= 0) {
+        return start_deg;
+    }
+    v = mui_aa_numeric_clamp(v, lo, hi);
+    /* shortcut: (v - lo) * sweep overflows past a span of about 2^31 / 360; Numeric ranges in MUI GUIs are far smaller */
+    return start_deg - (int)((v - lo) * sweep_deg / span);
+}
+
+void mui_aa_dial_point(int deg, int r, int* dx, int* dy) {
+    long c = mui_aa_dial_sin_q14(deg + 90), s = mui_aa_dial_sin_q14(deg);
+    *dx = (int)((c * r + (c < 0 ? -8192 : 8192)) / 16384); /* rounded to the nearest pixel */
+    *dy = (int)-((s * r + (s < 0 ? -8192 : 8192)) / 16384);
+}
+
+long mui_aa_knob_key(long v, long lo, long hi, int code, int shift, int* used) {
+    long step = shift ? (hi - lo) / 10 : 1;
+    if (step < 1) {
+        step = 1;
+    }
+    *used = 1;
+    if (code == 0x4C || code == 0x4E) {
+        return mui_aa_numeric_clamp(v + step, lo, hi);
+    }
+    if (code == 0x4D || code == 0x4F) {
+        return mui_aa_numeric_clamp(v - step, lo, hi);
+    }
+    *used = 0;
+    return v;
+}

@@ -2688,3 +2688,29 @@
 *       <mcc/up.h>, UP-Field.mcc
 *
 ******/
+
+/****** UP-Knob.mcc/UP-Knob.mcc ******
+*
+*   NAME
+*       UP-Knob.mcc -- MUI class, themed rotary knob (replaces MUIC_Knob)
+*
+*   FUNCTION
+*       A Numeric subclass like MUIC_Knob: MUIA_Numeric_Min, MUIA_Numeric_Max, MUIA_Numeric_Value, MUIA_Numeric_Default, MUIA_Numeric_Format and the MUIM_Numeric_* methods are the stock Numeric class's, value notifications included. The class has no UPA_ attributes of its own. A drag changes the value (right or up adds; two knob widths of travel sweep the range); when the knob is the active object the cursor keys step by 1, with shift by a tenth of the range. The dial sweeps 270 degrees. Default: no frame, on the cycle chain. Create it with MUI_NewObject("UP-Knob.mcc", ...) or UP_NewKnob.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP_NewKnob, UP-Slider.mcc
+*
+******/
+
+/****** UP-Levelmeter.mcc/UP-Levelmeter.mcc ******
+*
+*   NAME
+*       UP-Levelmeter.mcc -- MUI class, themed half-dial level meter (replaces MUIC_Levelmeter)
+*
+*   FUNCTION
+*       A Numeric subclass like MUIC_Levelmeter: the needle shows MUIA_Numeric_Value between MUIA_Numeric_Min and MUIA_Numeric_Max over 180 degrees; the MUIM_Numeric_* methods are the stock Numeric class's. MUIA_Levelmeter_Label (ISG STRPTR, must outlive the object) is drawn under the dial. Display only: it takes no input. Default: no frame. Create it with MUI_NewObject("UP-Levelmeter.mcc", ...) or UP_NewLevelmeter.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP_NewLevelmeter, UP-Knob.mcc
+*
+******/
