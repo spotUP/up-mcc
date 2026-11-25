@@ -871,7 +871,8 @@
 *       UPA_Field_String -- attribute of UP-Field.mcc
 *
 *   FUNCTION
-*       Object*: the inner string gadget (for MUIA_String_Acknowledge notifies)
+*       Object*: the field itself (it answers MUIA_String_Contents, _Acknowledge,
+*       _Accept, _MaxLen); kept for older callers
 *
 *   INPUTS
 *       UPA_Field_String - access G. Tag value from <mcc/up.h>.
@@ -929,8 +930,8 @@
 *
 *   FUNCTION
 *       BOOL: Esc in the active field sets MUIA_Window_CloseRequest on its
-*       window. The inner String gadget eats Esc itself, so the window never
-*       sees it; a dialog with a field sets this to close on Esc (I1360).
+*       window. The field eats Esc either way, so the window never sees it;
+*       a dialog with a field sets this to close on Esc (I1360).
 *
 *   INPUTS
 *       UPA_Field_EscClose - access IS. Tag value from <mcc/up.h>.
@@ -2658,7 +2659,8 @@
 *       UPA_Field_Key -- attribute of UP-Field.mcc
 *
 *   FUNCTION
-*       LONG: raw code of the last Up (0x4C), Down (0x4D), Esc (0x45) or Tab (0x42) pressed in the active field; notifies on every press.
+*       LONG: raw code of the last Up (0x4C), Down (0x4D), Esc (0x45) or Tab (0x42) pressed in the active field; notifies on every press. Up, Down and
+*       Shift+Tab then reach the window; Tab cycles to the next object.
 *
 *   INPUTS
 *       UPA_Field_Key - access G. Tag value from <mcc/up.h>.
@@ -2696,7 +2698,7 @@
 *       UPM_Field_Edited -- method of UP-Field.mcc
 *
 *   FUNCTION
-*       Method: the inner String contents changed; clears UPA_Field_Error and repaints. Internal: the field sends it to itself.
+*       Method: clears UPA_Field_Error and repaints (an edit does the same itself). Internal.
 *
 *   INPUTS
 *       UPM_Field_Edited - method id. Tag value from <mcc/up.h>.

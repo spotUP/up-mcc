@@ -259,13 +259,13 @@ enum { UPV_Button_Align_Left, UPV_Button_Align_Centre, UPV_Button_Align_Right };
 /* UP-Field */
 #define UPM_Field_Redraw UP_TAG(UP_CLS_FIELD, 0x01)     /* method: the window's active object changed, repaint the outline */
 #define UPA_Field_Tokens UP_TAG(UP_CLS_FIELD, 0x02)     /* I const uint32_t*: theme token array */
-#define UPA_Field_String UP_TAG(UP_CLS_FIELD, 0x03)     /* G Object*: the inner string gadget (for MUIA_String_Acknowledge notifies) */
+#define UPA_Field_String UP_TAG(UP_CLS_FIELD, 0x03)     /* G Object*: the field itself (it answers MUIA_String_Contents, _Acknowledge, _Accept, _MaxLen); kept for older callers */
 #define UPA_Field_Placeholder UP_TAG(UP_CLS_FIELD, 0x04) /* I STRPTR hint while empty and not active; must outlive the field */
 #define UPA_Field_MaxWidth UP_TAG(UP_CLS_FIELD, 0x05)   /* I LONG cap of the field's MaxWidth in px, 0 = unbounded */
-#define UPA_Field_EscClose UP_TAG(UP_CLS_FIELD, 0x06)   /* I S BOOL: Esc in the active field sets MUIA_Window_CloseRequest on its window (I1360); the String eats Esc itself, so the window never saw it */
+#define UPA_Field_EscClose UP_TAG(UP_CLS_FIELD, 0x06)   /* I S BOOL: Esc in the active field sets MUIA_Window_CloseRequest on its window (I1360); the field eats Esc either way */
 #define UPA_Field_Error UP_TAG(UP_CLS_FIELD, 0x07)     /* SG BOOL: outline in the ERROR colour (a validation error names this field); a user edit clears it */
-#define UPM_Field_Edited UP_TAG(UP_CLS_FIELD, 0x08)    /* method: the inner String contents changed; clears UPA_Field_Error and repaints. Internal */
-#define UPA_Field_Key UP_TAG(UP_CLS_FIELD, 0x09)        /* G LONG: raw code of the last Up (0x4C), Down (0x4D), Esc (0x45) or Tab (0x42) pressed in the active field; notifies on every press, the key still reaches the String */
+#define UPM_Field_Edited UP_TAG(UP_CLS_FIELD, 0x08)    /* method: clears UPA_Field_Error and repaints (an edit does the same itself). Internal */
+#define UPA_Field_Key UP_TAG(UP_CLS_FIELD, 0x09)        /* G LONG: raw code of the last Up (0x4C), Down (0x4D), Esc (0x45) or Tab (0x42) pressed in the active field; notifies on every press; Up, Down and Shift+Tab then reach the window, Tab cycles to the next object */
 /* the string length limit is MUIA_String_MaxLen */
 
 /* UP-Panel */

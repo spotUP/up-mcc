@@ -60,6 +60,31 @@ int main(void) {
     CHECK(mtl_offset_at(t, n, &line, 1, 0, 5 + s, prop, NULL) == 7);  /* x 52 nearest 51 */
     CHECK(mtl_offset_at(t, n, &line, 1, 0, 39 + s, prop, NULL) == 12); /* past the end */
     CHECK(mtl_offset_at(t, n, &line, 1, 0, -5, prop, NULL) == 0);
+    /* double click: the word (alnum, '_', 8-bit), the space run or the punctuation run under the offset */
+    {
+        const char* w = "ab_1  ,.x";
+        int lo, hi;
+        mtl_word_range(w, 9, 1, &lo, &hi);
+        CHECK(lo == 0 && hi == 4);
+        mtl_word_range(w, 9, 4, &lo, &hi); /* the space run */
+        CHECK(lo == 4 && hi == 6);
+        mtl_word_range(w, 9, 6, &lo, &hi); /* ",." */
+        CHECK(lo == 6 && hi == 8);
+        mtl_word_range(w, 9, 9, &lo, &hi); /* off == n: the word before the end */
+        CHECK(lo == 8 && hi == 9);
+        mtl_word_range(w, 9, -3, &lo, &hi); /* clamped to 0 */
+        CHECK(lo == 0 && hi == 4);
+        mtl_word_range(w, 9, 99, &lo, &hi); /* clamped to n */
+        CHECK(lo == 8 && hi == 9);
+        mtl_word_range("", 0, 0, &lo, &hi);
+        CHECK(lo == 0 && hi == 0);
+        mtl_word_range("2026-11-25", 10, 6, &lo, &hi); /* release date: one part */
+        CHECK(lo == 5 && hi == 7);
+        /* selection: ordered, clamped to the text, empty when anchor == caret */
+        CHECK(mtl_sel_range(7, 2, 9, &lo, &hi) && lo == 2 && hi == 7);
+        CHECK(mtl_sel_range(-4, 30, 9, &lo, &hi) && lo == 0 && hi == 9);
+        CHECK(!mtl_sel_range(3, 3, 9, &lo, &hi));
+    }
     puts("mui_aafield_edit_test: ok");
     return 0;
 }
