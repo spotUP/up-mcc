@@ -37,7 +37,9 @@ extern struct Library* MUIMasterBase;
 typedef struct ta_data {
     char* buf; /* cap bytes, NUL terminated, caller-visible through UPA_TextArea_Text */
     int cap, len, caret, anchor, pref_x, top;
-    int dragging; /* left button held after a click inside: mouse moves extend the selection */
+    int dragging; /* left button held after a click inside: 1 mouse moves extend the selection, 2 they drag the scroll bar thumb */
+    int sb_grab;  /* thumb drag: pointer offset below the thumb top */
+    up_scroller_t sb; /* the UP-Scroller bar the class draws on its right (aa_scroller_paint) */
     MtlLine* lines;
     int nlines, line_cap, wrap_w;
     int dirty;  /* text changed: wrap again */
@@ -53,6 +55,7 @@ typedef struct ta_data {
 
 typedef struct ta_geom {
     int x, y, w, lh, vis; /* text origin, text width, line height, whole lines that fit */
+    int bx, bh;           /* scroll bar left edge and height (its top is y) */
 } ta_geom;
 
 typedef struct ta_fit {
@@ -93,9 +96,11 @@ static void ta_geom_of(Object* obj, ta_data* d, ta_geom* g) {
     int inner;
     g->x = _mleft(obj) + d->m.pad_x;
     g->y = _mtop(obj) + d->m.pad_y + d->m.outline;
-    g->w = _mwidth(obj) - 2 * d->m.pad_x;
+    g->w = _mwidth(obj) - 2 * d->m.pad_x - d->sb.width; /* the bar strip is always reserved, so the wrap width never flips (as UP-List keeps its bar) */
+    g->bx = g->x + g->w + d->m.pad_x / 2;
     g->lh = aa_text_height(&d->aa, obj);
     inner = _mheight(obj) - 2 * (d->m.pad_y + d->m.outline);
+    g->bh = inner;
     if (g->w < 1) {
         g->w = 1;
     }
@@ -239,6 +244,8 @@ static ULONG ta_setup(struct IClass* cl, Object* obj, Msg msg) {
     }
     aa_setup(obj, &d->aa, NULL, 0);
     mui_aa_field_metrics(d->aa.font_px, d->aa.aspect_q8, &d->m);
+    up_scroller_metrics(d->aa.font_px, d->aa.aspect_q8, &d->sb);
+    aa_scroller_hold(&d->aa);
     for (k = 0; k <= MUI_AA_FIELD_ERROR; k++) {
         n = mui_aa_field_plan(d->aa.tok, &d->m, k, ops);
         while (n-- > 0) {
@@ -273,7 +280,7 @@ static ULONG ta_cleanup(struct IClass* cl, Object* obj, Msg msg) {
 static ULONG ta_askminmax(struct IClass* cl, Object* obj, struct MUIP_AskMinMax* msg) {
     ta_data* d = INST_DATA(cl, obj);
     int lh = aa_text_height(&d->aa, obj), px = d->aa.font_px;
-    int ph = 2 * (d->m.pad_y + d->m.outline), pw = 2 * d->m.pad_x;
+    int ph = 2 * (d->m.pad_y + d->m.outline), pw = 2 * d->m.pad_x + d->sb.width;
     DoSuperMethodA(cl, obj, (Msg)msg);
     msg->MinMaxInfo->MinWidth += pw + 8 * px;
     msg->MinMaxInfo->DefWidth += pw + 24 * px;
@@ -314,6 +321,7 @@ static ULONG ta_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     }
     maxtop = d->nlines > g.vis ? d->nlines - g.vis : 0;
     d->top = d->top < 0 ? 0 : d->top > maxtop ? maxtop : d->top;
+    aa_scroller_paint(&d->aa, rp, &d->sb, d->dragging == 2 ? MUI_AA_PRESSED : MUI_AA_NORMAL, g.bx, g.y, d->sb.width, g.bh, d->top, g.vis, d->nlines);
 
     if (d->placeholder != NULL) {
         uint32_t rgb;
@@ -393,6 +401,12 @@ static ULONG ta_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* 
                 set(_win(obj), MUIA_Window_ActiveObject, (ULONG)obj);
             }
             ta_ensure(obj, d, &g);
+            if (im->MouseX >= g.bx) { /* the scroll bar: page on the track, drag the thumb */
+                d->top = (int)mui_aa_scroller_press(&d->sb, g.bh, im->MouseY - g.y, d->top, g.vis, d->nlines, &d->sb_grab);
+                d->dragging = d->sb_grab >= 0 ? 2 : 0;
+                ta_redraw(obj);
+                return MUI_EventHandlerRC_Eat;
+            }
             line = d->top + (im->MouseY - g.y) / g.lh;
             line = line < d->top ? d->top : line;
             off = mtl_offset_at(d->buf, d->len, d->lines, d->nlines, line, im->MouseX - g.x, ta_width, &f);
@@ -401,13 +415,20 @@ static ULONG ta_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* 
             d->dragging = 1;
             return MUI_EventHandlerRC_Eat;
         }
-        if (im->Code == (SELECTDOWN | IECODE_UP_PREFIX)) {
+        if (im->Code == (SELECTDOWN | IECODE_UP_PREFIX) && d->dragging) {
+            if (d->dragging == 2) {
+                ta_redraw(obj); /* the thumb leaves its pressed colour */
+            }
             d->dragging = 0;
         }
         return 0;
     }
     if (im->Class == IDCMP_MOUSEMOVE) {
-        if (d->dragging) {
+        if (d->dragging == 2) {
+            ta_ensure(obj, d, &g);
+            d->top = (int)mui_aa_scroller_first_at(&d->sb, g.bh, d->sb_grab, im->MouseY - g.y, g.vis, d->nlines);
+            ta_redraw(obj);
+        } else if (d->dragging) {
             int line;
             ta_ensure(obj, d, &g);
             line = d->top + (im->MouseY - g.y) / g.lh;

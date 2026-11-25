@@ -180,7 +180,7 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPM_Menu_Closed UP_TAG(UP_CLS_MENU, 0x11) /* method: the popup window closed. Internal */
 #define UPM_Menu_Deactivated UP_TAG(UP_CLS_MENU, 0x12) /* method: the popup window lost activation. Internal */
 
-/* UP-TextArea: a minimal multi-line text editor (word wrap, caret, vertical scroll, Shift and mouse-drag selection, clipboard text via Ctrl or Amiga + C, X, V). Click or the cycle chain focuses it. */
+/* UP-TextArea: a minimal multi-line text editor (word wrap, caret, vertical scroll, Shift and mouse-drag selection, clipboard text via Ctrl or Amiga + C, X, V), with its own UP-Scroller bar on the right (always shown, a thumb while the text is taller than the view; click pages, drag scrolls). Click or the cycle chain focuses it. */
 #define UPA_TextArea_Text UP_TAG(UP_CLS_TEXTAREA, 0x01)        /* ISG STRPTR: the text, copied in on set; get returns the object's own NUL terminated buffer (valid until the next edit). Notifies on every change: notify with MUIV_EveryTime, the pointer stays the same */
 #define UPA_TextArea_MaxLen UP_TAG(UP_CLS_TEXTAREA, 0x02)      /* IG LONG: capacity in bytes, default 1024; longer text is cut */
 #define UPA_TextArea_Placeholder UP_TAG(UP_CLS_TEXTAREA, 0x03) /* I STRPTR hint while empty and not active; must outlive the object */

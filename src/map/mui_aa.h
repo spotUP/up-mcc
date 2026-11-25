@@ -214,6 +214,9 @@ void mui_aa_scroller_rgb(const uint32_t* token, int state, uint32_t* track, uint
 int mui_aa_scroller_geom(const up_scroller_t* m, int h, long first, long visible, long entries, int* thumb_y, int* thumb_h);
 /* First entry for a pointer at track y while the thumb is held grab pixels below its top; clamped to the ends. */
 long mui_aa_scroller_first_at(const up_scroller_t* m, int h, int grab, int y, long visible, long entries);
+/* SELECTDOWN at track y: on the thumb *grab is y minus the thumb top (a drag starts) and first is returned as is; on the track *grab is
+ * -1 and the first entry one page towards the pointer is returned. No thumb (everything fits): first, *grab -1. */
+long mui_aa_scroller_press(const up_scroller_t* m, int h, int y, long first, long visible, long entries, int* grab);
 uint32_t mui_aa_scroller_calls(void);
 
 /* I667i (design 3.6, AAList; popup look 3.3): row model maths of the virtual list. Row height font + 8 (tier S 10), left pad 10, a vertical pad
