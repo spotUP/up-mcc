@@ -115,6 +115,8 @@ mcc_test(mcc-draw-shims COMMAND mcc_draw_shims_test)
 endif()
 mcc_test_exe(mui_pop_test)
 mcc_test(mui-pop-state COMMAND mui_pop_test)
+mcc_test_exe(mui_popasl_test)
+mcc_test(mui-popasl COMMAND mui_popasl_test)
 
 mcc_test_exe(mui_numeric_scale_test)
 mcc_test(mui-numeric-scale COMMAND mui_numeric_scale_test)

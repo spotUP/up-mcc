@@ -356,6 +356,17 @@ void mui_aa_dial_point(int deg, int r, int* dx, int* dy);
  * Returns the new clamped value, or v unchanged (and *used 0) for any other key. */
 long mui_aa_knob_key(long v, long lo, long hi, int code, int shift, int* used);
 
+/* UP-Popasl string <-> ASL requester mapping, pure (host test mui-popasl). No dos.library: the class libraries do not open it.
+ * File: drawer/file split and join as PathPart/FilePart/AddPart do ("Work:a/b" <-> "Work:a" + "b", "RAM:" + "x" -> "RAM:x").
+ * Font: MUI's "name/size" spec without ".font"; parse puts ".font" back for ASLFO_InitialName (size 0 when absent).
+ * Screen mode: the display ID as "0x%08lX". Every writer NUL-terminates and returns 0 when the text was cut. */
+int mui_aa_path_split(const char* path, char* drawer, int dcap, char* file, int fcap);
+int mui_aa_path_join(const char* drawer, const char* file, char* out, int cap);
+int mui_aa_font_spec(const char* name, long size, char* out, int cap);
+int mui_aa_font_parse(const char* spec, char* name, int cap, long* size);
+int mui_aa_hex_text(uint32_t v, char* out, int cap);
+uint32_t mui_aa_hex_parse(const char* s); /* "0x..." or bare hex; stops at the first non-hex digit */
+
 #ifdef __cplusplus
 }
 #endif

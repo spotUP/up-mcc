@@ -1053,3 +1053,96 @@ long mui_aa_knob_key(long v, long lo, long hi, int code, int shift, int* used) {
     *used = 0;
     return v;
 }
+
+/* Copy n bytes of src into out (cap bytes), NUL-terminated; 0 when cut. */
+static int aa_put(char* out, int cap, int at, const char* src, int n) {
+    int ok = 1;
+    if (cap <= 0) {
+        return 0;
+    }
+    if (at + n >= cap) {
+        n = cap - 1 - at;
+        ok = 0;
+    }
+    if (n > 0) {
+        memcpy(out + at, src, (size_t)n);
+        at += n;
+    }
+    out[at < cap ? at : cap - 1] = '\0';
+    return ok;
+}
+
+int mui_aa_path_split(const char* path, char* drawer, int dcap, char* file, int fcap) {
+    int len = (int)strlen(path), cut = len;
+    while (cut > 0 && path[cut - 1] != '/' && path[cut - 1] != ':') {
+        cut--;
+    }
+    /* "a/b": the drawer is "a" (no trailing slash, as PathPart); "Work:b" keeps the colon */
+    int dlen = cut > 0 && path[cut - 1] == '/' ? cut - 1 : cut;
+    int ok = aa_put(drawer, dcap, 0, path, dlen);
+    return aa_put(file, fcap, 0, path + cut, len - cut) && ok;
+}
+
+int mui_aa_path_join(const char* drawer, const char* file, char* out, int cap) {
+    int dl = (int)strlen(drawer), ok = aa_put(out, cap, 0, drawer, dl), at = (int)strlen(out);
+    if (*file == '\0') {
+        return ok;
+    }
+    if (dl > 0 && drawer[dl - 1] != ':' && drawer[dl - 1] != '/') {
+        ok = aa_put(out, cap, at, "/", 1) && ok;
+        at = (int)strlen(out);
+    }
+    return aa_put(out, cap, at, file, (int)strlen(file)) && ok;
+}
+
+int mui_aa_font_spec(const char* name, long size, char* out, int cap) {
+    char num[12];
+    int nl = (int)strlen(name), at, ok;
+    if (nl >= 5 && strcmp(name + nl - 5, ".font") == 0) {
+        nl -= 5;
+    }
+    ok = aa_put(out, cap, 0, name, nl);
+    at = (int)strlen(out);
+    ok = aa_put(out, cap, at, "/", 1) && ok;
+    at = (int)strlen(out);
+    ok = mui_aa_numeric_text(size, num, (int)sizeof num) > 0 && ok;
+    return aa_put(out, cap, at, num, (int)strlen(num)) && ok;
+}
+
+int mui_aa_font_parse(const char* spec, char* name, int cap, long* size) {
+    const char* slash = strrchr(spec, '/');
+    int nl = slash != NULL ? (int)(slash - spec) : (int)strlen(spec), ok;
+    long v = 0;
+    ok = aa_put(name, cap, 0, spec, nl);
+    if (nl > 0 && !(nl >= 5 && strncmp(spec + nl - 5, ".font", 5) == 0)) {
+        ok = aa_put(name, cap, (int)strlen(name), ".font", 5) && ok;
+    }
+    for (slash = slash != NULL ? slash + 1 : ""; *slash >= '0' && *slash <= '9'; slash++) {
+        v = v * 10 + (*slash - '0');
+    }
+    *size = v;
+    return ok;
+}
+
+int mui_aa_hex_text(uint32_t v, char* out, int cap) {
+    char t[11] = "0x";
+    int i;
+    for (i = 0; i < 8; i++) {
+        t[2 + i] = "0123456789ABCDEF"[(v >> (28 - 4 * i)) & 15];
+    }
+    return aa_put(out, cap, 0, t, 10);
+}
+
+uint32_t mui_aa_hex_parse(const char* s) {
+    uint32_t v = 0;
+    if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) {
+        s += 2;
+    }
+    for (;; s++) {
+        int c = *s, d = c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
+        if (d < 0) {
+            return v;
+        }
+        v = v * 16 + (uint32_t)d;
+    }
+}

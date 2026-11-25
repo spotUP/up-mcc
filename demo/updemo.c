@@ -52,12 +52,13 @@ static void demo_requester(const char* text) {
     EasyRequest(NULL, &es, NULL, (APTR)text);
 }
 
-#define CLASS_COUNT 25 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
+#define CLASS_COUNT 28 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
 
 static const char* const g_names[CLASS_COUNT] = {"Button", "Text", "Panel", "Tabs", "Balance", "Slider",
                                                  "Progress", "Cycle", "Field", "Scroller", "List", "Checkmark", "Radio", "Popstring", "Poplist",
                                                  "Numericbutton", "Scale", "Colorfield", "Palette", "Image", "Menu", "Virtgroup", "Scrollgroup",
-                                                 "Knob", "Levelmeter"};
+                                                 "Knob", "Levelmeter",
+                                                 "Popobject", "Popasl", "Popscreen"};
 static const char* const g_cycle_entries[] = {"First", "Second", "Third", NULL};
 static const char* const g_tab_captions[] = {"Songs", "Albums", "Artists", "Playlists", NULL};
 static const char* const g_radio_entries[] = {"Low", "Medium", "High", NULL};
@@ -188,6 +189,15 @@ static Object* make(int index) {
         return MUI_NewObject(path, MUIA_Numeric_Min, 0UL, MUIA_Numeric_Max, 100UL, MUIA_Numeric_Value, 65UL, TAG_DONE);
     case 24:
         return MUI_NewObject(path, MUIA_Numeric_Min, 0UL, MUIA_Numeric_Max, 100UL, MUIA_Numeric_Value, 30UL, MUIA_Levelmeter_Label, (ULONG) "Level", TAG_DONE);
+    case 23: /* Popobject: a text card as the popup object (MUI 3.8 MUIA_Popobject_Object) */
+        return MUI_NewObject(path, MUIA_Popobject_Object,
+                             (ULONG)MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Popup, UPA_Panel_Popup, (ULONG)TRUE,
+                                                  MUIA_Group_Child, (ULONG)label("Popobject: any object as popup", UPV_Text_Tone_Normal), TAG_DONE),
+                             TAG_DONE);
+    case 24:
+        return MUI_NewObject(path, MUIA_Popasl_Type, 0UL /* ASL_FileRequest */, TAG_DONE);
+    case 25:
+        return MUI_NewObject(path, TAG_DONE);
     default:
         g_row_hook.h_Entry = (__typeof__(g_row_hook.h_Entry))(void (*)(void))HookEntry;
         g_row_hook.h_SubEntry = (__typeof__(g_row_hook.h_SubEntry))(void (*)(void))demo_cell;

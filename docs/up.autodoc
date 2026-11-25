@@ -2096,6 +2096,215 @@
 *
 ******/
 
+/****** UP-Popobject.mcc/UPA_Popobject_Object ******
+*
+*   NAME
+*       UPA_Popobject_Object -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       Object*: the popup object (as UPA_Popstring_Popup). The MUI 3.8 id MUIA_Popobject_Object is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_Object - access IG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popobject.mcc/UPA_Popobject_StrObjHook ******
+*
+*   NAME
+*       UPA_Popobject_StrObjHook -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       struct Hook*: before the popup opens (string to object); FALSE refuses the open. The MUI 3.8 id MUIA_Popobject_StrObjHook is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_StrObjHook - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popobject.mcc/UPA_Popobject_ObjStrHook ******
+*
+*   NAME
+*       UPA_Popobject_ObjStrHook -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       struct Hook*: after a successful close, MUIM_Popstring_Close TRUE (object to string). The MUI 3.8 id MUIA_Popobject_ObjStrHook is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_ObjStrHook - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popobject.mcc/UPA_Popobject_WindowHook ******
+*
+*   NAME
+*       UPA_Popobject_WindowHook -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       struct Hook*: before every open, object = the popup object, message = the popup window. The MUI 3.8 id MUIA_Popobject_WindowHook is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_WindowHook - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popobject.mcc/UPA_Popobject_Follow ******
+*
+*   NAME
+*       UPA_Popobject_Follow -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       BOOL: stored for MUI compatibility (default TRUE); the popup is placed under the object at every open. The MUI 3.8 id MUIA_Popobject_Follow is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_Follow - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popobject.mcc/UPA_Popobject_Light ******
+*
+*   NAME
+*       UPA_Popobject_Light -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       BOOL: stored for MUI compatibility (default FALSE); the popup window is always borderless. The MUI 3.8 id MUIA_Popobject_Light is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_Light - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popobject.mcc/UPA_Popobject_Volatile ******
+*
+*   NAME
+*       UPA_Popobject_Volatile -- attribute of UP-Popobject.mcc
+*
+*   FUNCTION
+*       BOOL: stored for MUI compatibility (default TRUE); a hidden object always closes its popup. The MUI 3.8 id MUIA_Popobject_Volatile is accepted as well.
+*
+*   INPUTS
+*       UPA_Popobject_Volatile - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popobject.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popasl.mcc/UPA_Popasl_Type ******
+*
+*   NAME
+*       UPA_Popasl_Type -- attribute of UP-Popasl.mcc
+*
+*   FUNCTION
+*       ULONG: ASL_FileRequest (default), ASL_FontRequest or ASL_ScreenModeRequest. The MUI 3.8 id MUIA_Popasl_Type is accepted as well.
+*
+*   INPUTS
+*       UPA_Popasl_Type - access IG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popasl.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popasl.mcc/UPA_Popasl_Active ******
+*
+*   NAME
+*       UPA_Popasl_Active -- attribute of UP-Popasl.mcc
+*
+*   FUNCTION
+*       BOOL: the requester is open (notifies). The MUI 3.8 id MUIA_Popasl_Active is accepted as well.
+*
+*   INPUTS
+*       UPA_Popasl_Active - access G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popasl.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popasl.mcc/UPA_Popasl_StartHook ******
+*
+*   NAME
+*       UPA_Popasl_StartHook -- attribute of UP-Popasl.mcc
+*
+*   FUNCTION
+*       struct Hook*: object = the Popasl, message = the requester tag list (may be changed); FALSE cancels. The MUI 3.8 id MUIA_Popasl_StartHook is accepted as well.
+*
+*   INPUTS
+*       UPA_Popasl_StartHook - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popasl.mcc, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popasl.mcc/UPA_Popasl_StopHook ******
+*
+*   NAME
+*       UPA_Popasl_StopHook -- attribute of UP-Popasl.mcc
+*
+*   FUNCTION
+*       struct Hook*: after a successful request, object = the Popasl, message = the requester; replaces the string fill. The MUI 3.8 id MUIA_Popasl_StopHook is accepted as well.
+*
+*   INPUTS
+*       UPA_Popasl_StopHook - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popasl.mcc, UP-Popstring.mcc
+*
+******/
+
 /****** UP-Numericbutton.mcc/UPA_Numeric_Min ******
 *
 *   NAME
