@@ -1,4 +1,6 @@
-/* UP-Popstring and UP-Poplist. One Group subclass, two dispatchers (Poplist = the same data with a UP-List popup built by the class).
+/* UP-Popstring, UP-Poplist, UP-Popobject, UP-Popasl and UP-Popscreen. One Group subclass, five dispatchers (Poplist = the same data with
+ * a UP-List popup built by the class; Popobject = Popstring under the MUI 3.8 Popobject names; Popasl = no popup window, the button runs
+ * an ASL requester; Popscreen = Poplist whose entries are the public screens, read again before each open).
  * The popup is a borderless window opened under the object, copied from UP-Cycle (mui_aacycle_class.c). Unlike the cycle, the window is
  * created once and REUSED for every later open (its position is set again), and it is only disposed in cleanup: the cycle kept a closed
  * popup half alive and ignored or crashed on the second click. Open / close decisions are the pure mui_aa_pop_* state machine. */
@@ -16,6 +18,8 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
+#include <libraries/asl.h>
+#include <proto/asl.h>
 
 #include "map/mui_aa.h"
 #include "map/mui_theme.h"
@@ -26,6 +30,13 @@ extern struct Library* MUIMasterBase;
 typedef struct aapop_data {
     Object *str, *btn, *popup, *root, *list;
     int is_list, n, active, deact;
+    int ok;   /* MUIM_Popstring_Close TRUE: the next close runs the ObjStrHook */
+    int asl_active;
+    ULONG compat; /* bits of aapop_compat: Follow, Light, Volatile (stored only) */
+    ULONG asl_type;
+    struct TagItem* asl_tags; /* clone of the creation tags: the ASL tags among them go to the requester */
+    void* scr;                /* Popscreen: aaps_names, allocated at the first open */
+    struct Hook *objstr_hook, *win_hook, *start_hook, *stop_hook;
     int no_activate; /* UPA_Popstring_NoActivate: the popup opens without taking the keyboard from the string */
     const char* const* entries;
     struct Hook *open_hook, *close_hook;
@@ -34,7 +45,48 @@ typedef struct aapop_data {
     mui_aa_pop_t pop;
 } aapop_data;
 
-static struct MUI_CustomClass *g_pop_class, *g_poplist_class;
+enum { AAPOP_K_STRING, AAPOP_K_LIST, AAPOP_K_OBJECT, AAPOP_K_ASL, AAPOP_K_SCREEN };
+static struct MUI_CustomClass *g_pop_class, *g_poplist_class, *g_popobject_class, *g_popasl_class, *g_popscreen_class;
+/* Each UP-Pop* attribute answers to its UP id and its MUI 3.8 id. Hooks first, then the stored-only Popobject flags. */
+static const ULONG aapop_hook_ids[6][2] = {{UPA_Popstring_OpenHook, MUIA_Popstring_OpenHook}, {UPA_Popstring_CloseHook, MUIA_Popstring_CloseHook},
+                                           {UPA_Popobject_StrObjHook, MUIA_Popobject_StrObjHook}, {UPA_Popobject_ObjStrHook, MUIA_Popobject_ObjStrHook},
+                                           {UPA_Popobject_WindowHook, MUIA_Popobject_WindowHook}, {UPA_Popasl_StartHook, MUIA_Popasl_StartHook}};
+static const ULONG aapop_compat_ids[3][2] = {{UPA_Popobject_Follow, MUIA_Popobject_Follow}, {UPA_Popobject_Light, MUIA_Popobject_Light},
+                                             {UPA_Popobject_Volatile, MUIA_Popobject_Volatile}};
+
+static struct TagItem* aapop_find(const ULONG* ids, struct TagItem* tags) {
+    struct TagItem* t = FindTagItem(ids[0], tags);
+    return t != NULL ? t : FindTagItem(ids[1], tags);
+}
+
+static ULONG aapop_tag(ULONG upa, ULONG muia, ULONG def, struct TagItem* tags) {
+    const ULONG ids[2] = {upa, muia};
+    struct TagItem* t = aapop_find(ids, tags);
+    return t != NULL ? t->ti_Data : def;
+}
+
+/* The hook slot for hook attribute i of aapop_hook_ids; StrObjHook is the open hook (same call: popup object, string). */
+static struct Hook** aapop_hook_slot(struct aapop_data* d, int i) {
+    struct Hook** slots[6] = {&d->open_hook, &d->close_hook, &d->open_hook, &d->objstr_hook, &d->win_hook, &d->start_hook};
+    return slots[i];
+}
+
+/* Hooks and stored flags from a tag list (OM_NEW and OM_SET). The StopHook shares the MUI id table of no other class. */
+static void aapop_read_tags(struct aapop_data* d, struct TagItem* tags) {
+    struct TagItem* t;
+    int i;
+    for (i = 0; i < 6; i++) {
+        if ((t = aapop_find(aapop_hook_ids[i], tags)) != NULL) {
+            *aapop_hook_slot(d, i) = (struct Hook*)t->ti_Data;
+        }
+    }
+    d->stop_hook = (struct Hook*)aapop_tag(UPA_Popasl_StopHook, MUIA_Popasl_StopHook, (ULONG)d->stop_hook, tags);
+    for (i = 0; i < 3; i++) {
+        if ((t = aapop_find(aapop_compat_ids[i], tags)) != NULL) {
+            d->compat = t->ti_Data ? d->compat | (1UL << i) : d->compat & ~(1UL << i);
+        }
+    }
+}
 
 static uint32_t aapop_now(void) {
     ULONG s = 0, m = 0;
@@ -150,6 +202,7 @@ static void aapop_open(Object* obj, aapop_data* d, int act) {
             set(d->list, UPA_List_Active, (ULONG)d->active);
         }
     }
+    aapop_hook(d->win_hook, d->root, d->popup);
     mui_aa_pop_opened(&d->pop);
     set(d->popup, MUIA_Window_Open, TRUE);
     set(obj, UPA_Popstring_Open, TRUE);
@@ -166,7 +219,11 @@ static void aapop_closed(Object* obj, aapop_data* d) {
     mui_aa_pop_closed(&d->pop, d->deact, aapop_now());
     d->deact = 0;
     if (was) {
+        if (d->ok) {
+            aapop_hook(d->objstr_hook, d->root, d->str);
+        }
         aapop_hook(d->close_hook, d->root, d->str);
+        d->ok = 0;
         set(obj, UPA_Popstring_Open, FALSE);
     }
 }
@@ -225,13 +282,14 @@ static ULONG aapop_dispose(struct IClass* cl, Object* obj, Msg msg) {
     return DoSuperMethodA(cl, obj, msg);
 }
 
-static ULONG aapop_new(struct IClass* cl, Object* obj, struct opSet* msg, int is_list) {
+static ULONG aapop_new(struct IClass* cl, Object* obj, struct opSet* msg, int kind) {
+    int is_list = kind == AAPOP_K_LIST || kind == AAPOP_K_SCREEN;
     aapop_data* d;
     struct opSet nm;
     struct TagItem def[7], tf[3];
     struct TagItem* tags = msg->ops_AttrList;
-    Object* str = (Object*)GetTagData(UPA_Popstring_String, 0, tags);
-    Object* btn = (Object*)GetTagData(UPA_Popstring_Button, 0, tags);
+    Object* str = (Object*)aapop_tag(UPA_Popstring_String, MUIA_Popstring_String, 0, tags);
+    Object* btn = (Object*)aapop_tag(UPA_Popstring_Button, MUIA_Popstring_Button, 0, tags);
     const char* const* entries = (const char* const*)GetTagData(UPA_Poplist_Entries, 0, tags);
     int n = 0, active = (int)GetTagData(UPA_Poplist_Active, (ULONG)-1, tags);
     while (entries != NULL && entries[n] != NULL) {
@@ -285,9 +343,9 @@ static ULONG aapop_new(struct IClass* cl, Object* obj, struct opSet* msg, int is
     d->entries = entries;
     d->n = n;
     d->active = active;
-    d->root = is_list ? NULL : (Object*)GetTagData(UPA_Popstring_Popup, 0, tags);
-    d->open_hook = (struct Hook*)GetTagData(UPA_Popstring_OpenHook, 0, tags);
-    d->close_hook = (struct Hook*)GetTagData(UPA_Popstring_CloseHook, 0, tags);
+    d->root = is_list ? NULL : (Object*)aapop_tag(UPA_Popstring_Popup, MUIA_Popobject_Object, 0, tags);
+    d->compat = 5; /* MUI defaults: Follow TRUE, Light FALSE, Volatile TRUE */
+    aapop_read_tags(d, tags);
     d->no_activate = GetTagData(UPA_Popstring_NoActivate, FALSE, tags) != 0;
     DoMethod(btn, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, UPM_Popstring_Click);
     return (ULONG)obj;
@@ -299,12 +357,7 @@ static ULONG aapop_set(struct IClass* cl, Object* obj, struct opSet* msg) {
     if ((ti = FindTagItem(MUIA_String_Contents, tags)) != NULL) {
         set(d->str, MUIA_String_Contents, ti->ti_Data);
     }
-    if ((ti = FindTagItem(UPA_Popstring_OpenHook, tags)) != NULL) {
-        d->open_hook = (struct Hook*)ti->ti_Data;
-    }
-    if ((ti = FindTagItem(UPA_Popstring_CloseHook, tags)) != NULL) {
-        d->close_hook = (struct Hook*)ti->ti_Data;
-    }
+    aapop_read_tags(d, tags);
     if ((ti = FindTagItem(UPA_Popstring_Popup, tags)) != NULL && !d->is_list && d->popup == NULL) {
         if (d->root != NULL && d->root != (Object*)ti->ti_Data) {
             MUI_DisposeObject(d->root);
@@ -327,10 +380,33 @@ static ULONG aapop_set(struct IClass* cl, Object* obj, struct opSet* msg) {
 
 static ULONG aapop_get(struct IClass* cl, Object* obj, struct opGet* msg) {
     aapop_data* d = INST_DATA(cl, obj);
-    switch (msg->opg_AttrID) {
+    ULONG id = msg->opg_AttrID;
+    int i;
+    for (i = 0; i < 6; i++) {
+        if (id == aapop_hook_ids[i][0] || id == aapop_hook_ids[i][1]) {
+            *msg->opg_Storage = (ULONG)*aapop_hook_slot(d, i);
+            return TRUE;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        if (id == aapop_compat_ids[i][0] || id == aapop_compat_ids[i][1]) {
+            *msg->opg_Storage = (d->compat >> i) & 1;
+            return TRUE;
+        }
+    }
+    switch (id) {
+    case UPA_Popasl_StopHook:
+    case MUIA_Popasl_StopHook:
+        *msg->opg_Storage = (ULONG)d->stop_hook;
+        return TRUE;
+    case MUIA_Popstring_Button:
+        *msg->opg_Storage = (ULONG)d->btn;
+        return TRUE;
+    case MUIA_Popstring_String:
     case UPA_Popstring_String:
         *msg->opg_Storage = (ULONG)d->str;
         return TRUE;
+    case MUIA_Popobject_Object:
     case UPA_Popstring_Popup:
         *msg->opg_Storage = (ULONG)d->root; /* NULL once the owner window's cleanup disposed it */
         return TRUE;
@@ -346,11 +422,11 @@ static ULONG aapop_get(struct IClass* cl, Object* obj, struct opGet* msg) {
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-static ULONG aapop_dispatch_c(struct IClass* cl, Object* obj, Msg msg, int is_list) {
+static ULONG aapop_dispatch_c(struct IClass* cl, Object* obj, Msg msg, int kind) {
     aapop_data* d;
     switch (msg->MethodID) {
     case OM_NEW:
-        return aapop_new(cl, obj, (struct opSet*)msg, is_list);
+        return aapop_new(cl, obj, (struct opSet*)msg, kind);
     case OM_DISPOSE:
         return aapop_dispose(cl, obj, msg);
     case OM_SET:
@@ -378,6 +454,19 @@ static ULONG aapop_dispatch_c(struct IClass* cl, Object* obj, Msg msg, int is_li
             }
         }
         return 0;
+    case MUIM_Popstring_Open:
+        d = INST_DATA(cl, obj);
+        if (!d->pop.open) {
+            aapop_open(obj, d, d->popup != NULL ? MUI_AA_POP_OPEN_REUSE : MUI_AA_POP_OPEN_NEW);
+        }
+        return (ULONG)(d->pop.open != 0);
+    case MUIM_Popstring_Close:
+        d = INST_DATA(cl, obj);
+        if (d->pop.open) {
+            d->ok = ((struct MUIP_Popstring_Close*)msg)->result != 0; /* TRUE: aapop_closed runs the ObjStrHook */
+            aapop_close(d);
+        }
+        return 0;
     case UPM_Popstring_Deactivated:
         d = INST_DATA(cl, obj);
         d->deact = 1;
@@ -391,22 +480,200 @@ static ULONG aapop_dispatch_c(struct IClass* cl, Object* obj, Msg msg, int is_li
 }
 
 static ULONG __attribute__((used)) aapopstring_dispatch_c(struct IClass* cl, Object* obj, Msg msg) {
-    return aapop_dispatch_c(cl, obj, msg, 0);
+    return aapop_dispatch_c(cl, obj, msg, AAPOP_K_STRING);
 }
 static ULONG __attribute__((used)) aapoplist_dispatch_c(struct IClass* cl, Object* obj, Msg msg) {
-    return aapop_dispatch_c(cl, obj, msg, 1);
+    return aapop_dispatch_c(cl, obj, msg, AAPOP_K_LIST);
+}
+/* shortcut: Follow, Light and Volatile are stored and read back only (the popup is placed at each open, never dragged along, and
+ * hides with the object); upgrade when a client needs a popup that follows a moving window. */
+static ULONG __attribute__((used)) aapopobject_dispatch_c(struct IClass* cl, Object* obj, Msg msg) {
+    return aapop_dispatch_c(cl, obj, msg, AAPOP_K_OBJECT);
+}
+
+/* Popasl: the ASL requester runs synchronously from the button (or MUIM_Popstring_Open), seeded from and written back to the string.
+ * asl.library is opened per run into a local AslBase (the inline calls bind to that name), so only this dispatcher pulls ASL in. */
+static void aapasl_run(Object* obj, aapop_data* d) {
+    struct Library* AslBase;
+    struct TagItem t[5];
+    char a[256], b[108], out[300];
+    STRPTR cur = NULL;
+    long size = 0;
+    APTR req;
+    ULONG dis = 0;
+    GetAttr(MUIA_Disabled, obj, &dis);
+    if (d->asl_active || dis || !aa_live(obj) || (AslBase = OpenLibrary((STRPTR) "asl.library", 37)) == NULL) {
+        return;
+    }
+    GetAttr(MUIA_String_Contents, d->str, (ULONG*)&cur);
+    cur = cur != NULL ? cur : (STRPTR) "";
+    out[0] = 0;
+    t[0].ti_Tag = ASLFR_Window, t[0].ti_Data = (ULONG)_window(obj); /* the same tag id for all three requester types */
+    t[1].ti_Tag = t[2].ti_Tag = TAG_IGNORE;
+    if (d->asl_type == ASL_FileRequest) {
+        mui_aa_path_split(cur, a, sizeof a, b, sizeof b);
+        t[1].ti_Tag = ASLFR_InitialDrawer, t[1].ti_Data = (ULONG)a;
+        t[2].ti_Tag = ASLFR_InitialFile, t[2].ti_Data = (ULONG)b;
+    } else if (d->asl_type == ASL_FontRequest && mui_aa_font_parse(cur, a, sizeof a, &size) && a[0] != 0) {
+        t[1].ti_Tag = ASLFO_InitialName, t[1].ti_Data = (ULONG)a;
+        t[2].ti_Tag = size > 0 ? ASLFO_InitialSize : TAG_IGNORE, t[2].ti_Data = (ULONG)size;
+    } else if (d->asl_type == ASL_ScreenModeRequest && cur[0] != 0) {
+        t[1].ti_Tag = ASLSM_InitialDisplayID, t[1].ti_Data = mui_aa_hex_parse(cur);
+    }
+    t[3].ti_Tag = TAG_MORE, t[3].ti_Data = (ULONG)(uintptr_t)d->asl_tags; /* the caller's ASL tags from the creation list */
+    t[4].ti_Tag = TAG_DONE;
+    d->asl_active = 1;
+    set(obj, UPA_Popasl_Active, TRUE);
+    set(_app(obj), MUIA_Application_Sleep, TRUE);
+    if (aapop_hook(d->start_hook, obj, (Object*)t) && (req = AllocAslRequest(d->asl_type, t)) != NULL) {
+        if (AslRequest(req, NULL)) {
+            if (d->stop_hook != NULL) {
+                aapop_hook(d->stop_hook, obj, (Object*)req);
+            } else if (d->asl_type == ASL_FileRequest) {
+                mui_aa_path_join(((struct FileRequester*)req)->fr_Drawer, ((struct FileRequester*)req)->fr_File, out, sizeof out);
+            } else if (d->asl_type == ASL_FontRequest) {
+                mui_aa_font_spec((const char*)((struct FontRequester*)req)->fo_Attr.ta_Name, ((struct FontRequester*)req)->fo_Attr.ta_YSize, out, sizeof out);
+            } else {
+                mui_aa_hex_text(((struct ScreenModeRequester*)req)->sm_DisplayID, out, sizeof out);
+            }
+            if (out[0] != 0) {
+                set(d->str, MUIA_String_Contents, (ULONG)out);
+            }
+        }
+        FreeAslRequest(req);
+    }
+    set(_app(obj), MUIA_Application_Sleep, FALSE);
+    CloseLibrary(AslBase);
+    d->asl_active = 0;
+    set(obj, UPA_Popasl_Active, FALSE);
+}
+
+static ULONG __attribute__((used)) aapopasl_dispatch_c(struct IClass* cl, Object* obj, Msg msg) {
+    aapop_data* d;
+    struct TagItem* tags;
+    switch (msg->MethodID) {
+    case OM_NEW:
+        tags = ((struct opSet*)msg)->ops_AttrList;
+        obj = (Object*)aapop_dispatch_c(cl, obj, msg, AAPOP_K_ASL);
+        if (obj != NULL) {
+            d = INST_DATA(cl, obj);
+            d->asl_type = aapop_tag(UPA_Popasl_Type, MUIA_Popasl_Type, ASL_FileRequest, tags);
+            d->asl_tags = CloneTagItems(tags); /* NULL on no memory: then only our own tags reach the requester */
+        }
+        return (ULONG)obj;
+    case OM_DISPOSE:
+        FreeTagItems(((aapop_data*)INST_DATA(cl, obj))->asl_tags);
+        break;
+    case UPM_Popstring_Click:
+    case MUIM_Popstring_Open:
+        aapasl_run(obj, INST_DATA(cl, obj));
+        return 0;
+    case OM_GET:
+        d = INST_DATA(cl, obj);
+        switch (((struct opGet*)msg)->opg_AttrID) {
+        case UPA_Popasl_Type:
+        case MUIA_Popasl_Type:
+            *((struct opGet*)msg)->opg_Storage = d->asl_type;
+            return TRUE;
+        case UPA_Popasl_Active:
+        case MUIA_Popasl_Active:
+            *((struct opGet*)msg)->opg_Storage = (ULONG)d->asl_active;
+            return TRUE;
+        }
+        break;
+    }
+    return aapop_dispatch_c(cl, obj, msg, AAPOP_K_ASL);
+}
+
+/* Popscreen: the entries are the public screen names, copied under LockPubScreenList before each open into one AllocVec block
+ * (pointer table, then the name buffers). shortcut: at most AAPS_MAX screens, and the list height is fixed at the first open;
+ * upgrade when a system runs more public screens. */
+#define AAPS_MAX 32
+static void aaps_refresh(aapop_data* d) {
+    const char** ptr;
+    char* name;
+    struct List* l;
+    struct Node* nd;
+    int n = 0, i;
+    if (d->scr == NULL) {
+        d->scr = AllocVec((AAPS_MAX + 1) * sizeof(char*) + AAPS_MAX * (MAXPUBSCREENNAME + 1), MEMF_ANY);
+    }
+    if (d->scr == NULL) {
+        return;
+    }
+    ptr = (const char**)d->scr;
+    name = (char*)(ptr + AAPS_MAX + 1);
+    l = LockPubScreenList();
+    for (nd = l->lh_Head; nd->ln_Succ != NULL && n < AAPS_MAX; nd = nd->ln_Succ, n++) {
+        for (i = 0; i < MAXPUBSCREENNAME && nd->ln_Name[i] != 0; i++) {
+            name[i] = nd->ln_Name[i];
+        }
+        name[i] = 0;
+        ptr[n] = name;
+        name += MAXPUBSCREENNAME + 1;
+    }
+    UnlockPubScreenList();
+    ptr[n] = NULL;
+    d->entries = ptr;
+    d->n = n;
+    d->active = -1;
+    if (d->list != NULL) {
+        SetAttrs(d->list, UPA_List_Count, (ULONG)n, UPA_List_Active, (ULONG)-1, TAG_DONE);
+    }
+}
+
+static ULONG __attribute__((used)) aapopscreen_dispatch_c(struct IClass* cl, Object* obj, Msg msg) {
+    aapop_data* d;
+    struct TagItem* ti;
+    switch (msg->MethodID) {
+    case OM_DISPOSE:
+        d = INST_DATA(cl, obj);
+        if (d->scr != NULL) {
+            FreeVec(d->scr);
+        }
+        break;
+    case OM_SET:
+        ti = FindTagItem(UPA_Popstring_Open, ((struct opSet*)msg)->ops_AttrList);
+        if (ti == NULL || !ti->ti_Data) {
+            break;
+        }
+        /* fall through: an open wish refreshes the screens like a click */
+    case UPM_Popstring_Click:
+    case MUIM_Popstring_Open:
+        d = INST_DATA(cl, obj);
+        if (!d->pop.open) {
+            aaps_refresh(d);
+        }
+        break;
+    }
+    return aapop_dispatch_c(cl, obj, msg, AAPOP_K_SCREEN);
 }
 
 extern ULONG aapopstring_dispatch(void);
 extern ULONG aapoplist_dispatch(void);
+extern ULONG aapopobject_dispatch(void);
+extern ULONG aapopasl_dispatch(void);
+extern ULONG aapopscreen_dispatch(void);
 const struct aa_class_desc aapopstring_class_desc = {MUIC_Group, sizeof(aapop_data), aapopstring_dispatch, &g_pop_class};
 const struct aa_class_desc aapoplist_class_desc = {MUIC_Group, sizeof(aapop_data), aapoplist_dispatch, &g_poplist_class};
+const struct aa_class_desc aapopobject_class_desc = {MUIC_Group, sizeof(aapop_data), aapopobject_dispatch, &g_popobject_class};
+const struct aa_class_desc aapopasl_class_desc = {MUIC_Group, sizeof(aapop_data), aapopasl_dispatch, &g_popasl_class};
+const struct aa_class_desc aapopscreen_class_desc = {MUIC_Group, sizeof(aapop_data), aapopscreen_dispatch, &g_popscreen_class};
 __asm__(".text\n.even\n.globl _aapopstring_dispatch\n_aapopstring_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
         "\tjbsr _aapopstring_dispatch_c\n\tlea 12(sp),sp\n\trts\n"
         ".globl _aapoplist_dispatch\n_aapoplist_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aapoplist_dispatch_c\n\tlea 12(sp),sp\n\trts\n");
+        "\tjbsr _aapoplist_dispatch_c\n\tlea 12(sp),sp\n\trts\n"
+        ".globl _aapopobject_dispatch\n_aapopobject_dispatch:\n"
+        "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
+        "\tjbsr _aapopobject_dispatch_c\n\tlea 12(sp),sp\n\trts\n"
+        ".globl _aapopasl_dispatch\n_aapopasl_dispatch:\n"
+        "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
+        "\tjbsr _aapopasl_dispatch_c\n\tlea 12(sp),sp\n\trts\n"
+        ".globl _aapopscreen_dispatch\n_aapopscreen_dispatch:\n"
+        "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
+        "\tjbsr _aapopscreen_dispatch_c\n\tlea 12(sp),sp\n\trts\n");
 
 static Object* aapop_make(struct MUI_CustomClass** slot, const struct aa_class_desc* desc, const struct TagItem* tags) {
     if (*slot == NULL) {
@@ -426,13 +693,25 @@ Object* UP_NewPoplist(const struct TagItem* tags) {
     return aapop_make(&g_poplist_class, &aapoplist_class_desc, tags);
 }
 
+Object* UP_NewPopobject(const struct TagItem* tags) {
+    return aapop_make(&g_popobject_class, &aapopobject_class_desc, tags);
+}
+
+Object* UP_NewPopasl(const struct TagItem* tags) {
+    return aapop_make(&g_popasl_class, &aapopasl_class_desc, tags);
+}
+
+Object* UP_NewPopscreen(const struct TagItem* tags) {
+    return aapop_make(&g_popscreen_class, &aapopscreen_class_desc, tags);
+}
+
 void mui_aapopstring_class_free(void) {
-    if (g_pop_class != NULL) {
-        MUI_DeleteCustomClass(g_pop_class);
-        g_pop_class = NULL;
-    }
-    if (g_poplist_class != NULL) {
-        MUI_DeleteCustomClass(g_poplist_class);
-        g_poplist_class = NULL;
+    struct MUI_CustomClass** slot[5] = {&g_pop_class, &g_poplist_class, &g_popobject_class, &g_popasl_class, &g_popscreen_class};
+    int i;
+    for (i = 0; i < 5; i++) {
+        if (*slot[i] != NULL) {
+            MUI_DeleteCustomClass(*slot[i]);
+            *slot[i] = NULL;
+        }
     }
 }

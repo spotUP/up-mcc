@@ -81,6 +81,9 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_IMAGE 0x15   /* UP-Image */
 #define UP_CLS_MENU 0x16    /* UP-Menu */
 #define UP_CLS_TEXTAREA 0x17 /* UP-TextArea */
+#define UP_CLS_POPOBJECT 0x1C /* UP-Popobject */
+#define UP_CLS_POPASL 0x1D    /* UP-Popasl */
+#define UP_CLS_POPSCREEN 0x1E /* UP-Popscreen (no own attributes) */
 #define UP_CLS_SCROLLGROUP 0x0E
 #define UP_CLS_VIRTGROUP 0x10
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
@@ -141,6 +144,26 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_Poplist_Entries UP_TAG(UP_CLS_POPLIST, 0x01) /* I char**: NULL terminated, must outlive the object */
 #define UPA_Poplist_Active UP_TAG(UP_CLS_POPLIST, 0x02)  /* ISG LONG: chosen entry, -1 none (default); setting it fills the string; notifies */
 /* Poplist also takes UPA_Popstring_String, _Button, _OpenHook, _CloseHook, _Open. */
+
+/* UP-Popobject (MUIC_Popobject): a Popstring with any object as popup. Every UP-Pop* class also takes the MUI 3.8 ids of its own and of
+ * MUIC_Popstring (MUIA_Popobject_*, MUIA_Popasl_*, MUIA_Popstring_String/_Button/_OpenHook/_CloseHook) and the methods MUIM_Popstring_Open
+ * and MUIM_Popstring_Close (result TRUE runs the ObjStrHook). Hooks take the MUI order: object = the popup object, message = the string. */
+#define UPA_Popobject_Object UP_TAG(UP_CLS_POPOBJECT, 0x01)     /* IG Object*: the popup object (as UPA_Popstring_Popup) */
+#define UPA_Popobject_StrObjHook UP_TAG(UP_CLS_POPOBJECT, 0x02) /* ISG struct Hook*: before the popup opens (string to object); FALSE refuses the open */
+#define UPA_Popobject_ObjStrHook UP_TAG(UP_CLS_POPOBJECT, 0x03) /* ISG struct Hook*: after a successful close, MUIM_Popstring_Close TRUE (object to string) */
+#define UPA_Popobject_WindowHook UP_TAG(UP_CLS_POPOBJECT, 0x04) /* ISG struct Hook*: before every open, object = the popup object, message = the popup window */
+#define UPA_Popobject_Follow UP_TAG(UP_CLS_POPOBJECT, 0x05)     /* ISG BOOL: stored for MUI compatibility (default TRUE); the popup is placed under the object at every open */
+#define UPA_Popobject_Light UP_TAG(UP_CLS_POPOBJECT, 0x06)      /* ISG BOOL: stored for MUI compatibility (default FALSE); the popup window is always borderless */
+#define UPA_Popobject_Volatile UP_TAG(UP_CLS_POPOBJECT, 0x07)   /* ISG BOOL: stored for MUI compatibility (default TRUE); a hidden object always closes its popup */
+
+/* UP-Popasl (MUIC_Popasl): the button opens an ASL file, font or screen mode requester; ASL tags in the creation list go to the
+ * requester. Without a StopHook the result is written into the string: the path, "name/size", or the display ID as 0x%08lX. */
+#define UPA_Popasl_Type UP_TAG(UP_CLS_POPASL, 0x01)      /* IG ULONG: ASL_FileRequest (default), ASL_FontRequest or ASL_ScreenModeRequest */
+#define UPA_Popasl_Active UP_TAG(UP_CLS_POPASL, 0x02)    /* G BOOL: the requester is open (notifies) */
+#define UPA_Popasl_StartHook UP_TAG(UP_CLS_POPASL, 0x03) /* ISG struct Hook*: object = the Popasl, message = the requester tag list (may be changed); FALSE cancels */
+#define UPA_Popasl_StopHook UP_TAG(UP_CLS_POPASL, 0x04)  /* ISG struct Hook*: after a successful request, object = the Popasl, message = the requester; replaces the string fill */
+
+/* UP-Popscreen (MUIC_Popscreen): a Poplist whose entries are the public screen names, read again at every open. */
 
 /* UP-Numericbutton (MUIC_Numericbutton equivalent): a button showing the number; a click opens a small popup slider under it, a
  * horizontal drag over the button changes the value directly (two button widths sweep the range). */
@@ -319,6 +342,9 @@ Object* UP_NewScroller(const struct TagItem* tags);
 Object* UP_NewField(const struct TagItem* tags);
 Object* UP_NewPopstring(const struct TagItem* tags);
 Object* UP_NewPoplist(const struct TagItem* tags);
+Object* UP_NewPopobject(const struct TagItem* tags);
+Object* UP_NewPopasl(const struct TagItem* tags);
+Object* UP_NewPopscreen(const struct TagItem* tags);
 Object* UP_NewNumericbutton(const struct TagItem* tags);
 Object* UP_NewScale(const struct TagItem* tags);
 Object* UP_NewColorfield(const struct TagItem* tags);
