@@ -193,31 +193,31 @@ static Object* make(int index) {
         return MUI_NewObject(path, MUIA_Numeric_Min, 0UL, MUIA_Numeric_Max, 100UL, MUIA_Numeric_Value, 65UL, TAG_DONE);
     case 24:
         return MUI_NewObject(path, MUIA_Numeric_Min, 0UL, MUIA_Numeric_Max, 100UL, MUIA_Numeric_Value, 30UL, MUIA_Levelmeter_Label, (ULONG) "Level", TAG_DONE);
-    case 23: /* Popobject: a text card as the popup object (MUI 3.8 MUIA_Popobject_Object) */
+    case 25: /* Popobject: a text card as the popup object (MUI 3.8 MUIA_Popobject_Object) */
         return MUI_NewObject(path, MUIA_Popobject_Object,
                              (ULONG)MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Popup, UPA_Panel_Popup, (ULONG)TRUE,
                                                   MUIA_Group_Child, (ULONG)label("Popobject: any object as popup", UPV_Text_Tone_Normal), TAG_DONE),
                              TAG_DONE);
-    case 24:
-        return MUI_NewObject(path, MUIA_Popasl_Type, 0UL /* ASL_FileRequest */, TAG_DONE);
-    case 25:
-        return MUI_NewObject(path, TAG_DONE);
-    case 23:
-    case 24:
-    case 25:
-        return MUI_NewObject(path, MUIA_Pendisplay_Spec, (ULONG)&g_pen_spec, TAG_DONE);
-    case 23: /* MUI gap E */
-    case 25:
-    case 27:
-        return MUI_NewObject(path, MUIA_Imagedisplay_Spec, (ULONG) "2:r3E3E3E3E,63636363,DDDDDDDD", TAG_DONE);
-    case 24:
     case 26:
+        return MUI_NewObject(path, MUIA_Popasl_Type, 0UL /* ASL_FileRequest */, TAG_DONE);
+    case 27:
+        return MUI_NewObject(path, TAG_DONE);
     case 28:
+    case 29:
+    case 30:
+        return MUI_NewObject(path, MUIA_Pendisplay_Spec, (ULONG)&g_pen_spec, TAG_DONE);
+    case 31: /* MUI gap E */
+    case 33:
+    case 35:
+        return MUI_NewObject(path, MUIA_Imagedisplay_Spec, (ULONG) "2:r3E3E3E3E,63636363,DDDDDDDD", TAG_DONE);
+    case 32:
+    case 34:
+    case 36:
         return MUI_NewObject(path, MUIA_Framedisplay_Spec, (ULONG) "910202", TAG_DONE);
-    case 23:
+    case 37:
         return MUI_NewObject(path, MUIA_Dirlist_Directory, (ULONG) "SYS:", MUIA_Dirlist_RejectIcons, (ULONG)TRUE, TAG_DONE);
-    case 24:
-    case 25:
+    case 38:
+    case 39:
         return MUI_NewObject(path, TAG_DONE);
     default:
         g_row_hook.h_Entry = (__typeof__(g_row_hook.h_Entry))(void (*)(void))HookEntry;
@@ -306,7 +306,7 @@ static int demo_body(int argc, char** argv) {
                        box(FALSE, obj[6], tier == 0 ? NULL : label("Scroll position", UPV_Text_Tone_Muted), obj[9], NULL, NULL, NULL));
             if (tier == 2) {
                 Object* more = card("More controls", box(TRUE, obj[11], obj[12], NULL, NULL, NULL, NULL), box(TRUE, obj[13], obj[14], obj[20], NULL, NULL, NULL),
-                                    box(TRUE, obj[15], obj[16], obj[17], obj[18], obj[19], NULL), box(TRUE, obj[21], obj[22], obj[23], obj[24], NULL, NULL));
+                                    box(TRUE, obj[15], obj[16], obj[17], obj[18], obj[19], NULL), box(FALSE, box(TRUE, obj[21], obj[22], obj[23], obj[24], NULL, NULL), box(TRUE, obj[25], obj[26], obj[27], NULL, NULL, NULL), NULL, NULL, NULL, NULL));
                 Object* left = card("Library", box(FALSE, obj[3], tab_pages(obj[3]), NULL, NULL, NULL, NULL), label("128 songs in your library", UPV_Text_Tone_Muted), obj[2], obj[10]);
                 root = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Panel, MUIA_Group_Child, (ULONG)label("UP-Demo", UPV_Text_Tone_Heading),
                                      MUIA_Group_Child, (ULONG)obj[1], MUIA_Group_Child, (ULONG)ctl,
