@@ -156,8 +156,13 @@ static int aapanel_holes(Object* grp, int* holes, int n, int depth, int max_dept
     {
         LONG i = 0;
         while (!*full && (child = NextObject(&state)) != NULL) {
+            ULONG shown = TRUE;
             if (page >= 0 && i++ != page) {
                 continue;
+            }
+            GetAttr(MUIA_ShowMe, child, &shown);
+            if (!shown) {
+                continue; /* D9: a hidden child (the footer Cancel button) keeps its last box; as a hole it left a stale patch beside Back */
             }
             if (rect_cl != NULL && OCLASS(child) == rect_cl) {
                 continue; /* a plain Rectangle is a spacer that paints nothing; as a hole it left MUI's darker snapped pen in the card */
