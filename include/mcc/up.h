@@ -264,6 +264,29 @@ typedef struct UP_Scrmode {
  * the method returns TRUE when the row exists and sets: text = the cell texts joined by two spaces (truncated to cap), x/y/w/h =
  * the row's box in window coordinates (all 0 when scrolled out of view or not shown), selected = 1 on the active row. */
 #define UPM_List_GetRow UP_TAG(UP_CLS_LIST, 0x10)
+/* MUI 3.8 MUIC_Listview counterparts (G1). 0x10 is taken twice already (UPA_List_Scroller, UPM_List_GetRow: ledger row 490); new numbers start at 0x11. */
+#define UPA_List_MultiSelect UP_TAG(UP_CLS_LIST, 0x11)  /* IG LONG UPV_List_MultiSelect_* (MUIA_Listview_MultiSelect); Default acts as Shifted */
+#define UPA_List_DoubleClick UP_TAG(UP_CLS_LIST, 0x12)  /* G BOOL: set TRUE on every double click or Return (MUIA_Listview_DoubleClick; notifies every time) */
+#define UPA_List_ClickColumn UP_TAG(UP_CLS_LIST, 0x13)  /* G LONG: column of the last click; Return gives UPA_List_DefClickColumn */
+#define UPA_List_DefClickColumn UP_TAG(UP_CLS_LIST, 0x14) /* ISG LONG: ClickColumn of a Return pick (default 0) */
+#define UPA_List_DragType UP_TAG(UP_CLS_LIST, 0x15)     /* ISG LONG UPV_List_DragType_*: accepted and stored only, the list starts no drag */
+#define UPA_List_Input UP_TAG(UP_CLS_LIST, 0x16)        /* ISG BOOL: rows can be hovered and selected (default TRUE); FALSE = UPA_List_NoSelect */
+#define UPM_List_Select UP_TAG(UP_CLS_LIST, 0x17)       /* method UP_ListSelect (MUIM_List_Select): pos row or UPV_List_Select_Active/All; seltype Off/On/Toggle/Ask; *state (may be NULL) = the row's state, for All the selected count. Multi-select lists only (else state 0) */
+#define UPM_List_NextSelected UP_TAG(UP_CLS_LIST, 0x18) /* method UP_ListNextSelected (MUIM_List_NextSelected): *pos from UPV_List_NextSelected_Start to the next selected row, -1 at the end; with none selected the active row once */
+#define UPV_List_MultiSelect_None 0
+#define UPV_List_MultiSelect_Default 1
+#define UPV_List_MultiSelect_Shifted 2 /* Shift+click toggles a row, a plain click selects that row alone */
+#define UPV_List_MultiSelect_Always 3  /* every click toggles a row */
+#define UPV_List_DragType_None 0
+#define UPV_List_DragType_Immediate 1
+#define UPV_List_Select_Off 0
+#define UPV_List_Select_On 1
+#define UPV_List_Select_Toggle 2
+#define UPV_List_Select_Ask 3
+#define UPV_List_Select_Active (-1)
+#define UPV_List_Select_All (-2)
+#define UPV_List_NextSelected_Start (-1)
+#define UPV_List_NextSelected_End (-1)
 #define UP_LIST_COLS 5
 typedef struct UP_ListColumns { /* weight > 0 shares the free width by weight, weight 0 is as wide as sample[k] (NULL = empty) */
     int n;
@@ -281,6 +304,15 @@ typedef struct UP_ListGetRow {
     LONG x, y, w, h;
     LONG selected;
 } UP_ListGetRow;
+typedef struct UP_ListSelect { /* same layout as struct MUIP_List_Select */
+    ULONG MethodID; /* UPM_List_Select */
+    LONG pos, seltype;
+    LONG* state;
+} UP_ListSelect;
+typedef struct UP_ListNextSelected { /* same layout as struct MUIP_List_NextSelected */
+    ULONG MethodID; /* UPM_List_NextSelected */
+    LONG* pos;
+} UP_ListNextSelected;
 
 /* UP-Button */
 #define UPA_Button_Caption UP_TAG(UP_CLS_BUTTON, 0x01)     /* ISG STRPTR shown text; a set relayouts the parent (a fit button grows) and updates the tooltip; copied, up to 47 bytes */

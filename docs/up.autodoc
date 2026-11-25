@@ -598,6 +598,158 @@
 *
 ******/
 
+/****** UP-List.mcc/UPA_List_MultiSelect ******
+*
+*   NAME
+*       UPA_List_MultiSelect -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       LONG UPV_List_MultiSelect_None/Default/Shifted/Always, as MUIA_Listview_MultiSelect. Shifted (and Default, which acts as Shifted): a plain click selects that row alone, Shift+click toggles it. Always: every click toggles the row. Selected rows draw like the active row. Read the selection with UPM_List_NextSelected, change it with UPM_List_Select. Keys move only the active row.
+*
+*   INPUTS
+*       UPA_List_MultiSelect - access I G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPA_List_DoubleClick ******
+*
+*   NAME
+*       UPA_List_DoubleClick -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       BOOL, as MUIA_Listview_DoubleClick: set TRUE on every double click on a row and on Return over the active row; notify with MUIV_EveryTime or TRUE. UPA_List_DoublePick still controls UPA_List_Picked.
+*
+*   INPUTS
+*       UPA_List_DoubleClick - access G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPA_List_ClickColumn ******
+*
+*   NAME
+*       UPA_List_ClickColumn -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       LONG, as MUIA_Listview_ClickColumn: the UPA_List_Columns column under the last click (0 for a single-column list); a Return pick gives UPA_List_DefClickColumn.
+*
+*   INPUTS
+*       UPA_List_ClickColumn - access G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPA_List_DefClickColumn ******
+*
+*   NAME
+*       UPA_List_DefClickColumn -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       LONG, as MUIA_Listview_DefClickColumn: the UPA_List_ClickColumn value of a Return pick (default 0).
+*
+*   INPUTS
+*       UPA_List_DefClickColumn - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPA_List_DragType ******
+*
+*   NAME
+*       UPA_List_DragType -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       LONG UPV_List_DragType_None/Immediate, as MUIA_Listview_DragType. Accepted and stored only: the list starts no drag and its rows are not drag sources.
+*
+*   INPUTS
+*       UPA_List_DragType - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPA_List_Input ******
+*
+*   NAME
+*       UPA_List_Input -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       BOOL, as MUIA_Listview_Input (default TRUE). FALSE is UPA_List_NoSelect: no hover, no selection, wheel only; may change while the list is shown.
+*
+*   INPUTS
+*       UPA_List_Input - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPM_List_Select ******
+*
+*   NAME
+*       UPM_List_Select -- method of UP-List.mcc
+*
+*   FUNCTION
+*       struct UP_ListSelect {MethodID, pos, seltype, state}, the layout of MUIM_List_Select. pos: a row, UPV_List_Select_Active or UPV_List_Select_All. seltype: UPV_List_Select_Off/On/Toggle/Ask. state (may be NULL) receives the row state, for All the number of selected rows. Acts on a list with UPA_List_MultiSelect other than None only (else state 0). Redraws unless seltype is Ask.
+*
+*   INPUTS
+*       UPM_List_Select - method ID from <mcc/up.h>; DoMethodA(list, (Msg)&msg).
+*
+*   RESULT
+*       0; the answer is written through the message pointers.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
+/****** UP-List.mcc/UPM_List_NextSelected ******
+*
+*   NAME
+*       UPM_List_NextSelected -- method of UP-List.mcc
+*
+*   FUNCTION
+*       struct UP_ListNextSelected {MethodID, pos}, the layout of MUIM_List_NextSelected. Start with *pos = UPV_List_NextSelected_Start; each call sets *pos to the next selected row, UPV_List_NextSelected_End (-1) after the last. With no row selected the first call gives the active row (-1 if none).
+*
+*   INPUTS
+*       UPM_List_NextSelected - method ID from <mcc/up.h>; DoMethodA(list, (Msg)&msg).
+*
+*   RESULT
+*       0; the answer is written through the message pointers.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
 /****** UP-List.mcc/UPM_List_GetRow ******
 *
 *   NAME

@@ -19,6 +19,7 @@
 
 #include "mui_aa_draw.h"
 #include "mui_aascroller_class.h"
+#include "map/mui_aalistsel.h"
 
 #define AAL_TEXT_CAP 160
 #define AAL_WHEEL_UP 0x7A
@@ -40,7 +41,29 @@ typedef struct aalist_data {
     aa_ctx aa;
     int shown; /* MUIM_Show seen, MUIM_Hide not yet (AA_SHOWN_CASES); outside aa_ctx, whose ABI 2 layout is frozen */
     struct MUI_EventHandlerNode ehn;
+    int cw[UP_LIST_COLS]; /* column widths of the last draw, for UPA_List_ClickColumn */
+    long multi, click_col, def_col, drag_type, dclick; /* UPA_List_MultiSelect, ClickColumn, DefClickColumn, DragType, DoubleClick */
+    uint32_t* sel; /* multi-select bitset (mui_aalistsel.h), sel_rows rows; NULL when MultiSelect is None or out of memory */
+    long sel_rows;
 } aalist_data;
+
+static int aalist_is_sel(const aalist_data* d, long row) {
+    return row == d->active || (row < d->sel_rows && up_sel_op(d->sel, row, UPV_List_Select_Ask));
+}
+
+/* Resize the bitset to count rows, keeping the bits of the rows that stay; on no memory the old one stays (sel_rows bounds it). */
+static void aalist_sel_size(aalist_data* d, long count) {
+    uint32_t* s;
+    if (d->multi == UPV_List_MultiSelect_None || (s = AllocVec((ULONG)UP_SEL_WORDS(count) * 4 + 4, MEMF_CLEAR)) == NULL) {
+        return;
+    }
+    if (d->sel != NULL) {
+        up_sel_copy(s, count, d->sel, d->sel_rows);
+        FreeVec(d->sel);
+    }
+    d->sel = s;
+    d->sel_rows = count;
+}
 
 /* Row colours of this list: the shared mapping, with the resting face on the Raised token when the list sits in a Raised popup (I1349). */
 static void aalist_row_rgb(const aalist_data* d, int st, int playing, uint32_t* face, uint32_t* text) {
@@ -158,7 +181,7 @@ static ULONG aalist_askminmax(struct IClass* cl, Object* obj, struct MUIP_AskMin
 /* One row at y: the highlight or the plain face, the column dividers, the cell texts. erase: a single-row repaint first clears the row to the
  * list face (the full draw has erased the whole list already), so no old highlight or text stays under the new one. */
 static void aalist_draw_row(Object* obj, aalist_data* d, struct RastPort* rp, long row, int l, int w, int y, int n, const int* cw, int th, int erase) {
-    int c, st = row == d->active ? MUI_AA_SELECTED : row == d->hover ? MUI_AA_HOVER : MUI_AA_NORMAL;
+    int c, st = aalist_is_sel(d, row) ? MUI_AA_SELECTED : row == d->hover ? MUI_AA_HOVER : MUI_AA_NORMAL;
     uint32_t face, text, muted, divider, base;
     aalist_row_rgb(d, MUI_AA_NORMAL, 0, &base, &text);
     mui_aa_list_header_rgb(d->aa.tok, &muted, &divider);
@@ -191,7 +214,7 @@ static ULONG aalist_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) 
     struct RastPort* rp;
     long k, vis, row;
     int l, t, w, h, th, c, n, th_h, y0;
-    int cw[UP_LIST_COLS], fixed[UP_LIST_COLS];
+    int *cw = d->cw, fixed[UP_LIST_COLS];
     uint32_t face, text, muted, divider;
     DoSuperMethodA(cl, obj, (Msg)msg);
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) {
@@ -289,6 +312,16 @@ static ULONG aalist_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEve
             long r = mui_aa_list_row_at(&d->m, im->MouseY - _mtop(obj) - aalist_title_h(d), d->first, d->count);
             if (r >= 0) {
                 int dbl = r == d->last_row && DoubleClick(d->last_s, d->last_m, im->Seconds, im->Micros);
+                d->click_col = mui_aa_list_col_at(&d->m, im->MouseX - _mleft(obj), d->cols.n < 1 ? 1 : d->cols.n, d->cw);
+                if (r < d->sel_rows) {
+                    if (d->multi == UPV_List_MultiSelect_Always || (im->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))) {
+                        up_sel_op(d->sel, r, UPV_List_Select_Toggle);
+                    } else { /* a plain click selects that row alone */
+                        up_sel_copy(d->sel, d->sel_rows, d->sel, 0);
+                        up_sel_op(d->sel, r, UPV_List_Select_On);
+                    }
+                    aa_redraw(obj, MADF_DRAWOBJECT);
+                }
                 aalist_set_active(obj, d, r);
                 if (aa_live(obj)) { /* I1165: a click makes the list the active object, the keys then act on it alone */
                     set(_win(obj), MUIA_Window_ActiveObject, (ULONG)obj);
@@ -296,6 +329,10 @@ static ULONG aalist_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEve
                 if (dbl || !d->double_pick) {
                     d->picked = r;
                     set(obj, UPA_List_Picked, (ULONG)r);
+                }
+                if (dbl) {
+                    d->dclick = TRUE;
+                    set(obj, UPA_List_DoubleClick, (ULONG)TRUE);
                 }
                 d->last_row = dbl ? -1 : r;
                 d->last_s = im->Seconds;
@@ -339,7 +376,10 @@ static ULONG aalist_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEve
     case 0x43:
         if (d->active >= 0) {
             d->picked = d->active;
+            d->click_col = d->def_col;
+            d->dclick = TRUE;
             set(obj, UPA_List_Picked, (ULONG)d->active);
+            set(obj, UPA_List_DoubleClick, (ULONG)TRUE);
             return MUI_EventHandlerRC_Eat;
         }
         return 0;
@@ -354,8 +394,15 @@ static ULONG aalist_set(struct IClass* cl, Object* obj, struct opSet* msg) {
     aalist_data* d = INST_DATA(cl, obj);
     struct TagItem *tc = FindTagItem(UPA_List_Count, msg->ops_AttrList), *ta = FindTagItem(UPA_List_Active, msg->ops_AttrList),
                    *tf = FindTagItem(UPA_List_First, msg->ops_AttrList), *tcol = FindTagItem(UPA_List_Columns, msg->ops_AttrList),
-                   *tp = FindTagItem(UPA_List_Playing, msg->ops_AttrList);
+                   *tp = FindTagItem(UPA_List_Playing, msg->ops_AttrList), *ti = FindTagItem(UPA_List_Input, msg->ops_AttrList);
     int changed = 0;
+    d->def_col = (long)GetTagData(UPA_List_DefClickColumn, (ULONG)d->def_col, msg->ops_AttrList);
+    d->drag_type = (long)GetTagData(UPA_List_DragType, (ULONG)d->drag_type, msg->ops_AttrList);
+    if (ti != NULL) {
+        d->no_select = !ti->ti_Data;
+        d->hover = -1;
+        changed = 1;
+    }
     if (tcol != NULL && tcol->ti_Data != 0) {
         d->cols = *(const UP_ListColumns*)tcol->ti_Data;
         changed = 1;
@@ -366,6 +413,7 @@ static ULONG aalist_set(struct IClass* cl, Object* obj, struct opSet* msg) {
     }
     if (tc != NULL) { /* the rows may have new text under the same count: always redraw */
         d->count = (long)tc->ti_Data;
+        aalist_sel_size(d, d->count);
         d->active = d->active < 0 ? -1 : mui_aa_list_clamp_active(d->active, d->count); /* none stays none */
         d->first = mui_aa_list_clamp_first(d->first, d->vis, d->count);
         changed = 1;
@@ -399,6 +447,12 @@ static ULONG aalist_get(struct IClass* cl, Object* obj, struct opGet* msg) {
     case UPA_List_First: *msg->opg_Storage = (ULONG)d->first; return TRUE;
     case UPA_List_Picked: *msg->opg_Storage = (ULONG)d->picked; return TRUE;
     case UPA_List_Playing: *msg->opg_Storage = (ULONG)d->playing; return TRUE;
+    case UPA_List_MultiSelect: *msg->opg_Storage = (ULONG)d->multi; return TRUE;
+    case UPA_List_DoubleClick: *msg->opg_Storage = (ULONG)d->dclick; return TRUE;
+    case UPA_List_ClickColumn: *msg->opg_Storage = (ULONG)d->click_col; return TRUE;
+    case UPA_List_DefClickColumn: *msg->opg_Storage = (ULONG)d->def_col; return TRUE;
+    case UPA_List_DragType: *msg->opg_Storage = (ULONG)d->drag_type; return TRUE;
+    case UPA_List_Input: *msg->opg_Storage = (ULONG)!d->no_select; return TRUE;
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -430,7 +484,7 @@ static ULONG aalist_getrow(struct IClass* cl, Object* obj, UP_ListGetRow* g) {
         g->text[used] = '\0';
     }
     g->x = g->y = g->w = g->h = 0;
-    g->selected = g->row == d->active;
+    g->selected = aalist_is_sel(d, g->row);
     if (aa_live(obj) && g->row >= d->first && g->row < d->first + aalist_visible(obj, d)) {
         g->x = _mleft(obj);
         g->y = _mtop(obj) + d->m.pad_y + aalist_title_h(d) + (int)(g->row - d->first) * d->m.row_h;
@@ -438,6 +492,34 @@ static ULONG aalist_getrow(struct IClass* cl, Object* obj, UP_ListGetRow* g) {
         g->h = d->m.row_h;
     }
     return TRUE;
+}
+
+/* UPM_List_Select (MUIM_List_Select): one row, the active row or all rows of a multi-select list. */
+static ULONG aalist_select(struct IClass* cl, Object* obj, UP_ListSelect* m) {
+    aalist_data* d = INST_DATA(cl, obj);
+    long lo = m->pos == UPV_List_Select_Active ? d->active : m->pos, hi = lo + 1, st = 0;
+    if (m->pos == UPV_List_Select_All) {
+        lo = 0;
+        hi = d->count;
+    }
+    for (; lo >= 0 && lo < hi && hi <= d->sel_rows; lo++) {
+        st += up_sel_op(d->sel, lo, (int)m->seltype);
+    }
+    if (m->state != NULL) {
+        *m->state = st;
+    }
+    if (m->seltype != UPV_List_Select_Ask && aa_live(obj)) {
+        aa_redraw(obj, MADF_DRAWOBJECT);
+    }
+    return 0;
+}
+
+/* UPM_List_NextSelected (MUIM_List_NextSelected): with no row selected the active row counts, once. */
+static ULONG aalist_next(struct IClass* cl, Object* obj, UP_ListNextSelected* m) {
+    aalist_data* d = INST_DATA(cl, obj);
+    long p = *m->pos, n = d->sel != NULL ? up_sel_next(d->sel, d->sel_rows < d->count ? d->sel_rows : d->count, p) : -1;
+    *m->pos = n < 0 && p < 0 ? d->active : n;
+    return 0;
 }
 
 static ULONG __attribute__((used)) aalist_dispatch_c(struct IClass* cl, Object* obj, Msg msg);
@@ -461,7 +543,7 @@ static ULONG aalist_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     }
     d = INST_DATA(cl, obj);
     cols = (const UP_ListColumns*)GetTagData(UPA_List_Columns, 0, t);
-    no_select = (int)GetTagData(UPA_List_NoSelect, FALSE, t);
+    no_select = GetTagData(UPA_List_NoSelect, FALSE, t) || !GetTagData(UPA_List_Input, TRUE, t);
     max_rows = (int)GetTagData(UPA_List_MaxRows, 0, t);
     count = (long)GetTagData(UPA_List_Count, 0, t);
     d->count = count;
@@ -484,6 +566,10 @@ static ULONG aalist_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     d->keys_unfocused = (int)GetTagData(UPA_List_KeysUnfocused, FALSE, t);
     d->raised = (int)GetTagData(UPA_List_Raised, FALSE, t);
     d->scroller = (Object*)(uintptr_t)GetTagData(UPA_List_Scroller, 0, t);
+    d->def_col = (long)GetTagData(UPA_List_DefClickColumn, 0, t);
+    d->drag_type = (long)GetTagData(UPA_List_DragType, 0, t);
+    d->multi = (long)GetTagData(UPA_List_MultiSelect, UPV_List_MultiSelect_None, t);
+    aalist_sel_size(d, count);
     return (ULONG)obj;
 }
 
@@ -503,6 +589,13 @@ static ULONG __attribute__((used)) aalist_dispatch_c(struct IClass* cl, Object* 
         return aalist_get(cl, obj, (struct opGet*)msg);
     case UPM_List_GetRow:
         return aalist_getrow(cl, obj, (UP_ListGetRow*)msg);
+    case UPM_List_Select:
+        return aalist_select(cl, obj, (UP_ListSelect*)msg);
+    case UPM_List_NextSelected:
+        return aalist_next(cl, obj, (UP_ListNextSelected*)msg);
+    case OM_DISPOSE:
+        FreeVec(((aalist_data*)INST_DATA(cl, obj))->sel); /* FreeVec(NULL) is a no-op */
+        break;
     AA_SHOWN_CASES(aalist_data)
     case MUIM_Setup:
         return aalist_setup(cl, obj, msg);

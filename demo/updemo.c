@@ -223,7 +223,7 @@ static Object* make(int index) {
         g_row_hook.h_Entry = (__typeof__(g_row_hook.h_Entry))(void (*)(void))HookEntry;
         g_row_hook.h_SubEntry = (__typeof__(g_row_hook.h_SubEntry))(void (*)(void))demo_cell;
         return MUI_NewObject(path, UPA_List_Count, 20UL, UPA_List_CellHook, (ULONG)(uintptr_t)&g_row_hook, UPA_List_Columns, (ULONG)(uintptr_t)&g_columns,
-                             UPA_List_Title, (ULONG)TRUE, UPA_List_MaxRows, (ULONG)(ULONG)g_list_rows, TAG_DONE);
+                             UPA_List_Title, (ULONG)TRUE, UPA_List_MultiSelect, (ULONG)UPV_List_MultiSelect_Shifted, UPA_List_MaxRows, (ULONG)(ULONG)g_list_rows, TAG_DONE);
     }
 }
 
