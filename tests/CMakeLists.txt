@@ -130,3 +130,6 @@ mcc_test_exe(mui_image_fit_test)
 mcc_test(mui-image-fit COMMAND mui_image_fit_test)
 mcc_test_exe(mui_dial_test)
 mcc_test(mui-dial COMMAND mui_dial_test)
+
+mcc_test_exe(up_penspec_test)
+mcc_test(up-penspec COMMAND up_penspec_test)

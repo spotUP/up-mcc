@@ -420,6 +420,27 @@ static inline Object* UP_NewList(const struct TagItem* tags, Object** list_out) 
 #endif
 #endif
 
+/* ---- MUI gap D: UP-Pendisplay (MUIC_Pendisplay), UP-Poppen (MUIC_Poppen), UP-Penadjust (MUIC_Penadjust and MUIC_Coloradjust). ----
+ * They answer the MUI 3.8 attributes and methods of the classes they replace (MUIA_Pendisplay_*, MUIM_Pendisplay_*, MUIA_Penadjust_PSIMode,
+ * MUIA_Coloradjust_*), so the tag values are those of <libraries/mui.h>; only the extras below are UP tags. UP-Poppen is a UP-Pendisplay
+ * that opens a UP-Penadjust in a popup on a click. UP-Penadjust also answers MUIA_Pendisplay_Spec (ISG, notifies). */
+#define UP_CLS_PENDISPLAY 0x1F /* UP-Pendisplay */
+#define UP_CLS_POPPEN 0x20     /* UP-Poppen */
+#define UP_CLS_PENADJUST 0x21  /* UP-Penadjust (+ Coloradjust mode) */
+#define UPM_Poppen_Click UP_TAG(UP_CLS_POPPEN, 0x10)       /* method: the swatch was pressed (toggle). Internal */
+#define UPM_Poppen_Closed UP_TAG(UP_CLS_POPPEN, 0x11)      /* method: the popup window closed. Internal */
+#define UPM_Poppen_Deactivated UP_TAG(UP_CLS_POPPEN, 0x12) /* method: the popup window lost activation. Internal */
+#define UPA_Penadjust_Coloradjust UP_TAG(UP_CLS_PENADJUST, 0x01) /* I BOOL: RGB sliders only, no pen kind choice (MUIC_Coloradjust); default FALSE */
+#define UPM_Penadjust_Changed UP_TAG(UP_CLS_PENADJUST, 0x10)     /* method: a child gadget changed. Internal */
+#define MUIC_UP_Pendisplay "UP-Pendisplay.mcc"
+#define MUIC_UP_Poppen "UP-Poppen.mcc"
+#define MUIC_UP_Penadjust "UP-Penadjust.mcc"
+#if (defined(__amigaos__) || defined(AMIGA)) && (defined(UP_MCC_LIBRARY) || defined(UP_MCC_STATIC_CTORS))
+Object* UP_NewPendisplay(const struct TagItem* tags);
+Object* UP_NewPoppen(const struct TagItem* tags);
+Object* UP_NewPenadjust(const struct TagItem* tags);
+#endif
+
 /* Theme token names (I685d2): UPTOK_<id> equals SEL_GUI_TOKEN_<id> for every token of the SEL_GUI_TOKENS list in
  * selecta/uimodel/tokens.h. The names are generated from that list, so a token added or removed there appears or goes here. */
 #include <selecta/uimodel/tokens.h>

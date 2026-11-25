@@ -52,13 +52,15 @@ static void demo_requester(const char* text) {
     EasyRequest(NULL, &es, NULL, (APTR)text);
 }
 
-#define CLASS_COUNT 28 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
+#define CLASS_COUNT 31 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
 
+static const struct MUI_PenSpec g_pen_spec = {"r3e3e3e3e,63636363,dddddddd"};
 static const char* const g_names[CLASS_COUNT] = {"Button", "Text", "Panel", "Tabs", "Balance", "Slider",
                                                  "Progress", "Cycle", "Field", "Scroller", "List", "Checkmark", "Radio", "Popstring", "Poplist",
                                                  "Numericbutton", "Scale", "Colorfield", "Palette", "Image", "Menu", "Virtgroup", "Scrollgroup",
                                                  "Knob", "Levelmeter",
-                                                 "Popobject", "Popasl", "Popscreen"};
+                                                 "Popobject", "Popasl", "Popscreen",
+                                                 "Pendisplay", "Poppen", "Penadjust"};
 static const char* const g_cycle_entries[] = {"First", "Second", "Third", NULL};
 static const char* const g_tab_captions[] = {"Songs", "Albums", "Artists", "Playlists", NULL};
 static const char* const g_radio_entries[] = {"Low", "Medium", "High", NULL};
@@ -198,6 +200,10 @@ static Object* make(int index) {
         return MUI_NewObject(path, MUIA_Popasl_Type, 0UL /* ASL_FileRequest */, TAG_DONE);
     case 25:
         return MUI_NewObject(path, TAG_DONE);
+    case 23:
+    case 24:
+    case 25:
+        return MUI_NewObject(path, MUIA_Pendisplay_Spec, (ULONG)&g_pen_spec, TAG_DONE);
     default:
         g_row_hook.h_Entry = (__typeof__(g_row_hook.h_Entry))(void (*)(void))HookEntry;
         g_row_hook.h_SubEntry = (__typeof__(g_row_hook.h_SubEntry))(void (*)(void))demo_cell;
