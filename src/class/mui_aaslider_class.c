@@ -325,7 +325,8 @@ static ULONG aaprogress_set(struct IClass* cl, Object* obj, struct opSet* msg) {
         d->value = (long)tv->ti_Data;
         changed = 1;
     }
-    if (changed && aa_live(obj)) {
+    /* Hidden gauge must not draw: SetAttrs(Value, ShowMe TRUE) ran this before ShowMe applied, painting a stale 6 px TRACK bar. */
+    if (changed && d->aa.shown && aa_live(obj)) {
         aa_redraw(obj, MADF_DRAWOBJECT);
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -381,6 +382,7 @@ static ULONG __attribute__((used)) aaprogress_dispatch_c(struct IClass* cl, Obje
         return aaprogress_set(cl, obj, (struct opSet*)msg);
     case OM_GET:
         return aaprogress_get(cl, obj, (struct opGet*)msg);
+    AA_SHOWN_CASES(aaprogress_data)
     }
     return DoSuperMethodA(cl, obj, msg);
 }
