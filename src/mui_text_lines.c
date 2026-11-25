@@ -138,6 +138,27 @@ int mtl_clip_key(int code, int cmd) {
     return key == 'c' || key == 'x' || key == 'v' || key == 'a' ? key : 0;
 }
 
+static int word_class(unsigned char c) {
+    if (c == '_' || c >= 0x80 || (c >= '0' && c <= '9') || ((c | 0x20) >= 'a' && (c | 0x20) <= 'z')) return 1;
+    return c == ' ' || c == '\t' ? 2 : 3;
+}
+
+void mtl_word_range(const char *text, int n, int off, int *lo, int *hi) {
+    int k, a, b;
+    off = off < 0 ? 0 : off > n ? n : off;
+    if (n <= 0) {
+        *lo = *hi = 0;
+        return;
+    }
+    a = off == n ? n - 1 : off;
+    k = word_class((unsigned char)text[a]);
+    b = a + 1;
+    while (a > 0 && word_class((unsigned char)text[a - 1]) == k) a--;
+    while (b < n && word_class((unsigned char)text[b]) == k) b++;
+    *lo = a;
+    *hi = b;
+}
+
 int mtl_delete_range(char *buf, int *len, int lo, int hi) {
     int n = *len;
     lo = lo < 0 ? 0 : lo > n ? n : lo;

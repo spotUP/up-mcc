@@ -12,7 +12,6 @@
 
 #include <clib/alib_protos.h>
 #include <clib/muimaster_protos.h>
-#include <devices/clipboard.h>
 #include <devices/inputevent.h>
 #include <intuition/intuition.h>
 #include <proto/exec.h>
@@ -24,7 +23,7 @@
 #include "map/mui_aa.h"
 #include "mui_aa_draw.h"
 #include "mui_aatip.h"
-#include "mui_ftxt.h"
+#include "mui_aaedit.h"
 #include "mui_text_lines.h"
 
 extern struct Library* MUIMasterBase;
@@ -197,88 +196,6 @@ static int ta_put(ta_data* d, const char* s, int slen) {
     return removed > 0 || put > 0;
 }
 
-/* Clipboard: one request on a private port per call. Failure (no device, no memory) is silent: copy and paste do nothing. */
-static struct IOClipReq* ta_clip_open(struct MsgPort** port) {
-    struct IOClipReq* io;
-    *port = CreateMsgPort();
-    if (*port == NULL) {
-        return NULL;
-    }
-    io = (struct IOClipReq*)CreateIORequest(*port, sizeof(struct IOClipReq));
-    if (io != NULL && OpenDevice((STRPTR) "clipboard.device", 0, (struct IORequest*)io, 0) != 0) {
-        DeleteIORequest((struct IORequest*)io);
-        io = NULL;
-    }
-    if (io == NULL) {
-        DeleteMsgPort(*port);
-    }
-    return io;
-}
-
-static void ta_clip_close(struct IOClipReq* io, struct MsgPort* port) {
-    CloseDevice((struct IORequest*)io);
-    DeleteIORequest((struct IORequest*)io);
-    DeleteMsgPort(port);
-}
-
-static void ta_clip_put(const char* s, int n) {
-    struct MsgPort* port;
-    struct IOClipReq* io;
-    unsigned char* b;
-    int total = ftxt_size(n);
-    if (n <= 0 || (b = (unsigned char*)AllocVec((ULONG)total, MEMF_ANY)) == NULL) {
-        return;
-    }
-    ftxt_encode(s, n, b, total);
-    io = ta_clip_open(&port);
-    if (io != NULL) {
-        io->io_Data = (STRPTR)b;
-        io->io_Length = (ULONG)total;
-        io->io_Offset = 0;
-        io->io_ClipID = 0;
-        io->io_Command = CMD_WRITE;
-        DoIO((struct IORequest*)io);
-        io->io_Command = CMD_UPDATE;
-        DoIO((struct IORequest*)io);
-        ta_clip_close(io, port);
-    }
-    FreeVec(b);
-}
-
-/* Reads the clip into out (cap bytes, NUL terminated). Returns the text length, 0 when empty or not text. At most cap*2+64 raw bytes
- * are kept; the rest is read and thrown away because a clip read must run to its end to be released. */
-static int ta_clip_get(char* out, int cap) {
-    struct MsgPort* port;
-    struct IOClipReq* io;
-    unsigned char *b, chunk[256];
-    int raw = cap * 2 + 64, have = 0, n = 0;
-    if (cap < 2 || (b = (unsigned char*)AllocVec((ULONG)raw, MEMF_ANY)) == NULL) {
-        return 0;
-    }
-    io = ta_clip_open(&port);
-    if (io != NULL) {
-        io->io_Offset = 0;
-        io->io_ClipID = 0;
-        for (;;) {
-            io->io_Command = CMD_READ;
-            io->io_Data = (STRPTR)chunk;
-            io->io_Length = sizeof chunk;
-            if (DoIO((struct IORequest*)io) != 0 || io->io_Actual == 0) {
-                break;
-            }
-            if (have < raw) {
-                int take = (int)io->io_Actual < raw - have ? (int)io->io_Actual : raw - have;
-                memcpy(b + have, chunk, (size_t)take);
-                have += take;
-            }
-        }
-        ta_clip_close(io, port);
-        n = ftxt_decode(b, have, out, cap);
-    }
-    FreeVec(b);
-    return n < 0 ? 0 : n;
-}
-
 /* Ctrl or Amiga + C/X/V/A. Returns 1 when the key was a clipboard or select-all command (handled). */
 static int ta_clipboard_key(Object* obj, ta_data* d, int code, int qual) {
     int lo, hi, edited = 0;
@@ -290,7 +207,7 @@ static int ta_clipboard_key(Object* obj, ta_data* d, int code, int qual) {
     }
     if (key == 'c' || key == 'x') {
         if (ta_selection(d, &lo, &hi)) {
-            ta_clip_put(d->buf + lo, hi - lo);
+            aaedit_clip_put(d->buf + lo, hi - lo);
             if (key == 'x') {
                 edited = ta_put(d, "", 0);
             }
@@ -298,7 +215,7 @@ static int ta_clipboard_key(Object* obj, ta_data* d, int code, int qual) {
     } else if (key == 'v') {
         char* t = (char*)AllocVec((ULONG)d->cap, MEMF_ANY);
         if (t != NULL) {
-            int n = ta_clip_get(t, d->cap);
+            int n = aaedit_clip_get(t, d->cap);
             if (n > 0) {
                 edited = ta_put(d, t, n);
             }
@@ -373,7 +290,7 @@ static ULONG ta_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     mui_aa_check_op_t ops[MUI_AA_FIELD_OPS];
     ta_geom g;
     ta_fit f;
-    int focus, n, k, i, maxtop;
+    int focus, n, i, maxtop;
     int l, t, w, h, has_sel, sel_lo, sel_hi;
     DoSuperMethodA(cl, obj, (Msg)msg);
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) {
@@ -386,25 +303,7 @@ static ULONG ta_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     h = _mheight(obj);
     focus = d->error ? MUI_AA_FIELD_ERROR : ta_focus(obj);
     n = mui_aa_field_plan(d->aa.tok, &d->m, focus, ops);
-    /* Paint each pixel once before the text: erasing the box, filling it in the outline colour and then in the face made every
-     * keystroke flash the parent and ring colours across the whole box. Corners get the parent colour, the ring leaves the face
-     * (a cross of two holes, so its rounded corners still sit on the ring), the face is filled once. */
-    if (n > 0) {
-        aa_round_corners(&d->aa, rp, l, t, w, h, ops[0].radius, d->aa.bg_rgb);
-    }
-    for (k = 0; k < n; k++) {
-        int x = l + ops[k].inset, y = t + ops[k].inset, bw = w - 2 * ops[k].inset, bh = h - 2 * ops[k].inset;
-        if (k + 1 < n) {
-            int fx = l + ops[k + 1].inset, fy = t + ops[k + 1].inset, fw = w - 2 * ops[k + 1].inset, fh = h - 2 * ops[k + 1].inset, r = ops[k + 1].radius;
-            int holes[8];
-            holes[0] = fx, holes[1] = fy + r, holes[2] = fw, holes[3] = fh - 2 * r;
-            holes[4] = fx + r, holes[5] = fy, holes[6] = fw - 2 * r, holes[7] = fh;
-            aa_round_fill_holes(&d->aa, rp, x, y, bw, bh, ops[k].radius, ops[k].rgb, holes, 2);
-        } else {
-            aa_round_fill(&d->aa, rp, x, y, bw, bh, ops[k].radius, ops[k].rgb);
-        }
-    }
-    aa_low_outline(&d->aa, rp, l, t, w, h, n > 0 ? ops[0].radius : 0);
+    aaedit_frame(&d->aa, rp, l, t, w, h, ops, n);
 
     ta_ensure(obj, d, &g);
     f.d = d;
