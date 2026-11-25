@@ -89,10 +89,9 @@ LONG aa_nearest_pen(aa_ctx* c, uint32_t rgb);
 void aa_rect(aa_ctx* c, struct RastPort* rp, int x0, int y0, int x1, int y1, uint32_t rgb);
 /* Rows with the insets of mui_aa_round_inset; radius 0 is one rectangle. */
 void aa_round_fill(aa_ctx* c, struct RastPort* rp, int x, int y, int w, int h, int radius, uint32_t rgb);
-/* The UP-Scroller bar (track, thumb for first/visible/entries) in the box x, y, w, h, in the pens aa_scroller_hold held (src/mui_aasbar.c). */
-struct up_scroller_t;
-void aa_scroller_paint(aa_ctx* c, struct RastPort* rp, const struct up_scroller_t* m, int state, int x, int y, int w, int h, long first, long visible, long entries);
-void aa_scroller_hold(aa_ctx* c);
+/* The UP-Scroller bar, one struct up_bar op (mcc/up_lib.h UP_DrawBar; src/mui_aasbar.c, the class libraries' shim calls the library). */
+struct up_bar;
+LONG aa_bar(aa_ctx* c, struct RastPort* rp, struct up_bar* b);
 /* aa_round_fill that leaves the hole rectangle (hx, hy, hw, hh) untouched: for a Group subclass that paints after its super call
  * around a child the super already drew. */
 void aa_round_fill_holes(aa_ctx* c, struct RastPort* rp, int x, int y, int w, int h, int radius, uint32_t rgb, const int* holes, int n);
