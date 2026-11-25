@@ -112,6 +112,7 @@ static void tte_free_pixmap(struct TTE_Pixmap* pm) {
 static struct {
     int px, refs;
     APTR font;
+    int cap_top, cap_h; /* the font's "H" ink rows in its pixmap, cap_h 0 = not measured yet (cap_box) */
 } g_fonts[FONT_SLOTS];
 static int g_missing_logged;
 
@@ -191,6 +192,7 @@ static APTR font_get(struct Screen* scr, int px) {
             g_fonts[free_slot].px = px;
             g_fonts[free_slot].refs = 1;
             g_fonts[free_slot].font = f;
+            g_fonts[free_slot].cap_h = 0;
             return f;
         }
     }
@@ -627,8 +629,66 @@ int aa_text_height(aa_ctx* c, Object* obj) {
     return c->backend == AA_PLAIN ? (int)aa_plain_textfont(c, obj)->tf_YSize : c->font_px + c->font_px / 4;
 }
 
+/* The TTF's cap ink: first row and height of an "H" in its pixmap at half coverage, measured once per font slot. */
+static int cap_box(aa_ctx* c, int* top) {
+    int i, slot = -1, py, px, t = -1, b = -1;
+    struct TTE_Pixmap* pm;
+    for (i = 0; i < FONT_SLOTS; i++) {
+        if (g_fonts[i].font == c->font) {
+            slot = i;
+            if (g_fonts[i].cap_h > 0) {
+                *top = g_fonts[i].cap_top;
+                return g_fonts[i].cap_h;
+            }
+        }
+    }
+    pm = tte_pixmap(c->font, "H", 1);
+    for (py = 0; pm != NULL && py < (int)pm->height; py++) {
+        for (px = 0; px < (int)pm->width; px++) {
+            if (pm->data[(size_t)py * pm->width + px] >= 128) {
+                t = t < 0 ? py : t;
+                b = py;
+                break;
+            }
+        }
+    }
+    if (pm != NULL) {
+        tte_free_pixmap(pm);
+    }
+    if (t < 0) {
+        *top = 0;
+        return 0;
+    }
+    if (slot >= 0) {
+        g_fonts[slot].cap_top = t;
+        g_fonts[slot].cap_h = b - t + 1;
+    }
+    *top = t;
+    return b - t + 1;
+}
+
+/* Rows to move a caption down so its cap ink (cap top to baseline), not the whole aa_text_height box, sits in the middle of the
+ * box: every caller centres that box in its face, and the box carries the descender room (and on the TTF the 1.25 line factor)
+ * under the baseline, which drew captions high (rig 3, 800x600 TC, UP-Button "Back": 4 rows over the ink, 9 under it on a
+ * 24 row face). asc is the TTF baseline row under y (TTE_FontAscender), -1 = the pixmap paths, whose ink rows are cap_box's own. */
+static int cap_dy(aa_ctx* c, Object* obj, int asc) {
+    int top, h;
+    if (c->backend == AA_PLAIN) {
+        struct TextFont* f = aa_plain_textfont(c, obj);
+        return ((int)f->tf_YSize - (int)f->tf_Baseline - 1) / 2; /* caps fill rows 0..tf_Baseline of a bitmap font */
+    }
+    h = cap_box(c, &top);
+    if (h <= 0) {
+        return 0;
+    }
+    return (aa_text_height(c, obj) - h) / 2 - (asc >= 0 ? asc - h : top);
+}
+
 void aa_text(aa_ctx* c, Object* obj, struct RastPort* rp, int x, int y, const char* str, uint32_t fg, uint32_t bg) {
     int len = (int)strlen(str);
+    if (c->backend != AA_TC) {
+        y += cap_dy(c, obj, -1); /* the TC path measures its own after it knows the ascender */
+    }
     if (c->backend == AA_PLAIN && c->tc) {
         plain_text_tc(c, obj, rp, x, y, str, fg);
         return;
@@ -679,7 +739,7 @@ void aa_text(aa_ctx* c, Object* obj, struct RastPort* rp, int x, int y, const ch
         tte_set_font(rp, c->font);
         tte_set_attrs(rp, set);
         tte_get_attrs(rp, get);
-        Move(rp, x, y + (int)asc);
+        Move(rp, x, y + cap_dy(c, obj, (int)asc) + (int)asc);
         tte_text(rp, str, (ULONG)len);
     } else {
         struct TTE_Pixmap* pm = tte_pixmap(c->font, str, (ULONG)len);
