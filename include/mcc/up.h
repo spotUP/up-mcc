@@ -70,6 +70,19 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_FIELD 0x07
 #define UP_CLS_PANEL 0x08
 #define UP_CLS_BALANCE 0x09
+#define UP_CLS_CHECKMARK 0x0A
+#define UP_CLS_RADIO 0x0B
+#define UP_CLS_POPSTRING 0x0C
+#define UP_CLS_POPLIST 0x0D
+#define UP_CLS_NUMERIC 0x11 /* UP-Numericbutton */
+#define UP_CLS_SCALE 0x12   /* UP-Scale */
+#define UP_CLS_COLORFIELD 0x13 /* UP-Colorfield */
+#define UP_CLS_PALETTE 0x14    /* UP-Palette */
+#define UP_CLS_IMAGE 0x15   /* UP-Image */
+#define UP_CLS_MENU 0x16    /* UP-Menu */
+#define UP_CLS_TEXTAREA 0x17 /* UP-TextArea */
+#define UP_CLS_SCROLLGROUP 0x0E
+#define UP_CLS_VIRTGROUP 0x10
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
 
 /* ---- Attributes (UPA_), methods (UPM_) and enumeration values (UPV_) of every class (design 8.3). The numbers are written here
@@ -82,6 +95,8 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UPA_Text_Align UP_TAG(UP_CLS_TEXT, 0x04)    /* I UPV_Text_Align_* */
 #define UPA_Text_Ellipsis UP_TAG(UP_CLS_TEXT, 0x05) /* I BOOL cut with "..." when wider than the box */
 #define UPA_Text_Fixed UP_TAG(UP_CLS_TEXT, 0x06)    /* I BOOL never wider than the default width of the widest text */
+#define UPA_Text_FillHeight UP_TAG(UP_CLS_TEXT, 0x07) /* I BOOL grow to the height of the row, so the erase covers the whole row */
+#define UPA_Text_Timeout UP_TAG(UP_CLS_TEXT, 0x08)  /* IS ULONG ms: a non-empty UPA_Text_Contents set clears itself this long later (0 = stays); a newer text restarts the clock */
 enum { UPV_Text_Tone_Normal, UPV_Text_Tone_Muted, UPV_Text_Tone_Title, UPV_Text_Tone_Heading };
 enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 
@@ -89,9 +104,88 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_Progress_Value UP_TAG(UP_CLS_PROGRESS, 0x01) /* ISG LONG: filled part */
 #define UPA_Progress_Max UP_TAG(UP_CLS_PROGRESS, 0x02)   /* ISG LONG: value that fills the bar */
 
+/* UP-Checkmark: MUIA_Selected (ISG BOOL, notifies) is the checked value, as for MUIC_Checkmark */
+#define UPA_Checkmark_Label UP_TAG(UP_CLS_CHECKMARK, 0x01) /* I STRPTR text right of the box; must outlive the object; absent = box only */
+
+/* UP-Radio */
+#define UPA_Radio_Entries UP_TAG(UP_CLS_RADIO, 0x01) /* I char**: NULL terminated, must outlive the object */
+#define UPA_Radio_Active UP_TAG(UP_CLS_RADIO, 0x02)  /* ISG LONG: index of the chosen entry (notifies) */
+
+/* UP-Virtgroup: a group whose contents (MUIA_Group_Child) are laid out at their own size, larger than the view, and shown through it at an offset */
+#define UPA_Virtgroup_Left UP_TAG(UP_CLS_VIRTGROUP, 0x01)   /* ISG LONG: pixels the contents are shifted left; clamped to the contents */
+#define UPA_Virtgroup_Top UP_TAG(UP_CLS_VIRTGROUP, 0x02)    /* ISG LONG: pixels the contents are shifted up; clamped to the contents */
+#define UPA_Virtgroup_Width UP_TAG(UP_CLS_VIRTGROUP, 0x03)  /* G LONG: width of the contents */
+#define UPA_Virtgroup_Height UP_TAG(UP_CLS_VIRTGROUP, 0x04) /* G LONG: height of the contents */
+
+/* UP-Scrollgroup: a virtgroup with an UP-Scroller on the right that shows only while the contents are taller than the view */
+#define UPA_Scrollgroup_Top UP_TAG(UP_CLS_SCROLLGROUP, 0x01) /* ISG LONG: pixels the contents are scrolled up */
+
 /* UP-Cycle */
 #define UPA_Cycle_Active UP_TAG(UP_CLS_CYCLE, 0x01)  /* ISG LONG: index of the shown entry (notifies) */
 #define UPA_Cycle_Entries UP_TAG(UP_CLS_CYCLE, 0x02) /* I char**: NULL terminated, must outlive the object */
+
+/* UP-Popstring: a UP-Field plus a button that opens a popup window under the object (MUIC_Popstring, simplified). One popup window per
+ * object, created at the first open and reused; it closes on a pick, Esc, a click outside or another click on the button. */
+#define UPA_Popstring_String UP_TAG(UP_CLS_POPSTRING, 0x01)   /* IG Object*: the string object (default a UP-Field); MUIA_String_Contents set/get are forwarded to it */
+#define UPA_Popstring_Button UP_TAG(UP_CLS_POPSTRING, 0x02)   /* I Object*: the button that opens the popup (default a UP-Button with a chevron) */
+#define UPA_Popstring_Popup UP_TAG(UP_CLS_POPSTRING, 0x03)    /* ISG Object*: root object of the popup window, owned by the class from then on; it is disposed with the owner window's cleanup (get then gives NULL), set a new one before the next open */
+#define UPA_Popstring_OpenHook UP_TAG(UP_CLS_POPSTRING, 0x04) /* IS struct Hook*: called before the popup opens, object = the popup root, message = the string object; returns FALSE to refuse */
+#define UPA_Popstring_CloseHook UP_TAG(UP_CLS_POPSTRING, 0x05) /* IS struct Hook*: called once after the popup closed, object = the popup root, message = the string object */
+#define UPA_Popstring_Open UP_TAG(UP_CLS_POPSTRING, 0x06)     /* ISG BOOL: the popup is open; set TRUE opens, FALSE closes (notifies) */
+#define UPA_Popstring_NoActivate UP_TAG(UP_CLS_POPSTRING, 0x07) /* I BOOL: the popup window opens inactive, so typing stays in the string (autocomplete); default FALSE */
+#define UPM_Popstring_Click UP_TAG(UP_CLS_POPSTRING, 0x10)    /* method: the button was pressed (toggle). Internal, used by the button notify */
+#define UPM_Popstring_Closed UP_TAG(UP_CLS_POPSTRING, 0x11)   /* method: the popup window closed. Internal */
+#define UPM_Popstring_Deactivated UP_TAG(UP_CLS_POPSTRING, 0x12) /* method: the popup window lost activation. Internal */
+
+/* UP-Poplist: a Popstring whose popup is a UP-List; the chosen entry is copied into the string. */
+#define UPA_Poplist_Entries UP_TAG(UP_CLS_POPLIST, 0x01) /* I char**: NULL terminated, must outlive the object */
+#define UPA_Poplist_Active UP_TAG(UP_CLS_POPLIST, 0x02)  /* ISG LONG: chosen entry, -1 none (default); setting it fills the string; notifies */
+/* Poplist also takes UPA_Popstring_String, _Button, _OpenHook, _CloseHook, _Open. */
+
+/* UP-Numericbutton (MUIC_Numericbutton equivalent): a button showing the number; a click opens a small popup slider under it, a
+ * horizontal drag over the button changes the value directly (two button widths sweep the range). */
+#define UPA_Numeric_Min UP_TAG(UP_CLS_NUMERIC, 0x01)   /* ISG LONG: lowest value (default 0) */
+#define UPA_Numeric_Max UP_TAG(UP_CLS_NUMERIC, 0x02)   /* ISG LONG: highest value (default 100) */
+#define UPA_Numeric_Value UP_TAG(UP_CLS_NUMERIC, 0x03) /* ISG LONG: current value, clamped to Min..Max (notifies) */
+#define UPM_Numeric_Deactivated UP_TAG(UP_CLS_NUMERIC, 0x10) /* method: the popup window lost activation. Internal */
+#define UPM_Numeric_Closed UP_TAG(UP_CLS_NUMERIC, 0x11)      /* method: the popup window closed. Internal */
+
+/* UP-Scale (MUIC_Scale equivalent): a horizontal tick ruler with the end and middle values as labels, meant under a UP-Slider. */
+#define UPA_Scale_Min UP_TAG(UP_CLS_SCALE, 0x01)   /* ISG LONG: value at the left end (default 0) */
+#define UPA_Scale_Max UP_TAG(UP_CLS_SCALE, 0x02)   /* ISG LONG: value at the right end (default 100) */
+#define UPA_Scale_Ticks UP_TAG(UP_CLS_SCALE, 0x03) /* ISG LONG: number of ticks, 2..64 (default 11) */
+
+/* UP-Colorfield (MUIC_Coloradjust-like swatch): shows one RGB colour; a click notifies MUIA_Pressed, as a UP-Button does. */
+#define UPA_Colorfield_RGB UP_TAG(UP_CLS_COLORFIELD, 0x01) /* ISG ULONG: 0xRRGGBB shown (default 0, black) */
+
+/* UP-Palette: a grid of colour swatches, one active; a click or the cursor keys (while it is the active object) choose it. */
+#define UPA_Palette_Entries UP_TAG(UP_CLS_PALETTE, 0x01) /* I ULONG*: array of 0xRRGGBB, copied at construction (at most 256) */
+#define UPA_Palette_Count UP_TAG(UP_CLS_PALETTE, 0x02)   /* I LONG: number of entries in UPA_Palette_Entries */
+#define UPA_Palette_Active UP_TAG(UP_CLS_PALETTE, 0x03)  /* ISG LONG: index of the chosen swatch (default 0; notifies) */
+#define UPA_Palette_Columns UP_TAG(UP_CLS_PALETTE, 0x04) /* I LONG: swatches per row (default 8, at most the entry count) */
+
+/* UP-Image (MUIC_Dtpic-like): a picture from a file (picture.datatype, remapped to the window screen) or from a caller bitmap, on the panel
+ * background. Without picture.datatype, a readable file or any bitmap the box stays empty (an outline only). */
+#define UPA_Image_File UP_TAG(UP_CLS_IMAGE, 0x01)   /* IS STRPTR: path of the picture, copied (at most 255 characters); set reloads and redraws */
+#define UPA_Image_Bitmap UP_TAG(UP_CLS_IMAGE, 0x02) /* IS struct BitMap*: caller bitmap shown instead of a file; NOT copied, must stay valid; wins over the file */
+#define UPA_Image_Fit UP_TAG(UP_CLS_IMAGE, 0x03)    /* I BOOL: scale to the box keeping the aspect (the box then stretches); default FALSE = the picture size */
+
+/* UP-Menu (MUIC_Menustrip-like, one menu): a UP-Button caption that opens a dark popup list of items under it. Several UP-Menu objects side by
+ * side in a horizontal group make a menu strip. One popup window, created at the first open and reused (as UP-Poplist). */
+#define UPA_Menu_Title UP_TAG(UP_CLS_MENU, 0x01)  /* I STRPTR: caption of the menu button; must outlive the object */
+#define UPA_Menu_Items UP_TAG(UP_CLS_MENU, 0x02)  /* I char**: NULL terminated item texts, "-" is a separator row; must outlive the object */
+#define UPA_Menu_Chosen UP_TAG(UP_CLS_MENU, 0x03) /* ISG LONG: index of the item last chosen, -1 before any (notifies on every pick, also the same item again) */
+#define UPA_Menu_Open UP_TAG(UP_CLS_MENU, 0x04)   /* ISG BOOL: the popup is open; set TRUE opens, FALSE closes */
+#define UPM_Menu_Click UP_TAG(UP_CLS_MENU, 0x10)  /* method: the title button was pressed. Internal */
+#define UPM_Menu_Closed UP_TAG(UP_CLS_MENU, 0x11) /* method: the popup window closed. Internal */
+#define UPM_Menu_Deactivated UP_TAG(UP_CLS_MENU, 0x12) /* method: the popup window lost activation. Internal */
+
+/* UP-TextArea: a minimal multi-line text editor (word wrap, caret, vertical scroll, Shift and mouse-drag selection, clipboard text via Ctrl or Amiga + C, X, V). Click or the cycle chain focuses it. */
+#define UPA_TextArea_Text UP_TAG(UP_CLS_TEXTAREA, 0x01)        /* ISG STRPTR: the text, copied in on set; get returns the object's own NUL terminated buffer (valid until the next edit). Notifies on every change: notify with MUIV_EveryTime, the pointer stays the same */
+#define UPA_TextArea_MaxLen UP_TAG(UP_CLS_TEXTAREA, 0x02)      /* IG LONG: capacity in bytes, default 1024; longer text is cut */
+#define UPA_TextArea_Placeholder UP_TAG(UP_CLS_TEXTAREA, 0x03) /* I STRPTR hint while empty and not active; must outlive the object */
+#define UPA_TextArea_Error UP_TAG(UP_CLS_TEXTAREA, 0x04) /* SG BOOL: outline in the ERROR colour (a validation error names this field); a user edit clears it */
+#define UPM_TextArea_Redraw UP_TAG(UP_CLS_TEXTAREA, 0x10)      /* method: the window's active object changed, repaint. Internal */
 
 /* UP-Tabs */
 #define UPA_Tabs_Active UP_TAG(UP_CLS_TABS, 0x01)   /* ISG LONG: index of the active tab (notifies) */
@@ -154,6 +248,7 @@ typedef struct UP_ListGetRow {
 #define UPA_Button_IconData UP_TAG(UP_CLS_BUTTON, 0x0A)    /* I struct UP_IconData*: caller icon for a glyph not in the set; used when UPA_Button_Icon names none. The struct and its mask are NOT copied: they must stay valid until the object is disposed */
 #define UPA_Button_Alt UP_TAG(UP_CLS_BUTTON, 0x0C)         /* IS BOOL: show UPA_Button_AltIcon instead of UPA_Button_Icon (play/pause); redraws and relayouts when live */
 #define UPA_Button_On UP_TAG(UP_CLS_BUTTON, 0x0B)          /* IS BOOL: lit state (a tab strip lights its active tab); redraws when live */
+#define UPA_Button_Flat UP_TAG(UP_CLS_BUTTON, 0x0D)        /* I BOOL: no face in the normal state (the parent shows through); hover and press show it. A square fixed size draws a circle */
 typedef struct UP_IconData { /* an alpha mask, w x h bytes row by row (0 clear .. 255 full); drawn like a baked icon, scaled to the icon box */
     const unsigned char* alpha;
     LONG w, h;
@@ -168,6 +263,9 @@ enum { UPV_Button_Align_Left, UPV_Button_Align_Centre, UPV_Button_Align_Right };
 #define UPA_Field_Placeholder UP_TAG(UP_CLS_FIELD, 0x04) /* I STRPTR hint while empty and not active; must outlive the field */
 #define UPA_Field_MaxWidth UP_TAG(UP_CLS_FIELD, 0x05)   /* I LONG cap of the field's MaxWidth in px, 0 = unbounded */
 #define UPA_Field_EscClose UP_TAG(UP_CLS_FIELD, 0x06)   /* I S BOOL: Esc in the active field sets MUIA_Window_CloseRequest on its window (I1360); the String eats Esc itself, so the window never saw it */
+#define UPA_Field_Error UP_TAG(UP_CLS_FIELD, 0x07)     /* SG BOOL: outline in the ERROR colour (a validation error names this field); a user edit clears it */
+#define UPM_Field_Edited UP_TAG(UP_CLS_FIELD, 0x08)    /* method: the inner String contents changed; clears UPA_Field_Error and repaints. Internal */
+#define UPA_Field_Key UP_TAG(UP_CLS_FIELD, 0x09)        /* G LONG: raw code of the last Up (0x4C), Down (0x4D), Esc (0x45) or Tab (0x42) pressed in the active field; notifies on every press, the key still reaches the String */
 /* the string length limit is MUIA_String_MaxLen */
 
 /* UP-Panel */
@@ -178,7 +276,8 @@ enum { UPV_Button_Align_Left, UPV_Button_Align_Centre, UPV_Button_Align_Right };
 #define UPA_Panel_Self UP_TAG(UP_CLS_PANEL, 0x05)        /* G Object*: the panel itself. A MUI Group passes an unknown OM_GET on to its \
                                                             children, so a Role answer counts only when Self names the asked object */
 #define UPA_Panel_Popup UP_TAG(UP_CLS_PANEL, 0x06)       /* I BOOL: root of a borderless popup window: square corners, no card padding (I1349) */
-enum { UPV_Panel_Role_Panel, UPV_Panel_Role_Surface, UPV_Panel_Role_Raised, UPV_Panel_Role_Count };
+#define UPA_Panel_FlatTopLeft UP_TAG(UP_CLS_PANEL, 0x07) /* I BOOL: square top left corner, so the card sits flush against the first tab */
+enum { UPV_Panel_Role_Panel, UPV_Panel_Role_Surface, UPV_Panel_Role_Raised, UPV_Panel_Role_Popup, UPV_Panel_Role_Count }; /* Popup: lighter than Raised, so a dropdown stands out from the card */
 /* I1371: MUIA_UserData value of a plain MUI Group inside a panel that keeps the spacing it was created with (a tool row of buttons). */
 #define UPV_Panel_KeepSpacing 0x55505331UL
 
@@ -218,8 +317,21 @@ Object* UP_NewCycle(const struct TagItem* tags);
 Object* UP_NewTabs(const struct TagItem* tags);
 Object* UP_NewScroller(const struct TagItem* tags);
 Object* UP_NewField(const struct TagItem* tags);
+Object* UP_NewPopstring(const struct TagItem* tags);
+Object* UP_NewPoplist(const struct TagItem* tags);
+Object* UP_NewNumericbutton(const struct TagItem* tags);
+Object* UP_NewScale(const struct TagItem* tags);
+Object* UP_NewColorfield(const struct TagItem* tags);
+Object* UP_NewPalette(const struct TagItem* tags);
+Object* UP_NewImage(const struct TagItem* tags);
+Object* UP_NewMenu(const struct TagItem* tags);
+Object* UP_NewTextArea(const struct TagItem* tags);
 Object* UP_NewPanel(const struct TagItem* tags);
 Object* UP_NewBalance(const struct TagItem* tags);
+Object* UP_NewCheckmark(const struct TagItem* tags);
+Object* UP_NewRadio(const struct TagItem* tags);
+Object* UP_NewVirtgroup(const struct TagItem* tags);   /* MUIA_Group_Child / MUIA_Group_Horiz describe the contents */
+Object* UP_NewScrollgroup(const struct TagItem* tags); /* MUIA_Group_Child / MUIA_Group_Horiz describe the contents */
 Object* UP_NewList(const struct TagItem* tags, Object** list_out); /* returns the list+scroller group; *list_out the list */
 #else
 #include <libraries/mui.h>

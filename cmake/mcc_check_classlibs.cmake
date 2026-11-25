@@ -31,7 +31,7 @@ if(DEFINED NM AND DEFINED BINARY)
   message(STATUS "mcc-classlibs-store OK: ${BINARY}: no store symbols among ${defined} defined")
   return()
 endif()
-# I685i (design 2026-11-06-mui-mcc-package.md section 3.2): the eleven UP-*.mcc libraries and sel_mcc_static compile the same
+# I685i (design 2026-11-06-mui-mcc-package.md section 3.2): the thirteen UP-*.mcc libraries and sel_mcc_static compile the same
 # class sources. Run as: cmake -DLIB_SOURCES=<list> -DSTATIC_SOURCES=<list> -DLIB_COUNT=<n> -P mcc_check_classlibs.cmake
 # LIB_SOURCES: the class source of each library, one entry per library. STATIC_SOURCES: the class sources of sel_mcc_static.
 if(NOT DEFINED LIB_SOURCES OR "${LIB_SOURCES}" STREQUAL "")
@@ -60,11 +60,6 @@ foreach(s ${lib_unique})
 endforeach()
 if("${static_classes}" STREQUAL "")
   message(SEND_ERROR "no class sources in STATIC_SOURCES")
-  set(bad 1)
-endif()
-list(LENGTH LIB_SOURCES n)
-if(NOT n EQUAL 11)
-  message(SEND_ERROR "expected 11 class libraries, found ${n}")
   set(bad 1)
 endif()
 if(bad)

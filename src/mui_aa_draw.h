@@ -63,6 +63,23 @@ void aa_cleanup(aa_ctx* c);
  * garbage window crashed the Amiga (I684a, AACycle set before the window opened). Use this before every redraw from
  * OM_SET or an outside call. */
 int aa_live(Object* obj);
+/* True when the mouse of im lies in obj AND obj is on screen. A Setup object on a hidden PageMode page keeps its event handler and its
+ * old box, so a bare box test lets a click on the visible page open the hidden page's popups. Every HandleEvent hit test goes here. */
+struct IntuiMessage;
+/* shown: the class's AA_SHOWN_CASES flag. */
+int aa_inside(int shown, Object* obj, const struct IntuiMessage* im);
+/* D4: the part of the window obj may paint, the intersection of every ancestor's box. Inside a UP-Virtgroup the contents extend past
+ * the view; only the virtgroup's own MUIM_Draw clips, so a redraw a child starts itself (hover, OM_SET, timer) or a hit test would reach
+ * past the view onto the objects around it. False when obj lies wholly outside. Every class redraw and hit test goes through it. */
+int aa_visible(Object* obj, int* x0, int* y0, int* x1, int* y1);
+/* MUI_Redraw clipped to aa_visible; skipped when obj is scrolled wholly out of view. Use instead of MUI_Redraw in every class. */
+void aa_redraw(Object* obj, ULONG flags);
+/* In a class dispatcher: tracks MUIM_Show / MUIM_Hide into d->shown (an int beside aa in the instance data), then falls to the super class. D is the instance data type. */
+#define AA_SHOWN_CASES(D) \
+    case MUIM_Show: \
+    case MUIM_Hide: \
+        ((D*)INST_DATA(cl, obj))->shown = (msg->MethodID == MUIM_Show); \
+        break;
 /* I685w: every fill takes the 0xRRGGBB itself. On a truecolour screen (c->tc) the RGB reaches the screen unchanged through
  * p96RectFill or FillPixelArray; on a palette screen it goes through the nearest held pen. Classes never see a pen. */
 /* Palette screens: hold the pen of rgb now, so a later draw cannot find the colour table full. A no-op on truecolour. */

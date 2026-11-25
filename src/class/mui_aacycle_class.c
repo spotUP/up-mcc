@@ -26,6 +26,7 @@ typedef struct aacycle_data {
     int n, active, hover, down;
     mui_aa_cycle_t m;
     aa_ctx aa;
+    int shown; /* MUIM_Show seen, MUIM_Hide not yet (AA_SHOWN_CASES); outside aa_ctx, whose ABI 2 layout is frozen */
     Object *popup, *list;
     struct Hook row_hook; /* UPA_List_RowHook of the popup list: the entry text (h_Data is this data) */
     struct MUI_EventHandlerNode ehn;
@@ -134,7 +135,9 @@ static ULONG aacycle_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
         /* I685x: the super filled the corner wedges with the snapped parent pen; on truecolour repaint them in the exact parent RGB. */
         aa_round_corners(&d->aa, rp, l, t, w, h, d->m.radius, d->aa.bg_rgb);
     }
-    aa_round_fill(&d->aa, rp, l, t, w, h, d->m.radius, face);
+    /* Same outline as UP-Field (TRACK line, face inset by one): on a raised card the face alone equals the card and the box vanishes. */
+    aa_round_fill(&d->aa, rp, l, t, w, h, d->m.radius, d->aa.tok[SEL_GUI_TOKEN_TRACK]);
+    aa_round_fill(&d->aa, rp, l + 1, t + 1, w - 2, h - 2, d->m.radius > 1 ? d->m.radius - 1 : 0, face);
     if (d->n > 0) {
         th = aa_text_height(&d->aa, obj);
         aa_text(&d->aa, obj, rp, l + d->m.pad_x, t + (h - th) / 2, d->entries[d->active], text, face);
@@ -194,8 +197,17 @@ static void aacycle_open_popup(Object* obj, aacycle_data* d) {
     Object *app = NULL, *list = NULL, *group;
     struct TagItem tl[8];
     struct Window* win = _window(obj);
-    if (win == NULL || d->n <= 0 || d->popup != NULL) {
+    ULONG is_open = 0;
+    if (win == NULL || d->n <= 0) {
         return;
+    }
+    if (d->popup != NULL) {
+        /* A pick, cancel or lost focus closes the popup window by notification but leaves it allocated: reopen from a fresh one. */
+        GetAttr(MUIA_Window_Open, d->popup, &is_open);
+        if (is_open) {
+            return;
+        }
+        aacycle_drop_popup(obj, d);
     }
     GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
     if (app == NULL) {
@@ -222,7 +234,7 @@ static void aacycle_open_popup(Object* obj, aacycle_data* d) {
     }
     {
         /* I1349: root = a themed card (Raised token, rounded, no MUI frame) around the list, not MUI's stock window frame and bevel */
-        Object* card = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Raised, UPA_Panel_Popup, (ULONG)TRUE, MUIA_Group_Child, (ULONG)group, TAG_DONE);
+        Object* card = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Popup, UPA_Panel_Popup, (ULONG)TRUE, MUIA_Group_Child, (ULONG)group, TAG_DONE);
         if (card != NULL) {
             group = card;
         }
@@ -256,23 +268,23 @@ static ULONG aacycle_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
         return DoSuperMethodA(cl, obj, (Msg)msg);
     }
     GetAttr(MUIA_Disabled, obj, &dis);
-    in = im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj);
+    in = aa_inside(d->shown, obj, im);
     if (im->Class == IDCMP_MOUSEMOVE) {
         if (in != d->hover) {
             d->hover = in;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
         return 0;
     }
     if (im->Class == IDCMP_MOUSEBUTTONS) {
         if (im->Code == SELECTDOWN && in && !dis) {
             d->down = 1;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
             return MUI_EventHandlerRC_Eat;
         }
         if (im->Code == SELECTUP && d->down) {
             d->down = 0;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
             if (in && !dis) {
                 aacycle_open_popup(obj, d);
             }
@@ -313,7 +325,7 @@ static ULONG aacycle_set(struct IClass* cl, Object* obj, struct opSet* msg) {
     if (ta != NULL && mui_aa_cycle_valid((int)ta->ti_Data, d->n) && (int)ta->ti_Data != d->active) {
         d->active = (int)ta->ti_Data;
         if (aa_live(obj)) {
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -344,6 +356,7 @@ static ULONG __attribute__((used)) aacycle_dispatch_c(struct IClass* cl, Object*
         return aacycle_set(cl, obj, (struct opSet*)msg);
     case OM_GET:
         return aacycle_get(cl, obj, (struct opGet*)msg);
+    AA_SHOWN_CASES(aacycle_data)
     case MUIM_Setup:
         return aacycle_setup(cl, obj, msg);
     case MUIM_Cleanup:

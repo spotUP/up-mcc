@@ -26,9 +26,12 @@ extern struct Library* MUIMasterBase;
 
 typedef struct aatext_data {
     char text[AAT_CAP], widest[AAT_CAP];
-    int tone, align, ellipsis, fixed, shown, minw, minh, defw;
+    int tone, align, ellipsis, fixed, tall, shown, minw, minh, defw;
     aa_ctx aa;
     Object* self;
+    ULONG timeout;                   /* UPA_Text_Timeout ms, 0 = the text stays */
+    Object* app;                     /* non-NULL while the hide timer is armed */
+    struct MUI_InputHandlerNode ihn; /* the hide timer, same MUIIHNF_TIMER node as the tooltip delay (mui_aatip.c) */
 } aatext_data;
 
 static struct MUI_CustomClass* g_class;
@@ -63,15 +66,39 @@ static ULONG aatext_setup(struct IClass* cl, Object* obj, Msg msg) {
     aa_hold(&d->aa, d->aa.tok[mui_aa_tone_token(d->tone)]);
     aa_hold(&d->aa, d->aa.bg_rgb);
     dots = aa_text_width(&d->aa, obj, "...");
-    d->defw = aa_text_width(&d->aa, obj, d->widest);
+    d->defw = aa_text_width(&d->aa, obj, d->widest) + (d->fixed ? 2 : 0); /* a fixed box is its text width exactly; a glyph overhang (t, n) was clipped */
     d->minw = d->ellipsis ? (dots < d->defw ? dots : d->defw) : d->defw;
     d->minh = aa_text_height(&d->aa, obj);
     d->shown = 1;
     return TRUE;
 }
 
+/* UPA_Text_Timeout: stop the hide timer (cleanup, a newer text, or the timer fired). */
+static void aatext_disarm(aatext_data* d) {
+    if (d->app != NULL) {
+        DoMethod(d->app, MUIM_Application_RemInputHandler, (ULONG)&d->ihn);
+        d->app = NULL;
+    }
+}
+
+/* UPA_Text_Timeout: (re)start the hide timer after a non-empty text; MUI sends UPM_Shared_Fire to obj when it runs out.
+ * Only while set up, because the node hangs off the application. */
+static void aatext_arm(Object* obj, aatext_data* d) {
+    aatext_disarm(d);
+    if (d->timeout == 0 || !d->shown || d->text[0] == '\0') {
+        return;
+    }
+    d->ihn.ihn_Object = obj;
+    d->ihn.ihn_Flags = MUIIHNF_TIMER;
+    d->ihn.ihn_Millis = (UWORD)d->timeout;
+    d->ihn.ihn_Method = UPM_Shared_Fire;
+    d->app = _app(obj);
+    DoMethod(d->app, MUIM_Application_AddInputHandler, (ULONG)&d->ihn);
+}
+
 static ULONG aatext_cleanup(struct IClass* cl, Object* obj, Msg msg) {
     aatext_data* d = INST_DATA(cl, obj);
+    aatext_disarm(d);
     d->shown = 0;
     aa_cleanup(&d->aa);
     return DoSuperMethodA(cl, obj, msg);
@@ -88,7 +115,7 @@ static ULONG aatext_askminmax(struct IClass* cl, Object* obj, struct MUIP_AskMin
     }
     msg->MinMaxInfo->MinHeight += d->minh;
     msg->MinMaxInfo->DefHeight += d->minh;
-    msg->MinMaxInfo->MaxHeight += d->minh;
+    msg->MinMaxInfo->MaxHeight = d->tall ? MUI_MAXMAX : msg->MinMaxInfo->MaxHeight + d->minh;
     return 0;
 }
 
@@ -109,7 +136,7 @@ static ULONG aatext_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) 
     w = _mwidth(obj);
     h = _mheight(obj);
     tw = aa_text_width(&d->aa, obj, d->text);
-    if (d->ellipsis && tw > w) {
+    if (tw > w) { /* a text set after layout may outgrow its box: cut it with "..." there, never drawn over the neighbour (ellipsis or not) */
         mui_aa_text_fit(d->text, w, aatext_width, d, fit, (int)sizeof fit);
         shown = fit;
         tw = aa_text_width(&d->aa, obj, fit);
@@ -127,15 +154,20 @@ static void aatext_store(Object* obj, aatext_data* d, const char* text) {
     strncpy(d->text, text, sizeof d->text - 1);
     d->text[sizeof d->text - 1] = '\0';
     if (d->shown) {
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
     }
 }
 
 static ULONG aatext_set(struct IClass* cl, Object* obj, struct opSet* msg) {
     aatext_data* d = INST_DATA(cl, obj);
-    struct TagItem* tag = FindTagItem(UPA_Text_Contents, msg->ops_AttrList);
+    struct TagItem* tag = FindTagItem(UPA_Text_Timeout, msg->ops_AttrList);
+    if (tag != NULL) {
+        d->timeout = tag->ti_Data;
+    }
+    tag = FindTagItem(UPA_Text_Contents, msg->ops_AttrList);
     if (tag != NULL && tag->ti_Data != 0) {
         aatext_store(obj, d, (const char*)tag->ti_Data);
+        aatext_arm(obj, d); /* newest wins: a new text restarts the clock */
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -174,6 +206,8 @@ static ULONG aatext_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     d->align = (int)GetTagData(UPA_Text_Align, UPV_Text_Align_Left, tags);
     d->ellipsis = (int)GetTagData(UPA_Text_Ellipsis, FALSE, tags);
     d->fixed = (int)GetTagData(UPA_Text_Fixed, FALSE, tags);
+    d->tall = (int)GetTagData(UPA_Text_FillHeight, FALSE, tags);
+    d->timeout = GetTagData(UPA_Text_Timeout, 0, tags);
     return (ULONG)obj;
 }
 
@@ -199,6 +233,12 @@ static ULONG __attribute__((used)) aatext_dispatch_c(struct IClass* cl, Object* 
         return aatext_set(cl, obj, (struct opSet*)msg);
     case OM_GET:
         return aatext_get(cl, obj, (struct opGet*)msg);
+    case UPM_Shared_Fire: { /* UPA_Text_Timeout ran out: one shot, then the text clears */
+        aatext_data* d = INST_DATA(cl, obj);
+        aatext_disarm(d);
+        aatext_store(obj, d, "");
+        return 0;
+    }
     }
     return DoSuperMethodA(cl, obj, msg);
 }

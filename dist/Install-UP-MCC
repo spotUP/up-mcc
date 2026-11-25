@@ -8,7 +8,7 @@
 ; whether Installer is started from its icon or from a shell, so no source path below depends on the current directory.
 (set #src (pathonly @icon))
 
-(welcome "This installs UP-MCC " #version ": eleven UP- user interface classes for MUI 3.8, the UP-MCC preferences class, the support library up-mcc.library, the Inter font, theme files, programmer headers, documentation and a demonstration program.")
+(welcome "This installs UP-MCC " #version ": twenty-three UP- user interface classes for MUI 3.8, the UP-MCC preferences class, the support library up-mcc.library, the Inter font, theme files, programmer headers, documentation and a demonstration program.")
 
 (complete 0)
 
@@ -26,7 +26,7 @@
 (set #classdest
   (askdir
     (prompt "Where are the MUI classes installed?")
-    (help "The eleven UP-*.mcc classes and UP-MCC.mcp are copied into this drawer. The default MUI:Libs/mui is where MUI looks for external classes by name.")
+    (help "The twenty-three UP-*.mcc classes and UP-MCC.mcp are copied into this drawer. The default MUI:Libs/mui is where MUI looks for external classes by name.")
     (default "MUI:Libs/mui")
     (newpath)
   )
@@ -34,7 +34,7 @@
 
 (copyfiles
   (prompt "Copying the UP- classes and the preferences class")
-  (help "Libs/mui/UP-*.mcc are the eleven classes (Button, Text, Panel, Tabs, Balance, Slider, Progress, Cycle, Field, Scroller, List). UP-MCC.mcp is the preferences class.")
+  (help "Libs/mui/UP-*.mcc are the twenty-three classes (Button, Text, Panel, Tabs, Balance, Slider, Progress, Cycle, Field, Scroller, List, Checkmark, Radio, Popstring, Poplist, Numericbutton, Scale, Colorfield, Palette, Image, Menu, Virtgroup, Scrollgroup). UP-MCC.mcp is the preferences class.")
   (source (tackon #src "Libs/mui"))
   (dest #classdest)
   (pattern "UP-#?.mc#?")

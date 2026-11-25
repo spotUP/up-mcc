@@ -52,12 +52,16 @@ static void demo_requester(const char* text) {
     EasyRequest(NULL, &es, NULL, (APTR)text);
 }
 
-#define CLASS_COUNT 11
+#define CLASS_COUNT 23 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
 
 static const char* const g_names[CLASS_COUNT] = {"Button", "Text", "Panel", "Tabs", "Balance", "Slider",
-                                                 "Progress", "Cycle", "Field", "Scroller", "List"};
+                                                 "Progress", "Cycle", "Field", "Scroller", "List", "Checkmark", "Radio", "Popstring", "Poplist",
+                                                 "Numericbutton", "Scale", "Colorfield", "Palette", "Image", "Menu", "Virtgroup", "Scrollgroup"};
 static const char* const g_cycle_entries[] = {"First", "Second", "Third", NULL};
 static const char* const g_tab_captions[] = {"Songs", "Albums", "Artists", "Playlists", NULL};
+static const char* const g_radio_entries[] = {"Low", "Medium", "High", NULL};
+static const char* const g_menu_items[] = {"Open", "Save", "-", "Quit", NULL};
+static ULONG g_palette[] = {0xE5484D, 0xF5A524, 0x46A758, 0x3E63DD, 0x8E4EC6, 0x889096};
 static const char* const g_artists[] = {"Virgill", "Jogeir Liljedahl", "Purple Motion", "Zabutom", "Dubmood", "Chipzel"};
 static const char* const g_times[] = {"3:42", "4:05", "2:58", "5:21", "3:09", "4:47"};
 static UP_ListColumns g_columns = {3, {3, 2, 0}, {NULL, NULL, "0:00"}};
@@ -155,6 +159,30 @@ static Object* make(int index) {
         return MUI_NewObject(path, UPA_Field_Placeholder, (ULONG) "Search songs, albums, artists", TAG_DONE);
     case 9:
         return MUI_NewObject(path, UPA_Scroller_Entries, 100UL, UPA_Scroller_Visible, 10UL, TAG_DONE);
+    case 11:
+        return MUI_NewObject(path, UPA_Checkmark_Label, (ULONG) "Shuffle on", TAG_DONE);
+    case 12:
+        return MUI_NewObject(path, UPA_Radio_Entries, (ULONG)g_radio_entries, UPA_Radio_Active, 1UL, TAG_DONE);
+    case 13:
+        return MUI_NewObject(path, TAG_DONE);
+    case 14:
+        return MUI_NewObject(path, UPA_Poplist_Entries, (ULONG)g_cycle_entries, UPA_Poplist_Active, 0UL, TAG_DONE);
+    case 15:
+        return MUI_NewObject(path, UPA_Numeric_Min, 0UL, UPA_Numeric_Max, 10UL, UPA_Numeric_Value, 4UL, TAG_DONE);
+    case 16:
+        return MUI_NewObject(path, UPA_Scale_Min, 0UL, UPA_Scale_Max, 100UL, UPA_Scale_Ticks, 11UL, TAG_DONE);
+    case 17:
+        return MUI_NewObject(path, UPA_Colorfield_RGB, 0x3E63DDUL, TAG_DONE);
+    case 18:
+        return MUI_NewObject(path, UPA_Palette_Entries, (ULONG)g_palette, UPA_Palette_Count, 6UL, UPA_Palette_Columns, 6UL, TAG_DONE);
+    case 19:
+        return MUI_NewObject(path, TAG_DONE);
+    case 20:
+        return MUI_NewObject(path, UPA_Menu_Title, (ULONG) "File", UPA_Menu_Items, (ULONG)g_menu_items, TAG_DONE);
+    case 21:
+        return MUI_NewObject(path, MUIA_Group_Child, (ULONG)label("Virtgroup: contents at their own size", UPV_Text_Tone_Normal), TAG_DONE);
+    case 22:
+        return MUI_NewObject(path, MUIA_Group_Child, (ULONG)label("Scrollgroup: scroller shows when taller", UPV_Text_Tone_Normal), TAG_DONE);
     default:
         g_row_hook.h_Entry = (__typeof__(g_row_hook.h_Entry))(void (*)(void))HookEntry;
         g_row_hook.h_SubEntry = (__typeof__(g_row_hook.h_SubEntry))(void (*)(void))demo_cell;
@@ -241,17 +269,26 @@ static int demo_body(int argc, char** argv) {
             pbk = card("Playback", tier == 0 ? NULL : label("Volume 40", UPV_Text_Tone_Muted), obj[5], tier == 0 ? NULL : label("Elapsed 2:05 of 3:22", UPV_Text_Tone_Muted),
                        box(FALSE, obj[6], tier == 0 ? NULL : label("Scroll position", UPV_Text_Tone_Muted), obj[9], NULL, NULL, NULL));
             if (tier == 2) {
+                Object* more = card("More controls", box(TRUE, obj[11], obj[12], NULL, NULL, NULL, NULL), box(TRUE, obj[13], obj[14], obj[20], NULL, NULL, NULL),
+                                    box(TRUE, obj[15], obj[16], obj[17], obj[18], obj[19], NULL), box(TRUE, obj[21], obj[22], NULL, NULL, NULL, NULL));
                 Object* left = card("Library", box(FALSE, obj[3], tab_pages(obj[3]), NULL, NULL, NULL, NULL), label("128 songs in your library", UPV_Text_Tone_Muted), obj[2], obj[10]);
                 root = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Panel, MUIA_Group_Child, (ULONG)label("UP-Demo", UPV_Text_Tone_Heading),
                                      MUIA_Group_Child, (ULONG)obj[1], MUIA_Group_Child, (ULONG)ctl,
-                                     MUIA_Group_Child, (ULONG)box(TRUE, left, obj[4], pbk, NULL, NULL, NULL), TAG_DONE);
+                                     MUIA_Group_Child, (ULONG)box(TRUE, left, obj[4], pbk, NULL, NULL, NULL),
+                                     MUIA_Group_Child, (ULONG)more, TAG_DONE);
             } else if (tier == 1) { /* 512 lines: no welcome line, no Surface panel; controls and playback side by side over a three-row library */
                 Object* lib = card("Library", obj[3], obj[10], NULL, NULL);
+                for (i = 11; i < CLASS_COUNT; i++) {
+                    demo_drop(obj, i);
+                }
                 demo_drop(obj, 1);
                 demo_drop(obj, 2);
                 root = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Panel, MUIA_Group_Child, (ULONG)label("UP-Demo", UPV_Text_Tone_Heading),
                                      MUIA_Group_Child, (ULONG)box(TRUE, ctl, obj[4], pbk, NULL, NULL, NULL), MUIA_Group_Child, (ULONG)lib, TAG_DONE);
             } else { /* 256 lines: heading, controls and playback side by side, the tabs; no list, no Surface panel, no welcome line */
+                for (i = 11; i < CLASS_COUNT; i++) {
+                    demo_drop(obj, i);
+                }
                 demo_drop(obj, 1);
                 demo_drop(obj, 2);
                 demo_drop(obj, 10);
@@ -329,7 +366,7 @@ static int demo_body(int argc, char** argv) {
                 Delay(5);
                 ticks++;
             }
-            MUI_DisposeObject(app); /* the application owns window, group and the eleven objects */
+            MUI_DisposeObject(app); /* the application owns window, group and the class objects */
         }
     } else {
         for (i = 0; i < CLASS_COUNT; i++) {

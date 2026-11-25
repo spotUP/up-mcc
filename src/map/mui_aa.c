@@ -128,14 +128,14 @@ void mui_aa_button_rgb(const uint32_t* token, int role, int state, uint32_t* fac
         t = token[SEL_GUI_TOKEN_TEXT];
         f = state == MUI_AA_SELECTED ? token[SEL_GUI_TOKEN_SURFACE_RAISED] : mui_aa_state_rgb(token, f, state == MUI_AA_DISABLED ? MUI_AA_NORMAL : state);
     } else if (role == MUI_AA_ROLE_TAB) {
-        /* I685w run 6: AATabs as the Mac Home filter chips: the active chip is an ACCENT face with ACCENT_TEXT, the others a raised chip in TEXT. */
+        /* The active tab is the paper (the raised card colour it sits flush against); an idle tab is halfway between the paper and the window surface. */
         if (state == MUI_AA_SELECTED || state == MUI_AA_PRESSED) {
-            f = token[SEL_GUI_TOKEN_ACCENT];
-            t = token[SEL_GUI_TOKEN_ACCENT_TEXT];
+            f = token[SEL_GUI_TOKEN_SURFACE_RAISED];
         } else {
-            f = mui_aa_state_rgb(token, token[SEL_GUI_TOKEN_SURFACE_RAISED], state);
-            t = token[SEL_GUI_TOKEN_TEXT];
+            uint32_t a = token[SEL_GUI_TOKEN_SURFACE], b = token[SEL_GUI_TOKEN_SURFACE_RAISED];
+            f = mui_aa_state_rgb(token, (((a ^ b) & 0xFEFEFEu) >> 1) + (a & b), state);
         }
+        t = token[SEL_GUI_TOKEN_TEXT];
     } else {
         f = mui_aa_state_rgb(token, token[SEL_GUI_TOKEN_SURFACE_RAISED], state);
         t = token[SEL_GUI_TOKEN_TEXT];
@@ -260,11 +260,15 @@ int mui_aa_text_fit(const char* s, int max_w, mui_aa_width_fn width, void* ctx, 
 }
 
 int mui_aa_panel_token(int role) {
-    return role == MUI_AA_PANEL_SURFACE ? SEL_GUI_TOKEN_SURFACE : role == MUI_AA_PANEL_RAISED ? SEL_GUI_TOKEN_SURFACE_RAISED : SEL_GUI_TOKEN_PANEL;
+    return role == MUI_AA_PANEL_POPUP ? SEL_GUI_TOKEN_SURFACE_HOVER : role == MUI_AA_PANEL_SURFACE ? SEL_GUI_TOKEN_SURFACE : role == MUI_AA_PANEL_RAISED ? SEL_GUI_TOKEN_SURFACE_RAISED : SEL_GUI_TOKEN_PANEL;
 }
 
 uint32_t mui_aa_panel_rgb(const uint32_t* token, int role) {
     return token[mui_aa_panel_token(role)];
+}
+
+uint32_t mui_aa_parent_rgb(const uint32_t* token, int parent_role) {
+    return parent_role < 0 ? token[SEL_GUI_TOKEN_BACKGROUND] : mui_aa_panel_rgb(token, parent_role);
 }
 
 int mui_aa_panel_radius(const uint32_t* token, int font_px) {
@@ -491,6 +495,14 @@ int mui_aa_field_placeholder(const uint32_t* token, const char* contents, int fo
     return 1;
 }
 
+int mui_aa_field_text(const uint32_t* token, const char* contents, int focus, uint32_t* rgb) {
+    if (focus || contents == NULL || contents[0] == '\0') {
+        return 0;
+    }
+    *rgb = token[SEL_GUI_TOKEN_TEXT];
+    return 1;
+}
+
 uint32_t mui_aa_field_placeholders(void) {
     return g_field_placeholders;
 }
@@ -512,7 +524,7 @@ void mui_aa_field_metrics(int font_px, int aspect_q8, mui_aa_field_t* out) {
 
 int mui_aa_field_plan(const uint32_t* token, const mui_aa_field_t* m, int focus, mui_aa_check_op_t* out) {
     g_field_calls++;
-    out[0].inset = 0, out[0].radius = m->radius, out[0].rgb = token[focus ? SEL_GUI_TOKEN_FOCUS_RING : MUI_AA_FIELD_LINE];
+    out[0].inset = 0, out[0].radius = m->radius, out[0].rgb = token[focus == MUI_AA_FIELD_ERROR ? SEL_GUI_TOKEN_ERROR : focus ? SEL_GUI_TOKEN_FOCUS_RING : MUI_AA_FIELD_LINE];
     out[1].inset = m->outline, out[1].radius = m->radius > m->outline ? m->radius - m->outline : 0, out[1].rgb = token[MUI_AA_FIELD_FACE];
     return MUI_AA_FIELD_OPS;
 }
@@ -521,6 +533,14 @@ uint32_t mui_aa_field_string_bg(const uint32_t* token, int focus) {
     (void)focus; /* focus moves the outline only (op 0); the face stays */
     g_field_calls++;
     return token[MUI_AA_FIELD_FACE];
+}
+
+uint32_t mui_aa_field_string_fg(const uint32_t* token) {
+    return token[SEL_GUI_TOKEN_TEXT];
+}
+
+int mui_aa_field_min_width(const mui_aa_field_t* m, int pw) {
+    return pw > 0 ? pw + 4 + 2 * m->pad_x : 0;
 }
 
 int mui_aa_field_string_gadget(unsigned gadget_type) {
@@ -843,4 +863,137 @@ void mui_aabtn_minmax(uint32_t content_w, uint32_t content_h, uint32_t fixed_w, 
     out->min_h = out->def_h = fixed_h != 0u ? fixed_h : content_h;
     out->w_fixed = (fixed_w != 0u || toggle) ? 1u : 0u;
     out->h_fixed = 1u;
+}
+
+int mui_aa_pop_click(mui_aa_pop_t* s, uint32_t now_ms) {
+    if (s->open) {
+        return MUI_AA_POP_CLOSE;
+    }
+    if (s->by_deactivate && (uint32_t)(now_ms - s->closed_ms) < MUI_AA_POP_GUARD_MS) {
+        s->by_deactivate = 0;
+        return MUI_AA_POP_NONE;
+    }
+    s->by_deactivate = 0;
+    return s->created ? MUI_AA_POP_OPEN_REUSE : MUI_AA_POP_OPEN_NEW;
+}
+
+void mui_aa_pop_opened(mui_aa_pop_t* s) {
+    s->created = 1;
+    s->open = 1;
+    s->by_deactivate = 0;
+}
+
+void mui_aa_pop_closed(mui_aa_pop_t* s, int by_deactivate, uint32_t now_ms) {
+    if (!s->open) {
+        return;
+    }
+    s->open = 0;
+    s->by_deactivate = by_deactivate;
+    s->closed_ms = now_ms;
+}
+
+long mui_aa_numeric_clamp(long v, long lo, long hi) {
+    return v < lo ? lo : v > hi ? hi : v;
+}
+
+long mui_aa_numeric_drag(long start, int dx, int w, long lo, long hi) {
+    if (w <= 0 || hi <= lo) {
+        return lo;
+    }
+    return mui_aa_numeric_clamp(start + (long)dx * (hi - lo) / (2L * w), lo, hi);
+}
+
+int mui_aa_numeric_text(long v, char* out, int cap) {
+    char tmp[16];
+    int n = 0, len = 0;
+    unsigned long u = v < 0 ? 0UL - (unsigned long)v : (unsigned long)v;
+    if (cap < 1) {
+        return 0;
+    }
+    do {
+        tmp[n++] = (char)('0' + u % 10);
+        u /= 10;
+    } while (u != 0 && n < 15);
+    if (v < 0 && len < cap - 1) {
+        out[len++] = '-';
+    }
+    while (n > 0 && len < cap - 1) {
+        out[len++] = tmp[--n];
+    }
+    out[len] = '\0';
+    return len;
+}
+
+int mui_aa_scale_plan(int w, long lo, long hi, int ticks, mui_aa_scale_tick_t* out) {
+    int i, n = ticks < 2 ? 2 : ticks > MUI_AA_SCALE_MAX ? MUI_AA_SCALE_MAX : ticks;
+    long span = hi - lo;
+    if (span <= 0 || w < 2) {
+        return 0;
+    }
+    for (i = 0; i < n; i++) {
+        out[i].x = (int)(((long)i * (w - 1) + (n - 1) / 2) / (n - 1));
+        out[i].value = lo + ((long)i * span + (n - 1) / 2) / (n - 1);
+        out[i].major = i == 0 || i == n - 1 || ((n & 1) && i == n / 2);
+    }
+    return n;
+}
+
+void mui_aa_scale_metrics(int font_px, int* minor_h, int* major_h, int* gap) {
+    int maj = font_px / 2 < 4 ? 4 : font_px / 2;
+    *major_h = maj;
+    *minor_h = maj / 2 < 2 ? 2 : maj / 2;
+    *gap = 2;
+}
+
+int mui_aa_palette_rows(int n, int cols) {
+    return n <= 0 || cols <= 0 ? 0 : (n + cols - 1) / cols;
+}
+
+void mui_aa_palette_cell(int i, int cols, int cw, int ch, int gap, int* x, int* y) {
+    *x = (i % cols) * (cw + gap);
+    *y = (i / cols) * (ch + gap);
+}
+
+int mui_aa_palette_hit(int x, int y, int cols, int n, int cw, int ch, int gap) {
+    int c, r, i;
+    if (x < 0 || y < 0 || cols <= 0 || cw <= 0 || ch <= 0) {
+        return -1;
+    }
+    c = x / (cw + gap);
+    r = y / (ch + gap);
+    if (c >= cols || x % (cw + gap) >= cw || y % (ch + gap) >= ch) {
+        return -1;
+    }
+    i = r * cols + c;
+    return i < n ? i : -1;
+}
+
+int mui_aa_palette_move(int active, int n, int cols, int dx, int dy) {
+    int c, r, ni;
+    if (n <= 0 || cols <= 0 || active < 0 || active >= n) {
+        return active;
+    }
+    c = active % cols + dx;
+    r = active / cols + dy;
+    if (c < 0 || c >= cols || r < 0 || r >= mui_aa_palette_rows(n, cols)) {
+        return active;
+    }
+    ni = r * cols + c;
+    return ni >= n ? n - 1 : ni;
+}
+
+void mui_aa_image_fit(int sw, int sh, int bw, int bh, int fit, int* dw, int* dh, int* ox, int* oy) {
+    int w = sw, h = sh;
+    if (fit && sw > 0 && sh > 0 && bw > 0 && bh > 0) {
+        if ((long)bw * sh <= (long)bh * sw) { /* width limits */
+            w = bw;
+            h = (int)((long)sh * bw / sw);
+        } else {
+            h = bh;
+            w = (int)((long)sw * bh / sh);
+        }
+        w = w < 1 ? 1 : w;
+        h = h < 1 ? 1 : h;
+    }
+    *dw = w, *dh = h, *ox = (bw - w) / 2, *oy = (bh - h) / 2;
 }

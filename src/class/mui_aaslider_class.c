@@ -27,6 +27,7 @@ typedef struct aaslider_data {
     int drawn_fw, drawn_w, drawn_h, drawn_state; /* I739: what the last draw left on screen (drawn_fw < 0: nothing yet) */
     up_slider_t m;
     aa_ctx aa;
+    int shown; /* MUIM_Show seen, MUIM_Hide not yet (AA_SHOWN_CASES); outside aa_ctx, whose ABI 2 layout is frozen */
     struct MUI_EventHandlerNode ehn;
     aatip_slot tip; /* I731 */
 } aaslider_data;
@@ -35,6 +36,7 @@ typedef struct aaprogress_data {
     long value, max;
     up_slider_t m;
     aa_ctx aa;
+    int shown; /* MUIM_Show seen, MUIM_Hide not yet (AA_SHOWN_CASES); outside aa_ctx, whose ABI 2 layout is frozen */
 } aaprogress_data;
 
 static struct MUI_CustomClass *g_slider_class, *g_progress_class;
@@ -175,26 +177,26 @@ static ULONG aaslider_handle(struct IClass* cl, Object* obj, struct MUIP_HandleE
         aatip_event(obj, &d->tip, im, 0);
     }
     if (im->Class == IDCMP_MOUSEMOVE) {
-        int in = im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj);
+        int in = aa_inside(d->shown, obj, im);
         aatip_event(obj, &d->tip, im, in);
         if (d->drag && !dis) {
             aaslider_move_to(obj, im->MouseX);
         }
         if (in != d->hover) {
             d->hover = in;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
         return 0;
     }
-    if (im->Code == SELECTDOWN && !dis && im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj)) {
+    if (im->Code == SELECTDOWN && !dis && aa_inside(d->shown, obj, im)) {
         d->drag = 1;
         aaslider_move_to(obj, im->MouseX);
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
         return MUI_EventHandlerRC_Eat;
     }
     if (im->Code == SELECTUP && d->drag) {
         d->drag = 0;
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
         return MUI_EventHandlerRC_Eat;
     }
     return 0;
@@ -222,7 +224,11 @@ static ULONG __attribute__((used)) aaslider_dispatch_c(struct IClass* cl, Object
         aaslider_data* d = INST_DATA(cl, obj);
         return aatip_fire(obj, &d->aa, &d->tip);
     }
+    case MUIM_Show:
+        ((aaslider_data*)INST_DATA(cl, obj))->shown = 1;
+        break;
     case MUIM_Hide:
+        ((aaslider_data*)INST_DATA(cl, obj))->shown = 0;
         aatip_drop(obj);
         break;
     case MUIM_Setup:
@@ -321,8 +327,9 @@ static ULONG aaprogress_set(struct IClass* cl, Object* obj, struct opSet* msg) {
         d->value = (long)tv->ti_Data;
         changed = 1;
     }
-    if (changed && aa_live(obj)) {
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+    /* Hidden gauge must not draw: SetAttrs(Value, ShowMe TRUE) ran this before ShowMe applied, painting a stale 6 px TRACK bar. */
+    if (changed && d->shown && aa_live(obj)) {
+        aa_redraw(obj, MADF_DRAWOBJECT);
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -377,6 +384,7 @@ static ULONG __attribute__((used)) aaprogress_dispatch_c(struct IClass* cl, Obje
         return aaprogress_set(cl, obj, (struct opSet*)msg);
     case OM_GET:
         return aaprogress_get(cl, obj, (struct opGet*)msg);
+    AA_SHOWN_CASES(aaprogress_data)
     }
     return DoSuperMethodA(cl, obj, msg);
 }

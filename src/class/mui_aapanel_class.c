@@ -1,7 +1,7 @@
 /* Selecta_AAPanel (I667e, design section 3.8). MUI 3.8: MUI_CreateCustomClass on Group, same dispatcher pattern as
  * mui_aatext_class.c. The group carries the role colour as its MUIA_Background (children without a background of their own
  * inherit it). The Group super fills every gap between the children with that background, the square face included, so the class
- * paints after the super: only the corner wedges outside mui_aa_panel_radius, in the window BACKGROUND, through aa_round_corners;
+ * paints after the super: only the corner wedges outside mui_aa_panel_radius, in the colour it sits on (bg_rgb), through aa_round_corners;
  * on truecolour it first paints the face in exact RGB around the inner group (I685w). No hardcoded colour, no ObtainBestPen. */
 #include "mui_aapanel_class.h"
 #include "mui_aa_class.h"
@@ -26,6 +26,7 @@ extern struct Library* MUIMasterBase;
 
 typedef struct aapanel_data {
     int role;
+    int flat_tl;    /* UPA_Panel_FlatTopLeft: square top left corner */
     int popup;      /* I1349: root of a borderless popup window: square corners, no card pad */
     int fixed;      /* > 0: the art frame, no pad */
     Object* inner;  /* I685e5: the plain vertical group that holds the program's children */
@@ -65,6 +66,15 @@ static ULONG aapanel_layout(struct Hook* hook, Object* obj, struct MUI_LayoutMsg
         lm->lm_MinMax.DefHeight = (WORD)(_defheight(in) + 2 * py);
         lm->lm_MinMax.MaxWidth = _maxwidth(in) >= MUI_MAXMAX ? MUI_MAXMAX : (WORD)(_maxwidth(in) + 2 * px);
         lm->lm_MinMax.MaxHeight = _maxheight(in) >= MUI_MAXMAX ? MUI_MAXMAX : (WORD)(_maxheight(in) + 2 * py);
+        {
+            /* A panel without children is a filler: an empty group reports max 0, which narrowed every Vert group the panel sat in. */
+            struct List* kids = NULL;
+            GetAttr(MUIA_Group_ChildList, in, (ULONG*)&kids);
+            if (kids == NULL || kids->lh_Head == (struct Node*)&kids->lh_Tail) {
+                lm->lm_MinMax.MaxWidth = MUI_MAXMAX;
+                lm->lm_MinMax.MaxHeight = MUI_MAXMAX;
+            }
+        }
         return 0;
     }
     case MUILM_LAYOUT:
@@ -126,11 +136,12 @@ static ULONG aapanel_cleanup(struct IClass* cl, Object* obj, Msg msg) {
 static int aapanel_holes(Object* grp, int* holes, int n, int depth, int max_depth, int* full) {
     struct List* kids = NULL;
     Object *state, *child;
-    static struct IClass* group_cl;
+    static struct IClass *group_cl, *rect_cl;
     LONG page = -1;
     ULONG pm = 0;
     if (group_cl == NULL) {
         group_cl = MUI_GetClass((char*)MUIC_Group);
+        rect_cl = MUI_GetClass((char*)MUIC_Rectangle);
     }
     GetAttr(MUIA_Group_ChildList, grp, (ULONG*)&kids);
     if (kids == NULL) {
@@ -145,8 +156,16 @@ static int aapanel_holes(Object* grp, int* holes, int n, int depth, int max_dept
     {
         LONG i = 0;
         while (!*full && (child = NextObject(&state)) != NULL) {
+            ULONG shown = TRUE;
             if (page >= 0 && i++ != page) {
                 continue;
+            }
+            GetAttr(MUIA_ShowMe, child, &shown);
+            if (!shown) {
+                continue; /* D9: a hidden child (the footer Cancel button) keeps its last box; as a hole it left a stale patch beside Back */
+            }
+            if (rect_cl != NULL && OCLASS(child) == rect_cl) {
+                continue; /* a plain Rectangle is a spacer that paints nothing; as a hole it left MUI's darker snapped pen in the card */
             }
             if (depth < max_depth && group_cl != NULL && OCLASS(child) == group_cl) {
                 n = aapanel_holes(child, holes, n, depth + 1, max_depth, full);
@@ -166,7 +185,7 @@ static int aapanel_holes(Object* grp, int* holes, int n, int depth, int max_dept
     return n;
 }
 
-static ULONG aapanel_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
+static ULONG aapanel_paint(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     aapanel_data* d = INST_DATA(cl, obj);
     ULONG r = DoSuperMethodA(cl, obj, (Msg)msg);
     if (msg->flags & MADF_DRAWOBJECT) {
@@ -208,9 +227,35 @@ static ULONG aapanel_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
                                     mui_aa_panel_rgb(d->aa.tok, d->role), holes, n);
             }
         }
-        aa_round_corners(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad, d->aa.tok[SEL_GUI_TOKEN_BACKGROUND]); /* I676c: read at draw, a live THEME changes both */
+        aa_round_corners(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad, d->aa.bg_rgb); /* the face the panel sits on (a card on a SURFACE panel: SURFACE, not BACKGROUND); a retheme resets it */
         aa_low_outline(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad);
+        if (d->flat_tl && rad > 0) { /* square the top left: the face over the wedge the round corner left in the parent colour */
+            aa_rect(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mleft(obj) + rad - 1, _mtop(obj) + up_rows(rad, d->aa.aspect_q8) - 1,
+                    mui_aa_panel_rgb(d->aa.tok, d->role));
+        }
     }
+    return r;
+}
+
+/* A card inside an UP-Virtgroup is taller than the view. After a relayout (the Scrollgroup bar shown or hidden on a page switch)
+ * MUI repaints a moved child directly, past the virtgroup's clipping MUIM_Draw, so the card painted its whole face, rounded bottom
+ * included, over the footer below the view. Clip every draw to the part the parents show, as aa_redraw does for own repaints. */
+static ULONG aapanel_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
+    int x0, y0, x1, y1;
+    APTR clip;
+    ULONG r;
+    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)) || !aa_live(obj)) {
+        return aapanel_paint(cl, obj, msg);
+    }
+    if (!aa_visible(obj, &x0, &y0, &x1, &y1)) {
+        return 0; /* wholly outside the view: the virtgroup paints it when it scrolls in */
+    }
+    if (x0 <= _left(obj) && y0 <= _top(obj) && x1 >= _right(obj) && y1 >= _bottom(obj)) {
+        return aapanel_paint(cl, obj, msg);
+    }
+    clip = MUI_AddClipping(muiRenderInfo(obj), x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+    r = aapanel_paint(cl, obj, msg);
+    MUI_RemoveClipping(muiRenderInfo(obj), clip);
     return r;
 }
 
@@ -272,6 +317,7 @@ static ULONG aapanel_new_by_name(struct IClass* cl, Object* obj, struct opSet* o
         aapanel_data* d = (aapanel_data*)INST_DATA(cl, (Object*)made);
         d->role = role;
         d->popup = GetTagData(UPA_Panel_Popup, FALSE, ops->ops_AttrList) ? 1 : 0;
+        d->flat_tl = GetTagData(UPA_Panel_FlatTopLeft, FALSE, ops->ops_AttrList) ? 1 : 0;
         d->inner = inner;
         g_made++;
     }

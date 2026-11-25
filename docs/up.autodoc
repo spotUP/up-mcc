@@ -1648,3 +1648,1041 @@
 *       <mcc/up.h>, UP-List.mcc
 *
 ******/
+
+/****** UP-Text.mcc/UPA_Text_FillHeight ******
+*
+*   NAME
+*       UPA_Text_FillHeight -- attribute of UP-Text.mcc
+*
+*   FUNCTION
+*       BOOL grow to the height of the row, so the erase covers the whole row
+*
+*   INPUTS
+*       UPA_Text_FillHeight - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Text.mcc
+*
+******/
+
+/****** UP-Text.mcc/UPA_Text_Timeout ******
+*
+*   NAME
+*       UPA_Text_Timeout -- attribute of UP-Text.mcc
+*
+*   FUNCTION
+*       ULONG milliseconds. A non-empty UPA_Text_Contents set clears the text
+*       this long later (an MUIIHNF_TIMER input handler, armed only while the
+*       object is set up). A newer text restarts the clock, so the newest
+*       notice wins. 0 (default) keeps the text until the next set.
+*
+*   INPUTS
+*       UPA_Text_Timeout - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Text.mcc
+*
+******/
+
+/****** UP-Checkmark.mcc/UPA_Checkmark_Label ******
+*
+*   NAME
+*       UPA_Checkmark_Label -- attribute of UP-Checkmark.mcc
+*
+*   FUNCTION
+*       STRPTR: text right of the box; must outlive the object; absent = box only. The checked value is MUIA_Selected (ISG, notifies).
+*
+*   INPUTS
+*       UPA_Checkmark_Label - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Checkmark.mcc
+*
+******/
+
+/****** UP-Radio.mcc/UPA_Radio_Active ******
+*
+*   NAME
+*       UPA_Radio_Active -- attribute of UP-Radio.mcc
+*
+*   FUNCTION
+*       LONG: index of the chosen entry (notifies)
+*
+*   INPUTS
+*       UPA_Radio_Active - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Radio.mcc
+*
+******/
+
+/****** UP-Radio.mcc/UPA_Radio_Entries ******
+*
+*   NAME
+*       UPA_Radio_Entries -- attribute of UP-Radio.mcc
+*
+*   FUNCTION
+*       char**: NULL terminated entry labels; must outlive the object
+*
+*   INPUTS
+*       UPA_Radio_Entries - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Radio.mcc
+*
+******/
+
+/****** UP-Button.mcc/UPA_Button_Flat ******
+*
+*   NAME
+*       UPA_Button_Flat -- attribute of UP-Button.mcc
+*
+*   FUNCTION
+*       BOOL: no face in the normal state, so the parent shows through; hover and press draw it. A square fixed size draws a circle. Read once when the object is created
+*
+*   INPUTS
+*       UPA_Button_Flat - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Button.mcc
+*
+******/
+
+/****** UP-Field.mcc/UPA_Field_Error ******
+*
+*   NAME
+*       UPA_Field_Error -- attribute of UP-Field.mcc
+*
+*   FUNCTION
+*       BOOL: draw the outline in the ERROR token colour, over the focus ring,
+*       to mark the field a validation error names. Any change of the contents
+*       clears it (the field repaints with its normal outline).
+*
+*   INPUTS
+*       UPA_Field_Error - access SG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Field.mcc
+*
+******/
+
+/****** UP-Panel.mcc/UPA_Panel_FlatTopLeft ******
+*
+*   NAME
+*       UPA_Panel_FlatTopLeft -- attribute of UP-Panel.mcc
+*
+*   FUNCTION
+*       BOOL: square top left corner, so the card sits flush against the first tab. Read once when the object is created
+*
+*   INPUTS
+*       UPA_Panel_FlatTopLeft - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Panel.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_String ******
+*
+*   NAME
+*       UPA_Popstring_String -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       Object*: the string object (default a UP-Field); MUIA_String_Contents set and get are forwarded to it
+*
+*   INPUTS
+*       UPA_Popstring_String - access IG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_Button ******
+*
+*   NAME
+*       UPA_Popstring_Button -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       Object*: the button that opens the popup (default a UP-Button with a chevron)
+*
+*   INPUTS
+*       UPA_Popstring_Button - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Virtgroup.mcc/UPA_Virtgroup_Left ******
+*
+*   NAME
+*       UPA_Virtgroup_Left -- attribute of UP-Virtgroup.mcc
+*
+*   FUNCTION
+*       LONG: pixels the contents are shifted left; clamped to the contents
+*
+*   INPUTS
+*       UPA_Virtgroup_Left - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Virtgroup.mcc
+*
+******/
+
+/****** UP-Virtgroup.mcc/UPA_Virtgroup_Top ******
+*
+*   NAME
+*       UPA_Virtgroup_Top -- attribute of UP-Virtgroup.mcc
+*
+*   FUNCTION
+*       LONG: pixels the contents are scrolled up; clamped to the contents at layout
+*
+*   INPUTS
+*       UPA_Virtgroup_Top - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_Popup ******
+*
+*   NAME
+*       UPA_Popstring_Popup -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       Object*: root object of the popup window, owned by the class from then on; it is disposed with the owner window cleanup, set a new one before the next open
+*
+*   INPUTS
+*       UPA_Popstring_Popup - access IS. Tag value from <mcc/up.h>.
+*       <mcc/up.h>, UP-Virtgroup.mcc
+*
+******/
+
+/****** UP-Virtgroup.mcc/UPA_Virtgroup_Width ******
+*
+*   NAME
+*       UPA_Virtgroup_Width -- attribute of UP-Virtgroup.mcc
+*
+*   FUNCTION
+*       LONG: minimum width of the contents
+*
+*   INPUTS
+*       UPA_Virtgroup_Width - access G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_OpenHook ******
+*
+*   NAME
+*       UPA_Popstring_OpenHook -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       struct Hook*: called before the popup opens, object = the popup root, message = the string object; returns FALSE to refuse
+*
+*   INPUTS
+*       UPA_Popstring_OpenHook - access IS. Tag value from <mcc/up.h>.
+*       <mcc/up.h>, UP-Virtgroup.mcc
+*
+******/
+
+/****** UP-Virtgroup.mcc/UPA_Virtgroup_Height ******
+*
+*   NAME
+*       UPA_Virtgroup_Height -- attribute of UP-Virtgroup.mcc
+*
+*   FUNCTION
+*       LONG: minimum height of the contents
+*
+*   INPUTS
+*       UPA_Virtgroup_Height - access G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_CloseHook ******
+*
+*   NAME
+*       UPA_Popstring_CloseHook -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       struct Hook*: called once after the popup closed, object = the popup root, message = the string object
+*
+*   INPUTS
+*       UPA_Popstring_CloseHook - access IS. Tag value from <mcc/up.h>.
+*       <mcc/up.h>, UP-Virtgroup.mcc
+*
+******/
+
+/****** UP-Scrollgroup.mcc/UPA_Scrollgroup_Top ******
+*
+*   NAME
+*       UPA_Scrollgroup_Top -- attribute of UP-Scrollgroup.mcc
+*
+*   FUNCTION
+*       LONG: pixels the contents are scrolled up; the vertical bar shows only while the contents are taller than the view
+*
+*   INPUTS
+*       UPA_Scrollgroup_Top - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_Open ******
+*
+*   NAME
+*       UPA_Popstring_Open -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       BOOL: the popup is open; set TRUE opens, FALSE closes (notifies)
+*
+*   INPUTS
+*       UPA_Popstring_Open - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPM_Popstring_Click ******
+*
+*   NAME
+*       UPM_Popstring_Click -- method of UP-Popstring.mcc
+*
+*   FUNCTION
+*       the button was pressed (toggle); internal, used by the button notify
+*
+*   INPUTS
+*       UPM_Popstring_Click - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPM_Popstring_Closed ******
+*
+*   NAME
+*       UPM_Popstring_Closed -- method of UP-Popstring.mcc
+*
+*   FUNCTION
+*       the popup window closed; internal
+*
+*   INPUTS
+*       UPM_Popstring_Closed - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPM_Popstring_Deactivated ******
+*
+*   NAME
+*       UPM_Popstring_Deactivated -- method of UP-Popstring.mcc
+*
+*   FUNCTION
+*       the popup window lost activation; internal
+*
+*   INPUTS
+*       UPM_Popstring_Deactivated - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Poplist.mcc/UPA_Poplist_Entries ******
+*
+*   NAME
+*       UPA_Poplist_Entries -- attribute of UP-Poplist.mcc
+*
+*   FUNCTION
+*       Char**: NULL terminated, must outlive the object
+*
+*   INPUTS
+*       UPA_Poplist_Entries - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Poplist.mcc
+*
+******/
+
+/****** UP-Poplist.mcc/UPA_Poplist_Active ******
+*
+*   NAME
+*       UPA_Poplist_Active -- attribute of UP-Poplist.mcc
+*
+*   FUNCTION
+*       LONG: chosen entry, -1 none (default); setting it fills the string; notifies
+*
+*   INPUTS
+*       UPA_Poplist_Active - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Poplist.mcc
+*
+******/
+
+/****** UP-Numericbutton.mcc/UPA_Numeric_Min ******
+*
+*   NAME
+*       UPA_Numeric_Min -- attribute of UP-Numericbutton.mcc
+*
+*   FUNCTION
+*       LONG: the lowest value (default 0)
+*
+*   INPUTS
+*       UPA_Numeric_Min - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Numericbutton.mcc
+*
+******/
+
+/****** UP-Numericbutton.mcc/UPA_Numeric_Max ******
+*
+*   NAME
+*       UPA_Numeric_Max -- attribute of UP-Numericbutton.mcc
+*
+*   FUNCTION
+*       LONG: the highest value (default 100)
+*
+*   INPUTS
+*       UPA_Numeric_Max - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Numericbutton.mcc
+*
+******/
+
+/****** UP-Numericbutton.mcc/UPA_Numeric_Value ******
+*
+*   NAME
+*       UPA_Numeric_Value -- attribute of UP-Numericbutton.mcc
+*
+*   FUNCTION
+*       LONG: the current value, clamped to Min..Max; setting it notifies
+*
+*   INPUTS
+*       UPA_Numeric_Value - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Numericbutton.mcc
+*
+******/
+
+/****** UP-Scale.mcc/UPA_Scale_Min ******
+*
+*   NAME
+*       UPA_Scale_Min -- attribute of UP-Scale.mcc
+*
+*   FUNCTION
+*       LONG: the value at the left end of the ruler (default 0)
+*
+*   INPUTS
+*       UPA_Scale_Min - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Scale.mcc
+*
+******/
+
+/****** UP-Scale.mcc/UPA_Scale_Max ******
+*
+*   NAME
+*       UPA_Scale_Max -- attribute of UP-Scale.mcc
+*
+*   FUNCTION
+*       LONG: the value at the right end of the ruler (default 100)
+*
+*   INPUTS
+*       UPA_Scale_Max - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Scale.mcc
+*
+******/
+
+/****** UP-Scale.mcc/UPA_Scale_Ticks ******
+*
+*   NAME
+*       UPA_Scale_Ticks -- attribute of UP-Scale.mcc
+*
+*   FUNCTION
+*       LONG: number of ticks, 2..64 (default 11)
+*
+*   INPUTS
+*       UPA_Scale_Ticks - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Scale.mcc
+*
+******/
+
+/****** UP-Colorfield.mcc/UPA_Colorfield_RGB ******
+*
+*   NAME
+*       UPA_Colorfield_RGB -- attribute of UP-Colorfield.mcc
+*
+*   FUNCTION
+*       ULONG: 0xRRGGBB shown (default 0, black)
+*
+*   INPUTS
+*       UPA_Colorfield_RGB - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Colorfield.mcc
+*
+******/
+
+/****** UP-Palette.mcc/UPA_Palette_Entries ******
+*
+*   NAME
+*       UPA_Palette_Entries -- attribute of UP-Palette.mcc
+*
+*   FUNCTION
+*       ULONG*: array of 0xRRGGBB, copied at construction (at most 256)
+*
+*   INPUTS
+*       UPA_Palette_Entries - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Palette.mcc
+*
+******/
+
+/****** UP-Palette.mcc/UPA_Palette_Count ******
+*
+*   NAME
+*       UPA_Palette_Count -- attribute of UP-Palette.mcc
+*
+*   FUNCTION
+*       LONG: number of entries in UPA_Palette_Entries
+*
+*   INPUTS
+*       UPA_Palette_Count - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Palette.mcc
+*
+******/
+
+/****** UP-Palette.mcc/UPA_Palette_Active ******
+*
+*   NAME
+*       UPA_Palette_Active -- attribute of UP-Palette.mcc
+*
+*   FUNCTION
+*       LONG: index of the chosen swatch (default 0; notifies)
+*
+*   INPUTS
+*       UPA_Palette_Active - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Palette.mcc
+*
+******/
+
+/****** UP-Palette.mcc/UPA_Palette_Columns ******
+*
+*   NAME
+*       UPA_Palette_Columns -- attribute of UP-Palette.mcc
+*
+*   FUNCTION
+*       LONG: swatches per row (default 8, at most the entry count)
+*
+*   INPUTS
+*       UPA_Palette_Columns - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Palette.mcc
+*
+******/
+
+/****** UP-Numericbutton.mcc/UPM_Numeric_Deactivated ******
+*
+*   NAME
+*       UPM_Numeric_Deactivated -- method of UP-Numericbutton.mcc
+*
+*   FUNCTION
+*       the popup window lost the active state; internal, used by the window notify
+*
+*   INPUTS
+*       UPM_Numeric_Deactivated - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Numericbutton.mcc
+*
+******/
+
+/****** UP-Numericbutton.mcc/UPM_Numeric_Closed ******
+*
+*   NAME
+*       UPM_Numeric_Closed -- method of UP-Numericbutton.mcc
+*
+*   FUNCTION
+*       the popup window closed; internal, used by the window notify
+*
+*   INPUTS
+*       UPM_Numeric_Closed - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Numericbutton.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_File ******
+*
+*   NAME
+*       UPA_Image_File -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       path of the picture (STRPTR), copied, at most 255 characters; set reloads and redraws
+*
+*   INPUTS
+*       UPA_Image_File - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Bitmap ******
+*
+*   NAME
+*       UPA_Image_Bitmap -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       struct BitMap*: caller bitmap shown instead of a file, not copied and must stay valid; wins over the file
+*
+*   INPUTS
+*       UPA_Image_Bitmap - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Fit ******
+*
+*   NAME
+*       UPA_Image_Fit -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       BOOL: scale to the box keeping the aspect (the box then stretches); default FALSE = the picture size
+*
+*   INPUTS
+*       UPA_Image_Fit - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Title ******
+*
+*   NAME
+*       UPA_Menu_Title -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       STRPTR caption of the menu button; must outlive the object
+*
+*   INPUTS
+*       UPA_Menu_Title - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Items ******
+*
+*   NAME
+*       UPA_Menu_Items -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       char**: NULL terminated item texts, "-" is a separator row; must outlive the object
+*
+*   INPUTS
+*       UPA_Menu_Items - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Chosen ******
+*
+*   NAME
+*       UPA_Menu_Chosen -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       LONG: index of the item last chosen, -1 before any (notifies on every pick, also the same item again)
+*
+*   INPUTS
+*       UPA_Menu_Chosen - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Open ******
+*
+*   NAME
+*       UPA_Menu_Open -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       BOOL: the popup is open; set TRUE opens, FALSE closes
+*
+*   INPUTS
+*       UPA_Menu_Open - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPM_Menu_Click ******
+*
+*   NAME
+*       UPM_Menu_Click -- method of UP-Menu.mcc
+*
+*   FUNCTION
+*       the title button was pressed; internal
+*
+*   INPUTS
+*       UPM_Menu_Click - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPM_Menu_Closed ******
+*
+*   NAME
+*       UPM_Menu_Closed -- method of UP-Menu.mcc
+*
+*   FUNCTION
+*       the popup window closed; internal
+*
+*   INPUTS
+*       UPM_Menu_Closed - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPM_Menu_Deactivated ******
+*
+*   NAME
+*       UPM_Menu_Deactivated -- method of UP-Menu.mcc
+*
+*   FUNCTION
+*       the popup window lost activation; internal
+*
+*   INPUTS
+*       UPM_Menu_Deactivated - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*       <mcc/up.h>, UP-Scrollgroup.mcc
+*
+******/
+
+/****** UP-TextArea.mcc/UPA_TextArea_Text ******
+*
+*   NAME
+*       UPA_TextArea_Text -- attribute of UP-TextArea.mcc
+*
+*   FUNCTION
+*       STRPTR: the text. A set copies the string in (cut at the capacity); a get returns the object's own NUL terminated buffer, valid until the next edit. Notifies on every change: notify with MUIV_EveryTime, the pointer stays the same
+*
+*   INPUTS
+*       UPA_TextArea_Text - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-TextArea.mcc
+*
+******/
+
+/****** UP-TextArea.mcc/UPA_TextArea_MaxLen ******
+*
+*   NAME
+*       UPA_TextArea_MaxLen -- attribute of UP-TextArea.mcc
+*
+*   FUNCTION
+*       LONG: capacity in bytes, default 1024 (a value below 1 gives the default); longer text is cut. Fixed at creation, a get returns the capacity
+*
+*   INPUTS
+*       UPA_TextArea_MaxLen - access IG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-TextArea.mcc
+*
+******/
+
+/****** UP-TextArea.mcc/UPA_TextArea_Placeholder ******
+*
+*   NAME
+*       UPA_TextArea_Placeholder -- attribute of UP-TextArea.mcc
+*
+*   FUNCTION
+*       STRPTR: hint drawn while the text is empty and the object is not active. The string is not copied and must outlive the object
+*
+*   INPUTS
+*       UPA_TextArea_Placeholder - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-TextArea.mcc
+*
+******/
+
+/****** UP-TextArea.mcc/UPA_TextArea_Error ******
+*
+*   NAME
+*       UPA_TextArea_Error -- attribute of UP-TextArea.mcc
+*
+*   FUNCTION
+*       BOOL: draw the outline in the ERROR token colour, over the focus ring,
+*       to mark the field a validation error names. The next user edit clears
+*       it.
+*
+*   INPUTS
+*       UPA_TextArea_Error - access SG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-TextArea.mcc
+*
+******/
+
+/****** UP-TextArea.mcc/UPM_TextArea_Redraw ******
+*
+*   NAME
+*       UPM_TextArea_Redraw -- method of UP-TextArea.mcc
+*
+*   FUNCTION
+*       Method, internal: the window's active object changed, repaint the outline. The class installs the notify on MUIA_Window_ActiveObject itself; callers do not send it
+*
+*   INPUTS
+*       UPM_TextArea_Redraw - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod; see FUNCTION for the return value.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-TextArea.mcc
+*
+******/
+
+/****** UP-Field.mcc/UPA_Field_Key ******
+*
+*   NAME
+*       UPA_Field_Key -- attribute of UP-Field.mcc
+*
+*   FUNCTION
+*       LONG: raw code of the last Up (0x4C), Down (0x4D), Esc (0x45) or Tab (0x42) pressed in the active field; notifies on every press.
+*
+*   INPUTS
+*       UPA_Field_Key - access G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Field.mcc
+*
+******/
+
+/****** UP-Popstring.mcc/UPA_Popstring_NoActivate ******
+*
+*   NAME
+*       UPA_Popstring_NoActivate -- attribute of UP-Popstring.mcc
+*
+*   FUNCTION
+*       BOOL: the popup window opens inactive, so typing stays in the string (autocomplete); default FALSE.
+*
+*   INPUTS
+*       UPA_Popstring_NoActivate - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popstring.mcc
+*
+******/
+
+/****** UP-Field.mcc/UPM_Field_Edited ******
+*
+*   NAME
+*       UPM_Field_Edited -- method of UP-Field.mcc
+*
+*   FUNCTION
+*       Method: the inner String contents changed; clears UPA_Field_Error and repaints. Internal: the field sends it to itself.
+*
+*   INPUTS
+*       UPM_Field_Edited - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod; see FUNCTION for the return value.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Field.mcc
+*
+******/

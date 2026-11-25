@@ -16,11 +16,16 @@ add_library(mui INTERFACE)
 if(SEL_AMIGA)
   target_link_libraries(mui INTERFACE -lmui)
 endif()
-set(MCC_MAP_SOURCES src/up_metrics.c src/map/mui_aa.c src/map/mui_aa_paint.c src/map/mui_aatip.c src/map/mui_theme_pure.c src/map/mui_theme.c src/map/mui_icons.c src/map/mui_fontprobe.c src/map/mui_log.c src/map/up_prefs_map.c src/map/up_origin.c src/map/up_store.c)
-set(MCC_AMIGA_SOURCES src/mui_aa_draw.c src/mui_aatip.c
+set(MCC_MAP_SOURCES src/up_metrics.c src/map/mui_aa.c src/map/mui_aa_paint.c src/map/mui_aasel.c src/map/mui_aascr.c src/map/mui_aatip.c src/map/mui_theme_pure.c src/map/mui_theme.c src/map/mui_icons.c src/map/mui_fontprobe.c src/map/mui_log.c src/map/up_prefs_map.c src/map/up_origin.c src/map/up_store.c)
+set(MCC_AMIGA_SOURCES src/mui_aa_draw.c src/mui_aa_clip.c src/mui_aatip.c
   src/class/mui_aabtn_class.c src/class/mui_aatext_class.c src/class/mui_aapanel_class.c src/class/mui_aatabs_class.c
   src/class/mui_aabalance_class.c src/class/mui_aaslider_class.c src/class/mui_aacycle_class.c src/class/mui_aalist_class.c
-  src/class/mui_aascroller_class.c src/class/mui_aafield_class.c)
+  src/class/mui_aascroller_class.c src/class/mui_aafield_class.c src/class/mui_aacheckmark_class.c src/class/mui_aaradio_class.c src/class/mui_aapopstring_class.c
+  src/class/mui_aanumeric_class.c src/class/mui_aascale_class.c
+  src/class/mui_aacolorfield_class.c src/class/mui_aapalette_class.c
+  src/class/mui_aaimage_class.c src/class/mui_aamenu_class.c
+  src/class/mui_aavirtgroup_class.c src/class/mui_aascrollgroup_class.c
+  src/class/mui_aatextarea_class.c src/mui_text_lines.c src/mui_ftxt.c)
 # I685i: the eleven UP-<Name>.mcc libraries (section 3.2/3.3), one row each: name | class source | description symbol of the file.
 # Slider and Progress both come from mui_aaslider_class.c. The class sources of the libraries must be the class sources of
 # sel_mcc_static (ctest mcc-classlibs-source; the Amiga part below also checks every library's SOURCES).
@@ -35,7 +40,20 @@ set(MCC_CLASS_LIBS
   "Cycle|src/class/mui_aacycle_class.c|aacycle_class_desc"
   "Field|src/class/mui_aafield_class.c|aafield_class_desc"
   "Scroller|src/class/mui_aascroller_class.c|aascroller_class_desc"
-  "List|src/class/mui_aalist_class.c|aalist_class_desc")
+  "List|src/class/mui_aalist_class.c|aalist_class_desc"
+  "Checkmark|src/class/mui_aacheckmark_class.c|aacheckmark_class_desc"
+  "Radio|src/class/mui_aaradio_class.c|aaradio_class_desc"
+  "Popstring|src/class/mui_aapopstring_class.c|aapopstring_class_desc"
+  "Poplist|src/class/mui_aapopstring_class.c|aapoplist_class_desc"
+  "Numericbutton|src/class/mui_aanumeric_class.c|aanumeric_class_desc"
+  "Scale|src/class/mui_aascale_class.c|aascale_class_desc"
+  "Colorfield|src/class/mui_aacolorfield_class.c|aacolorfield_class_desc"
+  "Palette|src/class/mui_aapalette_class.c|aapalette_class_desc"
+  "Image|src/class/mui_aaimage_class.c|aaimage_class_desc"
+  "Menu|src/class/mui_aamenu_class.c|aamenu_class_desc"
+  "Virtgroup|src/class/mui_aavirtgroup_class.c|aavirtgroup_class_desc"
+  "Scrollgroup|src/class/mui_aascrollgroup_class.c|aascrollgroup_class_desc"
+  "Textarea|src/class/mui_aatextarea_class.c|aatextarea_class_desc")
 set(_mcc_lib_sources "")
 foreach(row ${MCC_CLASS_LIBS})
   string(REPLACE "|" ";" cols "${row}")
@@ -168,7 +186,7 @@ target_include_directories(up_mcc_header_check PRIVATE "${MCC_SFD_INC}" "${MCC_D
 # instead of linking the static support code is a later row). The check at the end compares each target's SOURCES with the list.
 # I685n: what every .mcc/.mcp compiles itself, ahead of the archive, so the linker never pulls the archive's token store and registry
 # (src/map/up_store.c) or its draw context list: the client of the store (UP_CLASS_LIBRARY) and the draw code that registers with it.
-set(MCC_CLIENT_SOURCES src/map/up_store_client.c lib/classlib_draw_shims.c lib/classlib_shims.c)
+set(MCC_CLIENT_SOURCES src/map/up_store_client.c lib/classlib_draw_shims.c lib/classlib_shims.c src/mui_aa_clip.c)
 function(up_add_class_library name class_source desc)
   set(tgt "up_mcc_${name}")
   add_executable(${tgt} ${MCC_LIBINIT_SRC} lib/classheader.c "${class_source}" ${MCC_CLIENT_SOURCES} ${MCC_SFD_HEADERS})
@@ -198,7 +216,8 @@ find_program(MCC_SIZE NAMES m68k-amigaos-size HINTS "${AMIGA_GCC_ROOT}/bin" "$EN
 # writer, no libnix stdio, text section under 8 KB (cmake/mcc_check_slim.cmake).
 # Target is 8192 (design I1491a); the draw/AA code (mui_aa*.c) is still linked into each library, so the enforced ratchet is 26624
 # (worst measured 25588, Cycle). Lower it as that code moves behind up-mcc.library.
-set(UP_MCC_SLIM_MAX_TEXT 11468 CACHE STRING "max text bytes per class library")
+# 14336: UP-Textarea.mcc links its own wrap (mui_text_lines) and ftxt codec, ~13.6k
+set(UP_MCC_SLIM_MAX_TEXT 14336 CACHE STRING "max text bytes per class library")
 function(up_check_slim tgt desc)
   string(REGEX REPLACE "_class_desc$" "" _own "${desc}")
   add_custom_command(TARGET ${tgt} POST_BUILD
@@ -225,7 +244,7 @@ target_link_options(up_mcc_prefs PRIVATE -nostartfiles)
 up_mcc_lib_skeleton(up_mcc_prefs)
 up_check_no_store(up_mcc_prefs)
 add_custom_target(up_mcc_classes DEPENDS up_mcc_Button up_mcc_Text up_mcc_Panel up_mcc_Tabs up_mcc_Balance up_mcc_Slider up_mcc_Progress
-  up_mcc_Cycle up_mcc_Field up_mcc_Scroller up_mcc_List up_mcc_prefs)
+  up_mcc_Cycle up_mcc_Field up_mcc_Scroller up_mcc_List up_mcc_Checkmark up_mcc_Radio up_mcc_Popstring up_mcc_Poplist up_mcc_Numericbutton up_mcc_Scale up_mcc_Colorfield up_mcc_Palette up_mcc_Image up_mcc_Menu up_mcc_Virtgroup up_mcc_Scrollgroup up_mcc_Textarea up_mcc_prefs)
 
 # I685k: UP-Demo (demo/updemo.c). Headers: the release set staged here (include/mcc/*.h plus the one header up.h needs,
 # selecta/uimodel/tokens.h, which the release archive carries as Developer/include/selecta/uimodel/tokens.h) and the sfdc headers. No Selecta

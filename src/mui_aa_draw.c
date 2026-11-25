@@ -301,10 +301,10 @@ static uint32_t ctx_bg(const aa_ctx* c) {
         o = (Object*)p;
         self = 0;
         if (o != NULL && GetAttr(UPA_Panel_Self, o, &self) && (Object*)self == o && GetAttr(UPA_Panel_Role, o, &role)) {
-            return mui_aa_panel_rgb(c->tok, (int)role);
+            return mui_aa_parent_rgb(c->tok, (int)role);
         }
     }
-    return c->tok[SEL_GUI_TOKEN_BACKGROUND];
+    return mui_aa_parent_rgb(c->tok, -1);
 }
 
 void aa_setup(Object* obj, aa_ctx* c, const uint32_t* rgb, int n) {
@@ -717,7 +717,7 @@ static void ctx_retheme(aa_ctx* c) {
     memcpy(c->tok, mui_theme_tokens(), sizeof c->tok);
     c->bg_rgb = ctx_bg(c);
     if (aa_live(c->obj)) {
-        MUI_Redraw(c->obj, MADF_DRAWOBJECT);
+        aa_redraw(c->obj, MADF_DRAWOBJECT);
     }
 }
 

@@ -98,10 +98,13 @@ int mui_aa_text_maxw(int fixed, int defw);
 
 /* I667e (design 3.8, AAPanel): rounded panel groups. Role -> face token (panel PANEL, surface SURFACE, raised SURFACE_RAISED),
  * corner radius RADIUS_LARGE (tier S, font_px 0: half), inner padding and spacing SPACING. Tested on the host. */
-enum { MUI_AA_PANEL_PANEL = UPV_Panel_Role_Panel, MUI_AA_PANEL_SURFACE = UPV_Panel_Role_Surface, MUI_AA_PANEL_RAISED = UPV_Panel_Role_Raised,
+enum { MUI_AA_PANEL_PANEL = UPV_Panel_Role_Panel, MUI_AA_PANEL_SURFACE = UPV_Panel_Role_Surface, MUI_AA_PANEL_RAISED = UPV_Panel_Role_Raised, MUI_AA_PANEL_POPUP = UPV_Panel_Role_Popup,
        MUI_AA_PANEL_ROLES = UPV_Panel_Role_Count };
 int mui_aa_panel_token(int role);
 uint32_t mui_aa_panel_rgb(const uint32_t* token, int role);
+/* What an object (a panel's corner wedges included) sits on: the role colour of the nearest UP-Panel ancestor, parent_role < 0 when
+ * there is none (the window BACKGROUND). A raised card on a SURFACE panel rounds its corners in SURFACE, not in BACKGROUND. */
+uint32_t mui_aa_parent_rgb(const uint32_t* token, int parent_role);
 int mui_aa_panel_radius(const uint32_t* token, int font_px);
 int mui_aa_panel_spacing(const uint32_t* token);
 /* I949e2: group inner padding and spacing across (pad_x) and down (pad_y) for a screen of aspect_q8. 256 gives SPACING both ways. */
@@ -172,10 +175,18 @@ void mui_aa_field_metrics(int font_px, int aspect_q8, mui_aa_field_t* out);
  * desktop search field is lighter than its bar; the outline is TRACK so the edge reads on AGA too. */
 #define MUI_AA_FIELD_FACE SEL_GUI_TOKEN_SURFACE_RAISED
 #define MUI_AA_FIELD_LINE SEL_GUI_TOKEN_TRACK
+/* focus: 0 idle, 1 active (FOCUS_RING), MUI_AA_FIELD_ERROR (UPA_Field_Error / UPA_TextArea_Error set: the outline turns ERROR, over focus). */
+#define MUI_AA_FIELD_ERROR 2
 int mui_aa_field_plan(const uint32_t* token, const mui_aa_field_t* m, int focus, mui_aa_check_op_t* out);
 /* I667n: background of the inner String gadget in a focus state: the face of the plan (op 1). MUI 3.8 String fills its box with the
  * gadget's StringExtend background pen (Pens[1], ActivePens[1] when active), not with MUIA_Background, so the class sets that pen. */
 uint32_t mui_aa_field_string_bg(const uint32_t* token, int focus);
+/* Text of the inner String gadget (Pens[0], ActivePens[0]): the theme TEXT. The MUI prefs string pens (black by default) were
+ * unreadable on a dark theme face. */
+uint32_t mui_aa_field_string_fg(const uint32_t* token);
+/* Smallest field width that shows the placeholder (ink width pw) uncut: the text fit margin (4) plus the inner pad on both sides.
+ * 0 when there is no placeholder. */
+int mui_aa_field_min_width(const mui_aa_field_t* m, int pw);
 /* I667n: the gadget MUIA_Gadget_Gadget hands back carries a StringInfo with the pens: a classic GTYP_STRGADGET, or the
  * GTYP_CUSTOMGADGET (strgclass) MUI 3.8 String really makes (rig 2: GadgetType 0005). */
 int mui_aa_field_string_gadget(unsigned gadget_type);
@@ -188,6 +199,10 @@ int mui_aa_field_text_top(const mui_aa_field_t* m, int h, int ch);
  * and the field is not the active object, else 0. Every 1 counts on mui_aa_field_placeholders(), the sentinel that the draw painted one. */
 int mui_aa_field_placeholder(const uint32_t* token, const char* contents, int focus, uint32_t* rgb);
 uint32_t mui_aa_field_placeholders(void);
+/* D3: the contents of a filled, unfocused field. MUI 3.8 String renders its inactive contents in its own MUI prefs pen (black on the
+ * dark face), past MPEN_TEXT and the StringExtend pens; only the active gadget (typing) uses those. Returns 1 and the theme TEXT
+ * colour when contents is not empty and the field is not the active object, else 0 (the String draws it while active). */
+int mui_aa_field_text(const uint32_t* token, const char* contents, int focus, uint32_t* rgb);
 /* Calls of the field maths above: the sentinel that the class (and not a copy) runs it. */
 uint32_t mui_aa_field_calls(void);
 
@@ -282,6 +297,50 @@ typedef struct mui_btn_box {
     uint32_t h_fixed; /* always 1 today: a button never grows taller than its contents */
 } mui_btn_box_t;
 void mui_aabtn_minmax(uint32_t content_w, uint32_t content_h, uint32_t fixed_w, uint32_t fixed_h, uint32_t toggle, mui_btn_box_t* out);
+
+/* UP-Popstring / UP-Poplist popup state, pure (host test mui-pop-state). One popup window per object, created at the first open and
+ * REUSED: it is never disposed while it may still be running its own notification (the UP-Cycle crash on the second click came from
+ * leaving a closed popup half alive). A click on the button while the popup is open closes it. Closing by window deactivation (the
+ * click that lands on the button first deactivates the popup) is remembered for MUI_AA_POP_GUARD_MS so that same click toggles shut
+ * instead of reopening. */
+#define MUI_AA_POP_GUARD_MS 300
+enum { MUI_AA_POP_NONE, MUI_AA_POP_OPEN_NEW, MUI_AA_POP_OPEN_REUSE, MUI_AA_POP_CLOSE };
+typedef struct mui_aa_pop_t {
+    int created, open, by_deactivate;
+    uint32_t closed_ms;
+} mui_aa_pop_t;
+int mui_aa_pop_click(mui_aa_pop_t* s, uint32_t now_ms);           /* the action the caller must take; updates nothing but the guard */
+void mui_aa_pop_opened(mui_aa_pop_t* s);                         /* the window is now open (also the first time) */
+void mui_aa_pop_closed(mui_aa_pop_t* s, int by_deactivate, uint32_t now_ms); /* the window closed, for any reason; idempotent */
+
+/* UP-Numericbutton / UP-Scale pure maths (host test mui-numeric-scale). The button shows value as text; a drag of dx pixels from the
+ * value at the press moves it by dx * (hi - lo) / (2 * w) (a travel of two button widths sweeps the range), clamped; fewer than
+ * MUI_AA_NUM_DRAG_SLOP pixels is a click (opens the popup slider). */
+#define MUI_AA_NUM_DRAG_SLOP 3
+long mui_aa_numeric_clamp(long v, long lo, long hi);
+long mui_aa_numeric_drag(long start, int dx, int w, long lo, long hi);
+int mui_aa_numeric_text(long v, char* out, int cap); /* decimal text, NUL terminated; returns its length */
+/* Tick ruler of a width w: ticks (clamped 2..MUI_AA_SCALE_MAX) evenly spread over x 0..w-1, x[0] = 0 and x[n-1] = w-1. A tick is major
+ * when it is an end or the middle of an odd count; value is lo..hi at that tick (rounded). hi <= lo or w < 2 gives 0 ticks. */
+#define MUI_AA_SCALE_MAX 64
+typedef struct mui_aa_scale_tick_t {
+    int x, major;
+    long value;
+} mui_aa_scale_tick_t;
+int mui_aa_scale_plan(int w, long lo, long hi, int ticks, mui_aa_scale_tick_t* out);
+/* Tick lengths for a font of font_px: minor = major / 2 (at least 2), major = font_px / 2 (at least 4), gap above the labels. */
+void mui_aa_scale_metrics(int font_px, int* minor_h, int* major_h, int* gap);
+
+/* UP-Palette grid maths (host test mui-palette). Cells of cw x ch pixels with gap pixels between them, row-major, cols per row. */
+int mui_aa_palette_rows(int n, int cols);                /* rows needed for n cells */
+void mui_aa_palette_cell(int i, int cols, int cw, int ch, int gap, int* x, int* y); /* top-left of cell i */
+int mui_aa_palette_hit(int x, int y, int cols, int n, int cw, int ch, int gap);     /* cell under x,y (box-relative), -1 on a gap or outside */
+/* Cursor key step: dx/dy of -1,0,1. No wrap; a step down into a short last row lands on the last cell; a step off the grid stays. */
+int mui_aa_palette_move(int active, int n, int cols, int dx, int dy);
+
+/* UP-Image (host test mui-image-fit). Size of an sw x sh picture shown in a bw x bh box: fit=0 the picture size, fit=1 scaled to the box
+ * keeping the aspect (never below 1 pixel); the offsets centre it in the box (may be negative when the picture is larger). */
+void mui_aa_image_fit(int sw, int sh, int bw, int bh, int fit, int* dw, int* dh, int* ox, int* oy);
 
 #ifdef __cplusplus
 }

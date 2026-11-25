@@ -22,6 +22,7 @@ typedef struct aascroller_data {
     int hover, drag, grab;
     up_scroller_t m;
     aa_ctx aa;
+    int shown; /* MUIM_Show seen, MUIM_Hide not yet (AA_SHOWN_CASES); outside aa_ctx, whose ABI 2 layout is frozen */
     struct MUI_EventHandlerNode ehn;
 } aascroller_data;
 
@@ -92,8 +93,8 @@ static ULONG aascroller_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* m
     return 0;
 }
 
-static int aascroller_in(Object* obj, const struct IntuiMessage* im) {
-    return im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj);
+static int aascroller_in(const aascroller_data* d, Object* obj, const struct IntuiMessage* im) {
+    return aa_inside(d->shown, obj, im);
 }
 
 static ULONG aascroller_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* msg) {
@@ -103,7 +104,7 @@ static ULONG aascroller_handle(struct IClass* cl, Object* obj, struct MUIP_Handl
     if (im == NULL || (im->Class != IDCMP_MOUSEMOVE && im->Class != IDCMP_MOUSEBUTTONS)) {
         return DoSuperMethodA(cl, obj, (Msg)msg);
     }
-    in = aascroller_in(obj, im);
+    in = aascroller_in(d, obj, im);
     if (im->Class == IDCMP_MOUSEMOVE) {
         if (d->drag) {
             long nf = mui_aa_scroller_first_at(&d->m, _mheight(obj), d->grab, im->MouseY - _mtop(obj), d->visible, d->entries);
@@ -113,7 +114,7 @@ static ULONG aascroller_handle(struct IClass* cl, Object* obj, struct MUIP_Handl
         }
         if (in != d->hover) {
             d->hover = in;
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            aa_redraw(obj, MADF_DRAWOBJECT);
         }
         return 0;
     }
@@ -127,12 +128,12 @@ static ULONG aascroller_handle(struct IClass* cl, Object* obj, struct MUIP_Handl
             nf = nf < 0 ? 0 : nf > d->entries - d->visible ? d->entries - d->visible : nf;
             set(obj, UPA_Scroller_First, (ULONG)nf);
         }
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
         return MUI_EventHandlerRC_Eat;
     }
     if (im->Code == SELECTUP && d->drag) {
         d->drag = 0;
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
         return MUI_EventHandlerRC_Eat;
     }
     return 0;
@@ -156,7 +157,7 @@ static ULONG aascroller_set(struct IClass* cl, Object* obj, struct opSet* msg) {
         changed = 1;
     }
     if (changed && aa_live(obj)) {
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
+        aa_redraw(obj, MADF_DRAWOBJECT);
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -200,6 +201,7 @@ static ULONG __attribute__((used)) aascroller_dispatch_c(struct IClass* cl, Obje
         return aascroller_set(cl, obj, (struct opSet*)msg);
     case OM_GET:
         return aascroller_get(cl, obj, (struct opGet*)msg);
+    AA_SHOWN_CASES(aascroller_data)
     case MUIM_Setup:
         return aascroller_setup(cl, obj, msg);
     case MUIM_Cleanup:
