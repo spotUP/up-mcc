@@ -3678,3 +3678,212 @@
 *       <mcc/up.h>, UP-List.mcc, UP-Dirlist.mcc
 *
 ******/
+
+/****** UP-Poppen.mcc/UPM_Poppen_Closed ******
+*
+*   NAME
+*       UPM_Poppen_Closed -- method of UP-Poppen.mcc
+*
+*   FUNCTION
+*       The popup window of a UP-Poppen closed (its MUIA_Window_Open went FALSE, through a click, a deactivation or a dispose). Records whether the close came from losing activation, so the click that follows on the swatch does not reopen it at once. Internal, run by the popup window notify.
+*
+*   INPUTS
+*       UPM_Poppen_Closed - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Poppen.mcc
+*
+******/
+
+/****** UP-Poppen.mcc/UPM_Poppen_Deactivated ******
+*
+*   NAME
+*       UPM_Poppen_Deactivated -- method of UP-Poppen.mcc
+*
+*   FUNCTION
+*       The popup window of a UP-Poppen lost activation (the user clicked elsewhere). Marks the close as caused by deactivation and closes the popup. Internal, run by the popup window notify.
+*
+*   INPUTS
+*       UPM_Poppen_Deactivated - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Poppen.mcc
+*
+******/
+
+/****** UP-Penadjust.mcc/UPM_Penadjust_Changed ******
+*
+*   NAME
+*       UPM_Penadjust_Changed -- method of UP-Penadjust.mcc
+*
+*   FUNCTION
+*       A child gadget of a UP-Penadjust changed (an RGB slider or the kind cycle). Builds the pen spec from the children and sets MUIA_Pendisplay_Spec and the MUIA_Coloradjust_* attributes on the object, so both notify. Internal, run by the child notifies.
+*
+*   INPUTS
+*       UPM_Penadjust_Changed - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Penadjust.mcc
+*
+******/
+
+/****** UP-Imageadjust.mcc/UPM_Imageadjust_Changed ******
+*
+*   NAME
+*       UPM_Imageadjust_Changed -- method of UP-Imageadjust.mcc
+*
+*   FUNCTION
+*       The kind cycle or the value field of a UP-Imageadjust changed. Builds the image spec "<d>:<value>" from them, shows it in the preview without notifying, and sets MUIA_Imagedisplay_Spec on the object, so it notifies. Internal, run by the child notifies.
+*
+*   INPUTS
+*       UPM_Imageadjust_Changed - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Imageadjust.mcc
+*
+******/
+
+/****** UP-Frameadjust.mcc/UPM_Frameadjust_Changed ******
+*
+*   NAME
+*       UPM_Frameadjust_Changed -- method of UP-Frameadjust.mcc
+*
+*   FUNCTION
+*       The recessed checkmark or one of the type and spacing sliders of a UP-Frameadjust changed. Builds the frame spec "TSLRTB" from them, shows it in the preview without notifying, and sets MUIA_Framedisplay_Spec on the object, so it notifies. Internal, run by the child notifies.
+*
+*   INPUTS
+*       UPM_Frameadjust_Changed - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Frameadjust.mcc
+*
+******/
+
+/****** UP-Popimage.mcc/UPM_Popimage_Changed ******
+*
+*   NAME
+*       UPM_Popimage_Changed -- method of UP-Popimage.mcc
+*
+*   FUNCTION
+*       The UP-Imageadjust popup of a UP-Popimage changed its spec. Shows the spec in the display and sets MUIA_Imagedisplay_Spec on the pop, so it notifies. Does nothing while no popup exists. Internal, run by the popup notify.
+*
+*   INPUTS
+*       UPM_Popimage_Changed - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popimage.mcc
+*
+******/
+
+/****** UP-Popframe.mcc/UPM_Popframe_Changed ******
+*
+*   NAME
+*       UPM_Popframe_Changed -- method of UP-Popframe.mcc
+*
+*   FUNCTION
+*       The UP-Frameadjust popup of a UP-Popframe changed its spec. Shows the spec in the display and sets MUIA_Framedisplay_Spec on the pop, so it notifies. Does nothing while no popup exists. Internal, run by the popup notify.
+*
+*   INPUTS
+*       UPM_Popframe_Changed - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popframe.mcc
+*
+******/
+
+/****** UP-Popscreen.mcc/UP-Popscreen ******
+*
+*   NAME
+*       UP-Popscreen -- class of UP-Popscreen.mcc
+*
+*   FUNCTION
+*       UP-Popscreen replaces MUIC_Popscreen: a UP-Poplist (a UP-Popstring whose popup is a list) whose entries are the public screen names. The names are read under LockPubScreenList before each open, so the list follows screens that opened or closed since; at most 32 names are shown. The class has no attributes or methods of its own; use those of UP-Poplist and UP-Popstring.
+*
+*   INPUTS
+*       Create with MUI_NewObject("UP-Popscreen.mcc", ...) or UP_NewPopscreen() from <mcc/up.h>.
+*
+*   RESULT
+*       An object of the class, or NULL.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popscreen.mcc
+*
+******/
+
+/****** UP-Popimage.mcc/UP-Popimage ******
+*
+*   NAME
+*       UP-Popimage -- class of UP-Popimage.mcc
+*
+*   FUNCTION
+*       UP-Popimage replaces MUIC_Popimage: a UP-Popstring whose string is a UP-Imagedisplay preview and whose popup is a UP-Imageadjust. MUIA_Imagedisplay_Spec (ISG, notifies) is the image spec "<d>:<value>"; a value of 0xFFFF or less is taken as an MUII_ number. The popup is built at the first open. UPM_Popimage_Changed is internal.
+*
+*   INPUTS
+*       Create with MUI_NewObject("UP-Popimage.mcc", ...) or UP_NewPopimage() from <mcc/up.h>.
+*
+*   RESULT
+*       An object of the class, or NULL.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popimage.mcc
+*
+******/
+
+/****** UP-Popframe.mcc/UP-Popframe ******
+*
+*   NAME
+*       UP-Popframe -- class of UP-Popframe.mcc
+*
+*   FUNCTION
+*       UP-Popframe replaces MUIC_Popframe: a UP-Popstring whose string is a UP-Framedisplay preview and whose popup is a UP-Frameadjust. MUIA_Framedisplay_Spec (ISG, notifies) is the frame spec "TSLRTB". The popup is built at the first open. UPM_Popframe_Changed is internal.
+*
+*   INPUTS
+*       Create with MUI_NewObject("UP-Popframe.mcc", ...) or UP_NewPopframe() from <mcc/up.h>.
+*
+*   RESULT
+*       An object of the class, or NULL.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popframe.mcc
+*
+******/
+
+/****** UP-Frameadjust.mcc/UP-Frameadjust ******
+*
+*   NAME
+*       UP-Frameadjust -- class of UP-Frameadjust.mcc
+*
+*   FUNCTION
+*       UP-Frameadjust replaces MUIC_Frameadjust: a UP-Framedisplay preview, a UP-Checkmark for recessed and UP-Text / UP-Slider rows for the frame type and the four inner spacings. MUIA_Framedisplay_Spec (ISG, notifies) is the frame spec "TSLRTB"; setting it updates the controls without notifying them. UPM_Frameadjust_Changed is internal.
+*
+*   INPUTS
+*       Create with MUI_NewObject("UP-Frameadjust.mcc", ...) or UP_NewFrameadjust() from <mcc/up.h>.
+*
+*   RESULT
+*       An object of the class, or NULL.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Frameadjust.mcc
+*
+******/
