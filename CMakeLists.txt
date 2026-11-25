@@ -54,6 +54,13 @@ set(MCC_CLASS_LIBS
   "Virtgroup|src/class/mui_aavirtgroup_class.c|aavirtgroup_class_desc"
   "Scrollgroup|src/class/mui_aascrollgroup_class.c|aascrollgroup_class_desc"
   "Textarea|src/class/mui_aatextarea_class.c|aatextarea_class_desc")
+# MUI gap D: Pendisplay and Poppen share one source (as Slider/Progress), Penadjust also answers MUIC_Coloradjust.
+list(APPEND MCC_MAP_SOURCES src/map/up_penspec.c)
+list(APPEND MCC_AMIGA_SOURCES src/class/mui_aapendisplay_class.c src/class/mui_aapenadjust_class.c)
+list(APPEND MCC_CLASS_LIBS
+  "Pendisplay|src/class/mui_aapendisplay_class.c|aapendisplay_class_desc"
+  "Poppen|src/class/mui_aapendisplay_class.c|aapoppen_class_desc"
+  "Penadjust|src/class/mui_aapenadjust_class.c|aapenadjust_class_desc")
 set(_mcc_lib_sources "")
 foreach(row ${MCC_CLASS_LIBS})
   string(REPLACE "|" ";" cols "${row}")
@@ -245,6 +252,8 @@ up_mcc_lib_skeleton(up_mcc_prefs)
 up_check_no_store(up_mcc_prefs)
 add_custom_target(up_mcc_classes DEPENDS up_mcc_Button up_mcc_Text up_mcc_Panel up_mcc_Tabs up_mcc_Balance up_mcc_Slider up_mcc_Progress
   up_mcc_Cycle up_mcc_Field up_mcc_Scroller up_mcc_List up_mcc_Checkmark up_mcc_Radio up_mcc_Popstring up_mcc_Poplist up_mcc_Numericbutton up_mcc_Scale up_mcc_Colorfield up_mcc_Palette up_mcc_Image up_mcc_Menu up_mcc_Virtgroup up_mcc_Scrollgroup up_mcc_Textarea up_mcc_prefs)
+
+add_dependencies(up_mcc_classes up_mcc_Pendisplay up_mcc_Poppen up_mcc_Penadjust) # MUI gap D
 
 # I685k: UP-Demo (demo/updemo.c). Headers: the release set staged here (include/mcc/*.h plus the one header up.h needs,
 # selecta/uimodel/tokens.h, which the release archive carries as Developer/include/selecta/uimodel/tokens.h) and the sfdc headers. No Selecta

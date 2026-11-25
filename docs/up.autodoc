@@ -2229,6 +2229,82 @@
 *
 ******/
 
+/****** UP-Pendisplay.mcc/MUIA_Pendisplay_Spec ******
+*
+*   NAME
+*       MUIA_Pendisplay_Spec -- attribute of UP-Pendisplay.mcc
+*
+*   FUNCTION
+*       struct MUI_PenSpec*: the pen shown, MUI 3.8 format ("rRRRRRRRR,GGGGGGGG,BBBBBBBB" RGB, "pN" colormap pen, "mN" MUI pen; default "m5"). Notifies. Replaces MUIC_Pendisplay; also MUIA_Pendisplay_Pen (G, the screen pen or -1 for RGB), MUIA_Pendisplay_Reference (ISG, follows another Pendisplay) and MUIA_Pendisplay_RGBcolor (ISG struct MUI_RGBcolor*).
+*
+*   INPUTS
+*       MUIA_Pendisplay_Spec - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Pendisplay.mcc
+*
+******/
+
+/****** UP-Pendisplay.mcc/MUIM_Pendisplay_SetRGB ******
+*
+*   NAME
+*       MUIM_Pendisplay_SetRGB -- method of UP-Pendisplay.mcc
+*
+*   FUNCTION
+*       MUIM_Pendisplay_SetRGB(red, green, blue), MUIM_Pendisplay_SetColormap(colormap) and MUIM_Pendisplay_SetMUIPen(muipen) set MUIA_Pendisplay_Spec (which notifies), as in MUI 3.8. Guns are 32 bit.
+*
+*   INPUTS
+*       MUIM_Pendisplay_SetRGB - method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Pendisplay.mcc
+*
+******/
+
+/****** UP-Poppen.mcc/UPM_Poppen_Click ******
+*
+*   NAME
+*       UPM_Poppen_Click -- method of UP-Poppen.mcc
+*
+*   FUNCTION
+*       UP-Poppen replaces MUIC_Poppen: a UP-Pendisplay (all its attributes and methods) that is a button. A click opens a UP-Penadjust in a popup window under the swatch; its changes set MUIA_Pendisplay_Spec. Leaving the popup closes it. UPM_Poppen_Click, UPM_Poppen_Closed and UPM_Poppen_Deactivated are internal.
+*
+*   INPUTS
+*       UPM_Poppen_Click - internal method. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Call with DoMethod(); returns 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Poppen.mcc
+*
+******/
+
+/****** UP-Penadjust.mcc/UPA_Penadjust_Coloradjust ******
+*
+*   NAME
+*       UPA_Penadjust_Coloradjust -- attribute of UP-Penadjust.mcc
+*
+*   FUNCTION
+*       BOOL: TRUE makes the object a MUIC_Coloradjust (RGB sliders only, no kind cycle). Otherwise it is a MUIC_Penadjust (cycle RGB / Colormap / MUI pen; MUIA_Penadjust_PSIMode TRUE leaves out MUI pen). Both modes answer MUIA_Pendisplay_Spec (ISG, notifies) and MUIA_Coloradjust_Red/Green/Blue (ISG ULONG 32 bit), MUIA_Coloradjust_RGB (ISG ULONG*[3]) and MUIA_Coloradjust_ModeID (ISG, stored only).
+*
+*   INPUTS
+*       UPA_Penadjust_Coloradjust - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Penadjust.mcc
+*
+******/
+
 /****** UP-Palette.mcc/UPA_Palette_Entries ******
 *
 *   NAME
