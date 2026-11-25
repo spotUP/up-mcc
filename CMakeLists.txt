@@ -26,7 +26,7 @@ set(MCC_AMIGA_SOURCES src/mui_aa_draw.c src/mui_aa_clip.c src/mui_aatip.c src/mu
   src/class/mui_aacolorfield_class.c src/class/mui_aapalette_class.c
   src/class/mui_aaimage_class.c src/class/mui_aamenu_class.c
   src/class/mui_aavirtgroup_class.c src/class/mui_aascrollgroup_class.c
-  src/class/mui_aatextarea_class.c src/class/mui_aarect_class.c src/class/mui_aafloattext_class.c src/class/mui_aadial_class.c src/class/mui_aadirlist_class.c src/mui_text_lines.c src/mui_ftxt.c src/mui_aaedit.c)
+  src/class/mui_aatextarea_class.c src/class/mui_aarect_class.c src/class/mui_aafloattext_class.c src/class/mui_aadial_class.c src/class/mui_aadirlist_class.c src/mui_text_lines.c src/mui_text_float.c src/mui_ftxt.c src/mui_aaedit.c)
 # I685i: the eleven UP-<Name>.mcc libraries (section 3.2/3.3), one row each: name | class source | description symbol of the file.
 # Slider and Progress both come from mui_aaslider_class.c. The class sources of the libraries must be the class sources of
 # sel_mcc_static (ctest mcc-classlibs-source; the Amiga part below also checks every library's SOURCES).
@@ -241,8 +241,8 @@ find_program(MCC_SIZE NAMES m68k-amigaos-size HINTS "${AMIGA_GCC_ROOT}/bin" "$EN
 # writer, no libnix stdio, text section under 8 KB (cmake/mcc_check_slim.cmake).
 # Target is 8192 (design I1491a); the draw/AA code (mui_aa*.c) is still linked into each library, so the enforced ratchet is 26624
 # (worst measured 25588, Cycle). Lower it as that code moves behind up-mcc.library.
-# 14336: UP-Textarea.mcc links its own wrap (mui_text_lines) and ftxt codec, ~13.6k
-set(UP_MCC_SLIM_MAX_TEXT 14336 CACHE STRING "max text bytes per class library")
+# 14848: UP-Textarea.mcc links its own wrap (mui_text_lines) and ftxt codec; measured 14348 after the MUI gap merge (2026-11-25)
+set(UP_MCC_SLIM_MAX_TEXT 14848 CACHE STRING "max text bytes per class library")
 function(up_check_slim tgt desc)
   string(REGEX REPLACE "_class_desc$" "" _own "${desc}")
   add_custom_command(TARGET ${tgt} POST_BUILD
