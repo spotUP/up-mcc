@@ -84,6 +84,9 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_SCROLLGROUP 0x0E
 #define UP_CLS_VIRTGROUP 0x10
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
+#define UP_CLS_DIRLIST 0x24     /* UP-Dirlist */
+#define UP_CLS_VOLUMELIST 0x25  /* UP-Volumelist (no own attributes) */
+#define UP_CLS_SCRMODELIST 0x26 /* UP-Scrmodelist */
 
 /* ---- Attributes (UPA_), methods (UPM_) and enumeration values (UPV_) of every class (design 8.3). The numbers are written here
  * and nowhere else. I/S/G: settable at construction / later / readable. ---- */
@@ -186,6 +189,17 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_TextArea_Placeholder UP_TAG(UP_CLS_TEXTAREA, 0x03) /* I STRPTR hint while empty and not active; must outlive the object */
 #define UPA_TextArea_Error UP_TAG(UP_CLS_TEXTAREA, 0x04) /* SG BOOL: outline in the ERROR colour (a validation error names this field); a user edit clears it */
 #define UPM_TextArea_Redraw UP_TAG(UP_CLS_TEXTAREA, 0x10)      /* method: the window's active object changed, repaint. Internal */
+
+/* UP-Dirlist, UP-Volumelist, UP-Scrmodelist (MUIC_Dirlist, MUIC_Volumelist, MUIC_Scrmodelist): a group around a UP-List and its scroller.
+ * All three answer the MUI 3.8 list ids MUIA_List_Active (ISG, notifies), MUIA_List_Entries (G), MUIA_Listview_DoubleClick (G, notifies on
+ * a double click or Return) and MUIM_List_GetEntry. An entry is a struct FileInfoBlock* (Dirlist), the "Name:" STRPTR of a volume or
+ * assign (Volumelist), or a struct UP_Scrmode* (Scrmodelist). UP-Dirlist takes the MUI 3.8 MUIA_Dirlist_* ids and MUIM_Dirlist_ReRead;
+ * a set of any of them reads the directory again, synchronously (Status goes Reading, then Valid). */
+#define UPA_Scrmodelist_ModeID UP_TAG(UP_CLS_SCRMODELIST, 0x01) /* ISG ULONG: display ID of the active mode; set picks its row (INVALID_ID = none) */
+typedef struct UP_Scrmode {
+    ULONG id;
+    char name[32];
+} UP_Scrmode;
 
 /* UP-Tabs */
 #define UPA_Tabs_Active UP_TAG(UP_CLS_TABS, 0x01)   /* ISG LONG: index of the active tab (notifies) */
@@ -333,6 +347,9 @@ Object* UP_NewRadio(const struct TagItem* tags);
 Object* UP_NewVirtgroup(const struct TagItem* tags);   /* MUIA_Group_Child / MUIA_Group_Horiz describe the contents */
 Object* UP_NewScrollgroup(const struct TagItem* tags); /* MUIA_Group_Child / MUIA_Group_Horiz describe the contents */
 Object* UP_NewList(const struct TagItem* tags, Object** list_out); /* returns the list+scroller group; *list_out the list */
+Object* UP_NewDirlist(const struct TagItem* tags);
+Object* UP_NewVolumelist(const struct TagItem* tags);
+Object* UP_NewScrmodelist(const struct TagItem* tags);
 #else
 #include <libraries/mui.h>
 #include <proto/muimaster.h>

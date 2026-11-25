@@ -34,7 +34,7 @@
 
 (copyfiles
   (prompt "Copying the UP- classes and the preferences class")
-  (help "Libs/mui/UP-*.mcc are the twenty-three classes (Button, Text, Panel, Tabs, Balance, Slider, Progress, Cycle, Field, Scroller, List, Checkmark, Radio, Popstring, Poplist, Numericbutton, Scale, Colorfield, Palette, Image, Menu, Virtgroup, Scrollgroup). UP-MCC.mcp is the preferences class.")
+  (help "Libs/mui/UP-*.mcc are the twenty-six classes (Button, Text, Panel, Tabs, Balance, Slider, Progress, Cycle, Field, Scroller, List, Checkmark, Radio, Popstring, Poplist, Numericbutton, Scale, Colorfield, Palette, Image, Menu, Virtgroup, Scrollgroup, Dirlist, Volumelist, Scrmodelist). UP-MCC.mcp is the preferences class.")
   (source (tackon #src "Libs/mui"))
   (dest #classdest)
   (pattern "UP-#?.mc#?")

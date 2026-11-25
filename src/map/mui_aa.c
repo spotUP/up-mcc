@@ -997,3 +997,36 @@ void mui_aa_image_fit(int sw, int sh, int bw, int bh, int fit, int* dw, int* dh,
     }
     *dw = w, *dh = h, *ox = (bw - w) / 2, *oy = (bh - h) / 2;
 }
+
+static int aa_lower(int c) {
+    return c >= 'A' && c <= 'Z' ? c + 32 : c;
+}
+
+static int aa_stricmp(const char* a, const char* b) {
+    while (*a != 0 && aa_lower((unsigned char)*a) == aa_lower((unsigned char)*b)) {
+        a++, b++;
+    }
+    return aa_lower((unsigned char)*a) - aa_lower((unsigned char)*b);
+}
+
+int mui_aa_dir_cmp(const mui_aa_dirkey* a, const mui_aa_dirkey* b, int type, int dirs, int high_low) {
+    long c = 0;
+    if (dirs != 2 && a->dir != b->dir) {
+        return (a->dir ? -1 : 1) * (dirs == 1 ? -1 : 1);
+    }
+    if (type == 1) {
+        c = a->days != b->days ? a->days - b->days : a->mins != b->mins ? a->mins - b->mins : a->ticks - b->ticks;
+    } else if (type == 2) {
+        c = a->size - b->size;
+    }
+    if (c == 0) {
+        c = aa_stricmp(a->name, b->name);
+    }
+    c = c < 0 ? -1 : c > 0;
+    return high_low ? (int)-c : (int)c;
+}
+
+int mui_aa_icon_name(const char* name) {
+    size_t n = strlen(name);
+    return n >= 5 && aa_stricmp(name + n - 5, ".info") == 0;
+}

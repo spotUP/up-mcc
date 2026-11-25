@@ -2688,3 +2688,22 @@
 *       <mcc/up.h>, UP-Field.mcc
 *
 ******/
+
+/****** UP-Scrmodelist.mcc/UPA_Scrmodelist_ModeID ******
+*
+*   NAME
+*       UPA_Scrmodelist_ModeID -- attribute of UP-Scrmodelist.mcc
+*
+*   FUNCTION
+*       ULONG: the display ID of the active mode. A set picks the row of that mode (INVALID_ID or an unknown ID: no row); a get returns INVALID_ID while no row is active. UP-Scrmodelist, UP-Volumelist and UP-Dirlist also answer the MUI 3.8 ids MUIA_List_Active (ISG, notifies), MUIA_List_Entries (G), MUIA_Listview_DoubleClick (G, notifies on a double click or Return) and MUIM_List_GetEntry; an entry is a struct UP_Scrmode*, a "Name:" STRPTR or a struct FileInfoBlock*. UP-Dirlist takes the MUIA_Dirlist_* ids and MUIM_Dirlist_ReRead and reads synchronously
+*
+*   INPUTS
+*       UPA_Scrmodelist_ModeID - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Scrmodelist.mcc, UP-Dirlist.mcc, UP-Volumelist.mcc
+*
+******/
