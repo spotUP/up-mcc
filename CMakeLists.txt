@@ -25,7 +25,7 @@ set(MCC_AMIGA_SOURCES src/mui_aa_draw.c src/mui_aa_clip.c src/mui_aatip.c
   src/class/mui_aacolorfield_class.c src/class/mui_aapalette_class.c
   src/class/mui_aaimage_class.c src/class/mui_aamenu_class.c
   src/class/mui_aavirtgroup_class.c src/class/mui_aascrollgroup_class.c
-  src/class/mui_aatextarea_class.c src/mui_text_lines.c src/mui_ftxt.c src/mui_aaedit.c)
+  src/class/mui_aatextarea_class.c src/class/mui_aarect_class.c src/class/mui_aafloattext_class.c src/mui_text_lines.c src/mui_ftxt.c src/mui_aaedit.c)
 # I685i: the eleven UP-<Name>.mcc libraries (section 3.2/3.3), one row each: name | class source | description symbol of the file.
 # Slider and Progress both come from mui_aaslider_class.c. The class sources of the libraries must be the class sources of
 # sel_mcc_static (ctest mcc-classlibs-source; the Amiga part below also checks every library's SOURCES).
@@ -53,7 +53,9 @@ set(MCC_CLASS_LIBS
   "Menu|src/class/mui_aamenu_class.c|aamenu_class_desc"
   "Virtgroup|src/class/mui_aavirtgroup_class.c|aavirtgroup_class_desc"
   "Scrollgroup|src/class/mui_aascrollgroup_class.c|aascrollgroup_class_desc"
-  "Textarea|src/class/mui_aatextarea_class.c|aatextarea_class_desc")
+  "Textarea|src/class/mui_aatextarea_class.c|aatextarea_class_desc"
+  "Rectangle|src/class/mui_aarect_class.c|aarect_class_desc"
+  "Floattext|src/class/mui_aafloattext_class.c|aafloattext_class_desc")
 set(_mcc_lib_sources "")
 foreach(row ${MCC_CLASS_LIBS})
   string(REPLACE "|" ";" cols "${row}")
@@ -244,7 +246,7 @@ target_link_options(up_mcc_prefs PRIVATE -nostartfiles)
 up_mcc_lib_skeleton(up_mcc_prefs)
 up_check_no_store(up_mcc_prefs)
 add_custom_target(up_mcc_classes DEPENDS up_mcc_Button up_mcc_Text up_mcc_Panel up_mcc_Tabs up_mcc_Balance up_mcc_Slider up_mcc_Progress
-  up_mcc_Cycle up_mcc_Field up_mcc_Scroller up_mcc_List up_mcc_Checkmark up_mcc_Radio up_mcc_Popstring up_mcc_Poplist up_mcc_Numericbutton up_mcc_Scale up_mcc_Colorfield up_mcc_Palette up_mcc_Image up_mcc_Menu up_mcc_Virtgroup up_mcc_Scrollgroup up_mcc_Textarea up_mcc_prefs)
+  up_mcc_Cycle up_mcc_Field up_mcc_Scroller up_mcc_List up_mcc_Checkmark up_mcc_Radio up_mcc_Popstring up_mcc_Poplist up_mcc_Numericbutton up_mcc_Scale up_mcc_Colorfield up_mcc_Palette up_mcc_Image up_mcc_Menu up_mcc_Virtgroup up_mcc_Scrollgroup up_mcc_Textarea up_mcc_Rectangle up_mcc_Floattext up_mcc_prefs)
 
 # I685k: UP-Demo (demo/updemo.c). Headers: the release set staged here (include/mcc/*.h plus the one header up.h needs,
 # selecta/uimodel/tokens.h, which the release archive carries as Developer/include/selecta/uimodel/tokens.h) and the sfdc headers. No Selecta

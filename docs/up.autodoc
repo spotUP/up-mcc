@@ -2688,3 +2688,68 @@
 *       <mcc/up.h>, UP-Field.mcc
 *
 ******/
+
+/****** UP-Floattext.mcc/UPA_Floattext_First ******
+*
+*   NAME
+*       UPA_Floattext_First -- attribute of UP-Floattext.mcc
+*
+*   FUNCTION
+*       LONG: index of the first visible wrapped line. Clamped to the
+*       scrollable range. Setting MUIA_Floattext_Text resets it to 0. The
+*       paired scroller and the mouse wheel set it; it notifies on change.
+*       The MUI 3.8 attributes MUIA_Floattext_Text, _Justify, _SkipChars and
+*       _TabSize are accepted as well. SkipChars and TabSize apply at the
+*       next Text set. MUI text escape codes are not interpreted.
+*
+*   INPUTS
+*       UPA_Floattext_First - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Floattext.mcc, UP-Scroller.mcc
+*
+******/
+
+/****** UP-Floattext.mcc/UPA_Floattext_Scroller ******
+*
+*   NAME
+*       UPA_Floattext_Scroller -- attribute of UP-Floattext.mcc
+*
+*   FUNCTION
+*       Object *: UP-Scroller the text view keeps in step (Visible, Entries,
+*       First). UP_NewFloattext() builds the text view and this scroller in
+*       one group and wires both directions.
+*
+*   INPUTS
+*       UPA_Floattext_Scroller - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Floattext.mcc, UP-Scroller.mcc
+*
+******/
+
+/****** UP-Rectangle.mcc/UP-Rectangle.mcc ******
+*
+*   NAME
+*       UP-Rectangle.mcc -- MUI class, themed spacer and separator bar
+*
+*   FUNCTION
+*       The class has no UPA_ attributes of its own: it is used like the MUI
+*       Rectangle class. With no tags it is an invisible spacer that takes
+*       the free space. It accepts the MUI 3.8 attributes
+*       MUIA_Rectangle_HBar and MUIA_Rectangle_VBar (a 1 pixel line in the
+*       DIVIDER token colour) and MUIA_Rectangle_BarTitle (a horizontal bar
+*       with the title centred in TEXT_MUTED; implies HBar), all access IG.
+*       Create it with MUI_NewObject("UP-Rectangle.mcc", ...) or
+*       UP_NewRectangle.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP_NewRectangle
+*
+******/
