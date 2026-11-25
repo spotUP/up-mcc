@@ -52,7 +52,7 @@ static void demo_requester(const char* text) {
     EasyRequest(NULL, &es, NULL, (APTR)text);
 }
 
-#define CLASS_COUNT 37 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
+#define CLASS_COUNT 40 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
 
 static const struct MUI_PenSpec g_pen_spec = {"r3e3e3e3e,63636363,dddddddd"};
 static const char* const g_names[CLASS_COUNT] = {"Button", "Text", "Panel", "Tabs", "Balance", "Slider",
@@ -61,7 +61,8 @@ static const char* const g_names[CLASS_COUNT] = {"Button", "Text", "Panel", "Tab
                                                  "Knob", "Levelmeter",
                                                  "Popobject", "Popasl", "Popscreen",
                                                  "Pendisplay", "Poppen", "Penadjust",
-                                                 "Imagedisplay", "Framedisplay", "Popimage", "Popframe", "Imageadjust", "Frameadjust"};
+                                                 "Imagedisplay", "Framedisplay", "Popimage", "Popframe", "Imageadjust", "Frameadjust",
+                                                 "Dirlist", "Volumelist", "Scrmodelist"};
 static const char* const g_cycle_entries[] = {"First", "Second", "Third", NULL};
 static const char* const g_tab_captions[] = {"Songs", "Albums", "Artists", "Playlists", NULL};
 static const char* const g_radio_entries[] = {"Low", "Medium", "High", NULL};
@@ -213,6 +214,11 @@ static Object* make(int index) {
     case 26:
     case 28:
         return MUI_NewObject(path, MUIA_Framedisplay_Spec, (ULONG) "910202", TAG_DONE);
+    case 23:
+        return MUI_NewObject(path, MUIA_Dirlist_Directory, (ULONG) "SYS:", MUIA_Dirlist_RejectIcons, (ULONG)TRUE, TAG_DONE);
+    case 24:
+    case 25:
+        return MUI_NewObject(path, TAG_DONE);
     default:
         g_row_hook.h_Entry = (__typeof__(g_row_hook.h_Entry))(void (*)(void))HookEntry;
         g_row_hook.h_SubEntry = (__typeof__(g_row_hook.h_SubEntry))(void (*)(void))demo_cell;

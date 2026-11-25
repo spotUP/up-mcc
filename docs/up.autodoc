@@ -3121,3 +3121,48 @@
 *       <mcc/up.h>, UP-Imagedisplay.mcc, UP-Popimage.mcc
 *
 ******/
+
+/****** UP-Scrmodelist.mcc/UPA_Scrmodelist_ModeID ******
+*
+*   NAME
+*       UPA_Scrmodelist_ModeID -- attribute of UP-Scrmodelist.mcc
+*
+*   FUNCTION
+*       ULONG: the display ID of the active mode. A set picks the row of that mode (INVALID_ID or an unknown ID: no row); a get returns INVALID_ID while no row is active. UP-Scrmodelist, UP-Volumelist and UP-Dirlist also answer the MUI 3.8 ids MUIA_List_Active (ISG, notifies), MUIA_List_Entries (G), MUIA_Listview_DoubleClick (G, notifies on a double click or Return) and MUIM_List_GetEntry; an entry is a struct UP_Scrmode*, a "Name:" STRPTR or a struct FileInfoBlock*. UP-Dirlist takes the MUIA_Dirlist_* ids and MUIM_Dirlist_ReRead and reads synchronously
+*
+*   INPUTS
+*       UPA_Scrmodelist_ModeID - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Scrmodelist.mcc, UP-Dirlist.mcc, UP-Volumelist.mcc
+*
+******/
+
+/****** UP-Dirlist.mcc/--background-- ******
+*
+*   NAME
+*       UP-Dirlist.mcc -- MUIC_Dirlist equivalent: the entries of one directory
+*
+*   FUNCTION
+*       A group around a UP-List and its scroller. Takes the MUI 3.8 ids MUIA_Dirlist_AcceptPattern, Directory (ISG), DrawersOnly, FilesOnly, FilterDrawers, FilterHook (called with a struct ExAllData*), MultiSelDirs (stored only), RejectIcons, RejectPattern, SortDirs, SortHighLow, SortType (IS) and NumBytes, NumDrawers, NumFiles, Path, Status (G), and the method MUIM_Dirlist_ReRead. A set of any read-affecting id reads the directory again, synchronously: Status is Valid (or Invalid) when the set returns. Patterns filter drawers only with FilterDrawers. Answers MUIA_List_Active (ISG, notifies), MUIA_List_Entries (G), MUIA_Listview_DoubleClick (G, notifies) and MUIM_List_GetEntry; an entry is a struct FileInfoBlock*. Drawers show with a " (Drawer)" suffix in one column
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc, UP-Volumelist.mcc
+*
+******/
+
+/****** UP-Volumelist.mcc/--background-- ******
+*
+*   NAME
+*       UP-Volumelist.mcc -- MUIC_Volumelist equivalent: the mounted volumes and assigns
+*
+*   FUNCTION
+*       A group around a UP-List and its scroller, filled from the DOS list when created. No attributes of its own. Answers MUIA_List_Active (ISG, notifies), MUIA_List_Entries (G), MUIA_Listview_DoubleClick (G, notifies) and MUIM_List_GetEntry; an entry is a "Name:" STRPTR
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc, UP-Dirlist.mcc
+*
+******/

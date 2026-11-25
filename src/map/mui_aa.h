@@ -367,6 +367,16 @@ int mui_aa_font_parse(const char* spec, char* name, int cap, long* size);
 int mui_aa_hex_text(uint32_t v, char* out, int cap);
 uint32_t mui_aa_hex_parse(const char* s); /* "0x..." or bare hex; stops at the first non-hex digit */
 
+/* UP-Dirlist sort order (MUIA_Dirlist_SortType / SortDirs / SortHighLow), pure (host test mui-dirlist). type 0 name (case blind), 1 date,
+ * 2 size; dirs 0 drawers first, 1 drawers last, 2 mixed; high_low reverses the key, never the drawer grouping. Ties fall back to the name. */
+typedef struct mui_aa_dirkey {
+    const char* name;
+    long size, days, mins, ticks;
+    int dir;
+} mui_aa_dirkey;
+int mui_aa_dir_cmp(const mui_aa_dirkey* a, const mui_aa_dirkey* b, int type, int dirs, int high_low);
+int mui_aa_icon_name(const char* name); /* the name ends in ".info" (any case): MUIA_Dirlist_RejectIcons drops it */
+
 #ifdef __cplusplus
 }
 #endif

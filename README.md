@@ -1,7 +1,7 @@
 # up-mcc
 
 MUI custom class package for the Amiga: twenty-five `UP-<Name>.mcc` classes (Button, Text, Panel, Tabs, Balance, Slider, Progress,
-Cycle, Field, Scroller, List, Checkmark, Radio, Popstring, Poplist, Numericbutton, Scale, Colorfield, Palette, Image, Menu, Scrollgroup, Virtgroup, Rectangle, Floattext), the `UP-MCC.mcp` preferences class, the `up-mcc.library` support library, themes and a demo.
+Cycle, Field, Scroller, List, Checkmark, Radio, Popstring, Poplist, Numericbutton, Scale, Colorfield, Palette, Image, Menu, Scrollgroup, Virtgroup, Rectangle, Floattext, Dirlist, Volumelist, Scrmodelist), the `UP-MCC.mcp` preferences class, the `up-mcc.library` support library, themes and a demo.
 The same class sources also build as a static library (`sel_mcc_static`) that Selecta links. History comes from Selecta's
 `plugins/shared/mcc`; Selecta will consume this repo, not the reverse.
 
