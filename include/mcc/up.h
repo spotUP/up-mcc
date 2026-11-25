@@ -185,6 +185,7 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_TextArea_MaxLen UP_TAG(UP_CLS_TEXTAREA, 0x02)      /* IG LONG: capacity in bytes, default 1024; longer text is cut */
 #define UPA_TextArea_Placeholder UP_TAG(UP_CLS_TEXTAREA, 0x03) /* I STRPTR hint while empty and not active; must outlive the object */
 #define UPA_TextArea_Error UP_TAG(UP_CLS_TEXTAREA, 0x04) /* SG BOOL: outline in the ERROR colour (a validation error names this field); a user edit clears it */
+/* UP-Textarea and MUIA_Font: a MUIA_Font given at OM_NEW (an open struct TextFont *, e.g. topaz 8 for NFO art) draws the text in that bitmap font instead of the TTF. */
 #define UPM_TextArea_Redraw UP_TAG(UP_CLS_TEXTAREA, 0x10)      /* method: the window's active object changed, repaint. Internal */
 
 /* UP-Tabs */

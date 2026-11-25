@@ -51,6 +51,7 @@ typedef struct ta_data {
     struct MUI_EventHandlerNode ehn;
     aatip_slot tip;
     int error; /* UPA_TextArea_Error: ERROR outline until the next edit */
+    int own_font; /* MUIA_Font given at OM_NEW: the text draws in that bitmap font (the PLAIN backend), not the TTF */
 } ta_data;
 
 typedef struct ta_geom {
@@ -243,6 +244,9 @@ static ULONG ta_setup(struct IClass* cl, Object* obj, Msg msg) {
         return FALSE;
     }
     aa_setup(obj, &d->aa, NULL, 0);
+    if (d->own_font) {
+        d->aa.backend = AA_PLAIN; /* aa_text and its measures then use _font(obj), the MUIA_Font (a fixed font for NFO art) */
+    }
     mui_aa_field_metrics(d->aa.font_px, d->aa.aspect_q8, &d->m);
     {
         struct up_bar b = {UP_BAR_SETUP};
@@ -543,6 +547,7 @@ static ULONG ta_new(struct IClass* cl, Object* obj, struct opSet* msg) {
         return 0;
     }
     d = INST_DATA(cl, obj); /* BOOPSI instance data starts cleared; the tooltip slot above is already filled, so no memset */
+    d->own_font = FindTagItem(MUIA_Font, tags) != NULL;
     d->cap = (maxlen < 1 ? TA_DEF_MAXLEN : maxlen) + 1;
     d->line_cap = 32;
     d->pref_x = -1;
