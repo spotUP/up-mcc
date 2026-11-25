@@ -2400,6 +2400,234 @@
 *
 ******/
 
+/****** UP-Image.mcc/UPA_Image_Width ******
+*
+*   NAME
+*       UPA_Image_Width -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bitmap_Width; the drawn width of the bitmap or body (0 = the bitmap width)
+*
+*   INPUTS
+*       UPA_Image_Width - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Height ******
+*
+*   NAME
+*       UPA_Image_Height -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bitmap_Height; the drawn height of the bitmap or body (0 = the bitmap height)
+*
+*   INPUTS
+*       UPA_Image_Height - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_SourceColors ******
+*
+*   NAME
+*       UPA_Image_SourceColors -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       ULONG*: MUIA_Bitmap_SourceColors; 32-bit R,G,B triplets per source colour; the picture is remapped to the best screen pens at Setup
+*
+*   INPUTS
+*       UPA_Image_SourceColors - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_MappingTable ******
+*
+*   NAME
+*       UPA_Image_MappingTable -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       UBYTE*: MUIA_Bitmap_MappingTable; source colour to screen pen, wins over SourceColors; no pens are obtained
+*
+*   INPUTS
+*       UPA_Image_MappingTable - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Precision ******
+*
+*   NAME
+*       UPA_Image_Precision -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bitmap_Precision; ObtainBestPen OBP_Precision for SourceColors (default PRECISION_GUI)
+*
+*   INPUTS
+*       UPA_Image_Precision - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Transparent ******
+*
+*   NAME
+*       UPA_Image_Transparent -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bitmap_Transparent; this source colour is not drawn (-1 = none, the default); not applied to a Fit-scaled picture
+*
+*   INPUTS
+*       UPA_Image_Transparent - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_UseFriend ******
+*
+*   NAME
+*       UPA_Image_UseFriend -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       BOOL: MUIA_Bitmap_UseFriend; the remapped bitmap is a friend of the screen bitmap
+*
+*   INPUTS
+*       UPA_Image_UseFriend - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_RemappedBitmap ******
+*
+*   NAME
+*       UPA_Image_RemappedBitmap -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       struct BitMap*: MUIA_Bitmap_RemappedBitmap; the bitmap drawn after Setup (remapped copy, unpacked body or the caller bitmap), NULL before Setup
+*
+*   INPUTS
+*       UPA_Image_RemappedBitmap - access G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Body ******
+*
+*   NAME
+*       UPA_Image_Body -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       UBYTE*: MUIA_Bodychunk_Body; an ILBM BODY, needs Width, Height and Depth; usually with SourceColors
+*
+*   INPUTS
+*       UPA_Image_Body - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Compression ******
+*
+*   NAME
+*       UPA_Image_Compression -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bodychunk_Compression; 0 none, 1 ByteRun1; anything else draws an empty box
+*
+*   INPUTS
+*       UPA_Image_Compression - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Depth ******
+*
+*   NAME
+*       UPA_Image_Depth -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bodychunk_Depth; body planes 1..8
+*
+*   INPUTS
+*       UPA_Image_Depth - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
+/****** UP-Image.mcc/UPA_Image_Masking ******
+*
+*   NAME
+*       UPA_Image_Masking -- attribute of UP-Image.mcc
+*
+*   FUNCTION
+*       LONG: MUIA_Bodychunk_Masking; 0 none, 1 the body has a mask plane (used as the draw mask), 2 transparent colour (UPA_Image_Transparent)
+*
+*   INPUTS
+*       UPA_Image_Masking - access IS. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Image.mcc
+*
+******/
+
 /****** UP-Menu.mcc/UPA_Menu_Title ******
 *
 *   NAME
@@ -2467,6 +2695,82 @@
 *
 *   INPUTS
 *       UPA_Menu_Open - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Entries ******
+*
+*   NAME
+*       UPA_Menu_Entries -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       UP_MenuItem*: the rich item array (MUIC_Menuitem model), ended by a NULL title, at most UP_MENU_MAXITEMS; wins over UPA_Menu_Items. Per item: title ("-" = separator), shortcut (one character = Amiga+key, shown "Amiga+X"; with UPV_MenuItem_CommandString shown as is), flags UPV_MenuItem_Checkit / Toggle / Checked / Disabled / CommandString, exclude bitmask (MUIA_Menuitem_Exclude). A checked item shows "*" left of its title. UPA_Menu_Chosen stands for MUIA_Menuitem_Trigger.
+*
+*   INPUTS
+*       UPA_Menu_Entries - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Enabled ******
+*
+*   NAME
+*       UPA_Menu_Enabled -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       BOOL: MUIA_Menu_Enabled; FALSE disables the whole menu (MUIA_Disabled)
+*
+*   INPUTS
+*       UPA_Menu_Enabled - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Checked ******
+*
+*   NAME
+*       UPA_Menu_Checked -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       ULONG: bit i = item i is checked (MUIA_Menuitem_Checked); a pick updates it through Checkit / Toggle / Exclude and notifies
+*
+*   INPUTS
+*       UPA_Menu_Checked - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menu.mcc/UPA_Menu_Disabled ******
+*
+*   NAME
+*       UPA_Menu_Disabled -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       ULONG: bit i = item i is disabled (MUIA_Menuitem_Enabled inverted); a disabled item cannot be chosen; not drawn grey
+*
+*   INPUTS
+*       UPA_Menu_Disabled - access ISG. Tag value from <mcc/up.h>.
 *
 *   RESULT
 *       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).

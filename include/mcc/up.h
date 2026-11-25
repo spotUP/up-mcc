@@ -169,6 +169,20 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_Image_File UP_TAG(UP_CLS_IMAGE, 0x01)   /* IS STRPTR: path of the picture, copied (at most 255 characters); set reloads and redraws */
 #define UPA_Image_Bitmap UP_TAG(UP_CLS_IMAGE, 0x02) /* IS struct BitMap*: caller bitmap shown instead of a file; NOT copied, must stay valid; wins over the file */
 #define UPA_Image_Fit UP_TAG(UP_CLS_IMAGE, 0x03)    /* I BOOL: scale to the box keeping the aspect (the box then stretches); default FALSE = the picture size */
+/* MUIC_Bitmap / MUIC_Bodychunk attributes (MUI 3.8 semantics). Remapping (SourceColors or MappingTable) and masks apply to UPA_Image_Bitmap and
+ * UPA_Image_Body, not to a file (picture.datatype remaps that itself). A set of any of them rebuilds the picture when shown. */
+#define UPA_Image_Width UP_TAG(UP_CLS_IMAGE, 0x04)          /* IS LONG: pixels of the bitmap shown (MUIA_Bitmap_Width); required with a body; default the bitmap width */
+#define UPA_Image_Height UP_TAG(UP_CLS_IMAGE, 0x05)         /* IS LONG: rows shown (MUIA_Bitmap_Height); required with a body */
+#define UPA_Image_SourceColors UP_TAG(UP_CLS_IMAGE, 0x06)   /* IS ULONG*: 32-bit R,G,B triplets of the source colours; each gets the best screen pen. Must stay valid */
+#define UPA_Image_MappingTable UP_TAG(UP_CLS_IMAGE, 0x07)   /* IS UBYTE*: source colour -> screen pen; wins over SourceColors. Must stay valid */
+#define UPA_Image_Precision UP_TAG(UP_CLS_IMAGE, 0x08)      /* IS LONG: ObtainBestPen OBP_Precision for SourceColors (default PRECISION_GUI) */
+#define UPA_Image_Transparent UP_TAG(UP_CLS_IMAGE, 0x09)    /* IS LONG: source colour drawn transparent (-1 none, default); unscaled only */
+#define UPA_Image_UseFriend UP_TAG(UP_CLS_IMAGE, 0x0A)      /* I BOOL: the remapped bitmap is a friend of the screen bitmap (default FALSE) */
+#define UPA_Image_RemappedBitmap UP_TAG(UP_CLS_IMAGE, 0x0B) /* G struct BitMap*: the bitmap drawn (remapped copy or the source), valid between Setup and Cleanup */
+#define UPA_Image_Body UP_TAG(UP_CLS_IMAGE, 0x0C)           /* IS UBYTE*: ILBM BODY data (MUIA_Bodychunk_Body), unpacked into an own bitmap at Setup. Must stay valid */
+#define UPA_Image_Compression UP_TAG(UP_CLS_IMAGE, 0x0D)    /* IS LONG: 0 none, 1 ByteRun1 (cmpByteRun1) */
+#define UPA_Image_Depth UP_TAG(UP_CLS_IMAGE, 0x0E)          /* IS LONG: planes in the body, 1..8 */
+#define UPA_Image_Masking UP_TAG(UP_CLS_IMAGE, 0x0F)        /* IS LONG: 0 none, 1 a mask plane follows each row's planes (mskHasMask, used as the mask), 2 UPA_Image_Transparent */
 
 /* UP-Menu (MUIC_Menustrip-like, one menu): a UP-Button caption that opens a dark popup list of items under it. Several UP-Menu objects side by
  * side in a horizontal group make a menu strip. One popup window, created at the first open and reused (as UP-Poplist). */
@@ -176,6 +190,24 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_Menu_Items UP_TAG(UP_CLS_MENU, 0x02)  /* I char**: NULL terminated item texts, "-" is a separator row; must outlive the object */
 #define UPA_Menu_Chosen UP_TAG(UP_CLS_MENU, 0x03) /* ISG LONG: index of the item last chosen, -1 before any (notifies on every pick, also the same item again) */
 #define UPA_Menu_Open UP_TAG(UP_CLS_MENU, 0x04)   /* ISG BOOL: the popup is open; set TRUE opens, FALSE closes */
+/* MUIC_Menuitem / MUIC_Menu attributes: a richer item array instead of UPA_Menu_Items, at most UP_MENU_MAXITEMS items (item i = bit i of
+ * the masks below). Checked items show "*" left of the title, shortcuts show right of it. Menuitem_Trigger is UPA_Menu_Chosen. */
+#define UPA_Menu_Entries UP_TAG(UP_CLS_MENU, 0x05)  /* I UP_MenuItem*: array ended by a NULL title; wins over UPA_Menu_Items; must outlive the object */
+#define UPA_Menu_Enabled UP_TAG(UP_CLS_MENU, 0x06)  /* ISG BOOL: the whole menu can open (MUIA_Menu_Enabled; same as MUIA_Disabled inverted), default TRUE */
+#define UPA_Menu_Checked UP_TAG(UP_CLS_MENU, 0x07)  /* ISG ULONG: bit i = item i checked (MUIA_Menuitem_Checked); a pick updates it per Checkit/Toggle/Exclude (notifies) */
+#define UPA_Menu_Disabled UP_TAG(UP_CLS_MENU, 0x08) /* ISG ULONG: bit i = item i cannot be picked (MUIA_Menuitem_Enabled inverted) */
+#define UP_MENU_MAXITEMS 32
+#define UPV_MenuItem_Checkit 0x01       /* the item has a check state (MUIA_Menuitem_Checkit) */
+#define UPV_MenuItem_Toggle 0x02        /* a pick of a checked item unchecks it (MUIA_Menuitem_Toggle) */
+#define UPV_MenuItem_Checked 0x04       /* checked at creation */
+#define UPV_MenuItem_Disabled 0x08      /* disabled at creation */
+#define UPV_MenuItem_CommandString 0x10 /* the shortcut is shown as written and is no key (MUIA_Menuitem_CommandString) */
+typedef struct UP_MenuItem {
+    const char* title;    /* "-" is a separator; NULL ends the array */
+    const char* shortcut; /* NULL none; one character = Amiga + that key picks the item while the window is active (shown "Amiga+X") */
+    ULONG flags;          /* UPV_MenuItem_* */
+    ULONG exclude;        /* bit j = item j is unchecked when this one gets checked (MUIA_Menuitem_Exclude) */
+} UP_MenuItem;
 #define UPM_Menu_Click UP_TAG(UP_CLS_MENU, 0x10)  /* method: the title button was pressed. Internal */
 #define UPM_Menu_Closed UP_TAG(UP_CLS_MENU, 0x11) /* method: the popup window closed. Internal */
 #define UPM_Menu_Deactivated UP_TAG(UP_CLS_MENU, 0x12) /* method: the popup window lost activation. Internal */

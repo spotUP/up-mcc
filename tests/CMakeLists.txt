@@ -126,3 +126,7 @@ mcc_test(mui-cycle-empty COMMAND mui_cycle_test)
 
 mcc_test_exe(mui_image_fit_test)
 mcc_test(mui-image-fit COMMAND mui_image_fit_test)
+mcc_test_exe(mui_image_body_test)
+mcc_test(mui-image-body COMMAND mui_image_body_test)
+mcc_test_exe(mui_menu_check_test)
+mcc_test(mui-menu-check COMMAND mui_menu_check_test)

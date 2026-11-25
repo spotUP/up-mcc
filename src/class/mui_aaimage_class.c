@@ -1,6 +1,9 @@
 /* UP-Image. Dispatcher pattern of mui_aacolorfield_class.c. The picture comes from picture.datatype (loaded at Setup, remapped to the window
  * screen, kept until Cleanup) or from a caller bitmap. It is blitted exact; the scaled copy for UPA_Image_Fit is made once per size.
- * Without datatypes.library, picture.datatype or a readable file the box shows only its outline. */
+ * Without datatypes.library, picture.datatype or a readable file the box shows only its outline.
+ * MUIC_Bitmap / MUIC_Bodychunk: a body is unpacked into an own planar bitmap (mui_aa_body_unpack); a caller bitmap or a body with
+ * SourceColors or a MappingTable is copied pixel by pixel through the pen table into a remapped bitmap; a transparent colour or a body
+ * mask plane becomes a chip-RAM mask for BltMaskBitMapRastPort. All of it is built at Setup and freed at Cleanup. */
 #include "mui_aaimage_class.h"
 #include "mui_aa_class.h"
 
@@ -12,6 +15,8 @@
 #include <datatypes/pictureclass.h>
 #include <graphics/gfx.h>
 #include <graphics/scale.h>
+#include <graphics/view.h>
+#include <exec/memory.h>
 #include <intuition/intuition.h>
 #include <proto/exec.h>
 #include "mui_gfxbase.h"
@@ -36,13 +41,23 @@ typedef struct aaimage_data {
     struct BitMap* scaled;            /* cache for Fit, owned */
     int sw, sh, scaled_w, scaled_h;   /* source size, cached size */
     int fit, has_lib;
+    const ULONG* colors;              /* UPA_Image_SourceColors, not owned */
+    const UBYTE* map;                 /* UPA_Image_MappingTable, not owned */
+    const UBYTE* body;                /* UPA_Image_Body, not owned */
+    struct BitMap* body_bm;           /* the unpacked body, owned */
+    struct BitMap* remap_bm;          /* the remapped copy, owned */
+    UBYTE* mask;                      /* mask of the drawn bitmap, owned, chip RAM */
+    struct ColorMap* cm;              /* where the pens in got came from */
+    int bw, bh, prec, transp, use_friend, comp, depth, masking, mbpr;
+    ULONG got[8];                     /* bit i = pens[i] was obtained and is released at Cleanup */
+    UBYTE pens[256];
     aa_ctx aa;
 } aaimage_data;
 
 static struct MUI_CustomClass* g_image_class;
 
 static struct BitMap* aaimage_src(aaimage_data* d) {
-    return d->user_bm != NULL ? d->user_bm : d->dt_bm;
+    return d->remap_bm != NULL ? d->remap_bm : d->user_bm != NULL ? d->user_bm : d->body_bm != NULL ? d->body_bm : d->dt_bm;
 }
 
 static void aaimage_free_scaled(aaimage_data* d) {
@@ -61,6 +76,16 @@ static void aaimage_unload(aaimage_data* d) {
         d->dt = NULL;
     }
     d->dt_bm = NULL;
+    WaitBlit();
+    FreeBitMap(d->remap_bm), FreeBitMap(d->body_bm); /* NULL is a no-op */
+    FreeVec(d->mask);
+    d->remap_bm = d->body_bm = NULL, d->mask = NULL;
+    for (int i = 0; i < 256; i++) {
+        if (d->got[i >> 5] & (1UL << (i & 31))) {
+            ReleasePen(d->cm, (ULONG)d->pens[i]);
+        }
+    }
+    memset(d->got, 0, sizeof d->got);
     if (d->has_lib) {
         d->has_lib = 0;
         if (--g_dt_users == 0) {
@@ -76,6 +101,70 @@ static void aaimage_size(aaimage_data* d) {
     if (bm != NULL) {
         d->sw = (int)GetBitMapAttr(bm, BMA_WIDTH);
         d->sh = (int)GetBitMapAttr(bm, BMA_HEIGHT);
+        d->sw = d->bw > 0 && d->bw < d->sw ? d->bw : d->sw;
+        d->sh = d->bh > 0 && d->bh < d->sh ? d->bh : d->sh;
+    }
+}
+
+/* The raw picture: unpack the body, remap through the pen table, build the mask. A failed allocation leaves that step out. */
+static void aaimage_raw(Object* obj, aaimage_data* d) {
+    struct BitMap *src = d->user_bm, *fr = _screen(obj)->RastPort.BitMap, *draw;
+    struct RastPort srp, drp;
+    int w, h, x, y, i, dep, fd = (int)GetBitMapAttr(fr, BMA_DEPTH);
+    if (src == NULL && d->body != NULL && d->bw > 0 && d->bh > 0 && d->depth >= 1 && d->depth <= 8) {
+        d->body_bm = src = AllocBitMap((ULONG)d->bw, (ULONG)d->bh, (ULONG)d->depth, BMF_CLEAR, NULL);
+    }
+    if (src == NULL) {
+        return;
+    }
+    w = (int)GetBitMapAttr(src, BMA_WIDTH), h = (int)GetBitMapAttr(src, BMA_HEIGHT);
+    w = d->bw > 0 && d->bw < w ? d->bw : w, h = d->bh > 0 && d->bh < h ? d->bh : h;
+    dep = (int)GetBitMapAttr(src, BMA_DEPTH);
+    dep = dep > 8 ? 8 : dep;
+    if (d->colors != NULL || d->map != NULL) {
+        d->remap_bm = d->use_friend ? AllocBitMap((ULONG)w, (ULONG)h, (ULONG)fd, BMF_CLEAR | BMF_MINPLANES, fr)
+                                    : AllocBitMap((ULONG)w, (ULONG)h, (ULONG)(fd > 8 ? 8 : fd), BMF_CLEAR, NULL);
+    }
+    draw = d->remap_bm != NULL ? d->remap_bm : src;
+    if (d->transp >= 0 || (d->body_bm != NULL && d->masking == 1)) {
+        /* shortcut: a non-standard (RTG) bitmap gets a word-aligned mask, the layout P96 and CGX read; per-plane modulo otherwise */
+        d->mbpr = (GetBitMapAttr(draw, BMA_FLAGS) & BMF_STANDARD) ? draw->BytesPerRow : ((w + 15) >> 4) << 1;
+        d->mask = AllocVec((ULONG)(d->mbpr * h), MEMF_CHIP | MEMF_CLEAR);
+    }
+    if (d->body_bm != NULL &&
+        !mui_aa_body_unpack(d->body, d->comp, d->bw, d->bh, d->depth, d->masking == 1, d->body_bm->Planes, d->body_bm->BytesPerRow,
+                            d->transp < 0 ? d->mask : NULL, d->mbpr)) {
+        aaimage_unload(d); /* bad compression: an empty box */
+        return;
+    }
+    InitRastPort(&srp);
+    srp.BitMap = src;
+    if (d->remap_bm != NULL) {
+        d->cm = _screen(obj)->ViewPort.ColorMap;
+        for (i = 0; i < (1 << dep); i++) {
+            LONG p = d->map != NULL ? d->map[i] : ObtainBestPen(d->cm, d->colors[3 * i], d->colors[3 * i + 1], d->colors[3 * i + 2], OBP_Precision, (ULONG)d->prec, TAG_DONE);
+            d->pens[i] = (UBYTE)(p < 0 ? 1 : p);
+            if (d->map == NULL && p >= 0) {
+                d->got[i >> 5] |= 1UL << (i & 31);
+            }
+        }
+        InitRastPort(&drp);
+        drp.BitMap = d->remap_bm;
+        for (y = 0; y < h; y++) {
+            for (x = 0; x < w; x++) {
+                SetAPen(&drp, d->pens[ReadPixel(&srp, x, y) & 0xFF]);
+                WritePixel(&drp, x, y);
+            }
+        }
+    }
+    if (d->mask != NULL && d->transp >= 0) {
+        for (y = 0; y < h; y++) {
+            for (x = 0; x < w; x++) {
+                if (ReadPixel(&srp, x, y) != d->transp) {
+                    d->mask[y * d->mbpr + (x >> 3)] |= (UBYTE)(0x80 >> (x & 7));
+                }
+            }
+        }
     }
 }
 
@@ -108,6 +197,7 @@ static void aaimage_load(Object* obj, aaimage_data* d) {
             aaimage_unload(d); /* picture.datatype missing or the file unreadable */
         }
     }
+    aaimage_raw(obj, d);
     aaimage_size(d);
 }
 
@@ -185,15 +275,51 @@ static ULONG aaimage_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
     /* clip the centred picture to the box: a negative offset cuts the source instead */
     cx = ox < 0 ? -ox : 0, cy = oy < 0 ? -oy : 0;
     cw = (dw - cx < w ? dw - cx : w), ch = (dh - cy < h ? dh - cy : h);
-    BltBitMapRastPort(src, cx, cy, rp, l + (ox > 0 ? ox : 0), t + (oy > 0 ? oy : 0), cw, ch, 0xC0);
+    if (d->mask != NULL && src != d->scaled) { /* shortcut: a scaled picture is drawn without its mask */
+        BltMaskBitMapRastPort(src, cx, cy, rp, l + (ox > 0 ? ox : 0), t + (oy > 0 ? oy : 0), cw, ch, 0xE0, d->mask);
+    } else {
+        BltBitMapRastPort(src, cx, cy, rp, l + (ox > 0 ? ox : 0), t + (oy > 0 ? oy : 0), cw, ch, 0xC0);
+    }
     return 0;
+}
+
+/* Every picture attribute of a tag list into d; TRUE when one was there. */
+static int aaimage_tags(aaimage_data* d, struct TagItem* tags) {
+    struct TagItem *state = tags, *ti;
+    int seen = 0;
+    while ((ti = NextTagItem(&state)) != NULL) {
+        ULONG v = ti->ti_Data;
+        switch (ti->ti_Tag) {
+        case UPA_Image_File:
+            memset(d->file, 0, sizeof d->file);
+            if (v != 0) {
+                strncpy(d->file, (const char*)v, sizeof d->file - 1);
+            }
+            break;
+        case UPA_Image_Bitmap: d->user_bm = (struct BitMap*)v; break;
+        case UPA_Image_Fit: d->fit = v != 0; break;
+        case UPA_Image_Width: d->bw = (int)v; break;
+        case UPA_Image_Height: d->bh = (int)v; break;
+        case UPA_Image_SourceColors: d->colors = (const ULONG*)v; break;
+        case UPA_Image_MappingTable: d->map = (const UBYTE*)v; break;
+        case UPA_Image_Precision: d->prec = (int)v; break;
+        case UPA_Image_Transparent: d->transp = (int)v; break;
+        case UPA_Image_UseFriend: d->use_friend = v != 0; break;
+        case UPA_Image_Body: d->body = (const UBYTE*)v; break;
+        case UPA_Image_Compression: d->comp = (int)v; break;
+        case UPA_Image_Depth: d->depth = (int)v; break;
+        case UPA_Image_Masking: d->masking = (int)v; break;
+        default: continue;
+        }
+        seen = 1;
+    }
+    return seen;
 }
 
 static ULONG aaimage_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     aaimage_data* d;
     struct opSet nm;
     struct TagItem def[2];
-    const char* file = (const char*)GetTagData(UPA_Image_File, 0, msg->ops_AttrList);
     def[0].ti_Tag = MUIA_Frame, def[0].ti_Data = (ULONG)MUIV_Frame_None;
     def[1].ti_Tag = TAG_MORE, def[1].ti_Data = (ULONG)(uintptr_t)msg->ops_AttrList;
     nm = *msg;
@@ -204,27 +330,16 @@ static ULONG aaimage_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     }
     d = INST_DATA(cl, obj);
     memset(d, 0, sizeof *d);
-    if (file != NULL) {
-        strncpy(d->file, file, sizeof d->file - 1);
-    }
-    d->user_bm = (struct BitMap*)GetTagData(UPA_Image_Bitmap, 0, msg->ops_AttrList);
-    d->fit = GetTagData(UPA_Image_Fit, FALSE, msg->ops_AttrList) != 0;
+    d->prec = PRECISION_GUI, d->transp = -1;
+    aaimage_tags(d, msg->ops_AttrList);
     return (ULONG)obj;
 }
 
 static ULONG aaimage_set(struct IClass* cl, Object* obj, struct opSet* msg) {
     aaimage_data* d = INST_DATA(cl, obj);
-    struct TagItem *tf = FindTagItem(UPA_Image_File, msg->ops_AttrList), *tb = FindTagItem(UPA_Image_Bitmap, msg->ops_AttrList);
-    if (tf != NULL || tb != NULL) {
-        if (tf != NULL) {
-            memset(d->file, 0, sizeof d->file);
-            if (tf->ti_Data != 0) {
-                strncpy(d->file, (const char*)tf->ti_Data, sizeof d->file - 1);
-            }
-        }
-        if (tb != NULL) {
-            d->user_bm = (struct BitMap*)tb->ti_Data;
-        }
+    int fit = d->fit; /* Fit is I only */
+    if (aaimage_tags(d, msg->ops_AttrList)) {
+        d->fit = fit;
         if (aa_live(obj)) {
             aaimage_load(obj, d);
             aa_redraw(obj, MADF_DRAWOBJECT); /* the box keeps its layout size; a different picture size needs a relayout by the caller */
@@ -247,6 +362,13 @@ static ULONG __attribute__((used)) aaimage_dispatch_c(struct IClass* cl, Object*
         return aaimage_new(cl, obj, (struct opSet*)msg);
     case OM_SET:
         return aaimage_set(cl, obj, (struct opSet*)msg);
+    case OM_GET:
+        if (((struct opGet*)msg)->opg_AttrID == UPA_Image_RemappedBitmap) {
+            aaimage_data* d = INST_DATA(cl, obj);
+            *((struct opGet*)msg)->opg_Storage = (ULONG)(d->remap_bm != NULL ? d->remap_bm : d->body_bm != NULL ? d->body_bm : d->user_bm);
+            return TRUE;
+        }
+        break;
     case MUIM_Setup:
         return aaimage_setup(cl, obj, msg);
     case MUIM_Cleanup:
