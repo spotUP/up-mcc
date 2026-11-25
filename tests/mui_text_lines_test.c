@@ -124,5 +124,26 @@ int main(void) {
     assert(mtl_clip_key('z', 1) == 0 && mtl_clip_key('a', 0) == 0 && mtl_clip_key(0x08, 0) == 0);
 
     puts("mui_text_lines_test: ok");
+    /* Floattext prep: skip chars, TAB to the next multiple of tabsize, column restarts after LF; count-only and a cut buffer */
+    {
+        char fb[32];
+        assert(mtl_float_prep("a\tb", 0, 4, fb, sizeof fb) == 5 && strcmp(fb, "a   b") == 0);
+        assert(mtl_float_prep("ab\n\tc", 0, 4, fb, sizeof fb) == 8 && strcmp(fb, "ab\n    c") == 0);
+        assert(mtl_float_prep("x*y_z", "*_", 8, fb, sizeof fb) == 3 && strcmp(fb, "xyz") == 0);
+        assert(mtl_float_prep("\t", 0, 0, 0, 0) == 8);
+        assert(mtl_float_prep("abcdef", 0, 8, fb, 4) == 6 && strcmp(fb, "abc") == 0);
+        assert(mtl_float_prep(0, 0, 8, fb, sizeof fb) == 0 && fb[0] == '\0');
+    }
+    /* Justify: gaps sum to extra, differ by at most one */
+    {
+        int sum = 0, g;
+        for (g = 0; g < 3; g++) {
+            int v = mtl_justify_gap(7, 3, g);
+            assert(v == 2 || v == 3);
+            sum += v;
+        }
+        assert(sum == 7);
+        assert(mtl_justify_gap(5, 0, 0) == 0 && mtl_justify_gap(0, 4, 2) == 0);
+    }
     return 0;
 }

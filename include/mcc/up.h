@@ -81,6 +81,8 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_IMAGE 0x15   /* UP-Image */
 #define UP_CLS_MENU 0x16    /* UP-Menu */
 #define UP_CLS_TEXTAREA 0x17 /* UP-TextArea */
+#define UP_CLS_RECTANGLE 0x18 /* UP-Rectangle */
+#define UP_CLS_FLOATTEXT 0x19 /* UP-Floattext */
 #define UP_CLS_SCROLLGROUP 0x0E
 #define UP_CLS_VIRTGROUP 0x10
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
@@ -186,6 +188,12 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_TextArea_Placeholder UP_TAG(UP_CLS_TEXTAREA, 0x03) /* I STRPTR hint while empty and not active; must outlive the object */
 #define UPA_TextArea_Error UP_TAG(UP_CLS_TEXTAREA, 0x04) /* SG BOOL: outline in the ERROR colour (a validation error names this field); a user edit clears it */
 #define UPM_TextArea_Redraw UP_TAG(UP_CLS_TEXTAREA, 0x10)      /* method: the window's active object changed, repaint. Internal */
+
+/* UP-Rectangle: MUIC_Rectangle (spacer, divider bar, bar title). It takes the MUI tags MUIA_Rectangle_HBar, _VBar and _BarTitle (I, readable with get); no UPA_ tags of its own. */
+
+/* UP-Floattext: MUIC_Floattext (read-only word-wrapped text, wheel and scroller scrolling). It takes the MUI tags MUIA_Floattext_Text (ISG, copied), _Justify (ISG), _SkipChars and _TabSize (IS, applied when the text is next set). */
+#define UPA_Floattext_First UP_TAG(UP_CLS_FLOATTEXT, 0x01)    /* ISG LONG: top visible line, clamped to the text (notifies) */
+#define UPA_Floattext_Scroller UP_TAG(UP_CLS_FLOATTEXT, 0x02) /* I Object*: the UP-Scroller kept in step (UP_NewFloattext sets it itself; a by-name builder passes it) */
 
 /* UP-Tabs */
 #define UPA_Tabs_Active UP_TAG(UP_CLS_TABS, 0x01)   /* ISG LONG: index of the active tab (notifies) */
@@ -303,6 +311,8 @@ enum { UPV_Panel_Role_Panel, UPV_Panel_Role_Surface, UPV_Panel_Role_Raised, UPV_
 #define MUIC_UP_Field "UP-Field.mcc"
 #define MUIC_UP_Panel "UP-Panel.mcc"
 #define MUIC_UP_Balance "UP-Balance.mcc"
+#define MUIC_UP_Rectangle "UP-Rectangle.mcc"
+#define MUIC_UP_Floattext "UP-Floattext.mcc"
 
 /* ---- Constructors: the tag list is the whole interface. Defaults a caller does not give (no frame, cycle chain) are the class's. ----
  * A client gets inlines over MUI_NewObjectA: the class library loads from MUI:Libs/mui, no class code is linked in. The class build
@@ -333,6 +343,8 @@ Object* UP_NewRadio(const struct TagItem* tags);
 Object* UP_NewVirtgroup(const struct TagItem* tags);   /* MUIA_Group_Child / MUIA_Group_Horiz describe the contents */
 Object* UP_NewScrollgroup(const struct TagItem* tags); /* MUIA_Group_Child / MUIA_Group_Horiz describe the contents */
 Object* UP_NewList(const struct TagItem* tags, Object** list_out); /* returns the list+scroller group; *list_out the list */
+Object* UP_NewRectangle(const struct TagItem* tags);
+Object* UP_NewFloattext(const struct TagItem* tags, Object** ft_out); /* returns the text+scroller group; *ft_out the text */
 #else
 #include <libraries/mui.h>
 #include <proto/muimaster.h>
@@ -348,6 +360,7 @@ UP_CLIENT_CTOR(UP_NewScroller, MUIC_UP_Scroller)
 UP_CLIENT_CTOR(UP_NewField, MUIC_UP_Field)
 UP_CLIENT_CTOR(UP_NewPanel, MUIC_UP_Panel)
 UP_CLIENT_CTOR(UP_NewBalance, MUIC_UP_Balance)
+UP_CLIENT_CTOR(UP_NewRectangle, MUIC_UP_Rectangle)
 #undef UP_CLIENT_CTOR
 /* The list is a UP-List and a UP-Scroller in a horizontal group; the scroller follows the list through UPA_List_First. Returns the group; *list_out the list. */
 static inline Object* UP_NewList(const struct TagItem* tags, Object** list_out) {
