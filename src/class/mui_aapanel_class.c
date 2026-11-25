@@ -195,6 +195,11 @@ static void aapanel_drag_end(aapanel_data* d, struct Window* w) {
     }
 }
 
+/* The tighter of the MUI layout limit and the Intuition window limit (MUI's WindowLimits from the same layout; 0 there: none). */
+static int aapanel_lim(int mui, int win, int is_min) {
+    return win <= 0 ? mui : is_min ? (win > mui ? win : mui) : (win < mui ? win : mui);
+}
+
 /* Drag of the grip: an outline of the new box follows the mouse, kept in the root object's MUI limits plus the window margin, and
  * on screen; the window is resized once, on the release, and MUI lays it out again on IDCMP_NEWSIZE. Esc, the menu button or the
  * window going inactive cancels. */
@@ -233,10 +238,11 @@ static ULONG aapanel_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
     }
     if (im->Class == IDCMP_MOUSEMOVE && d->drag) {
         int ew = w->Width - _width(obj), eh = w->Height - _height(obj); /* the window margin around the root object */
-        int nw = mui_aa_grip_size(w->Width, im->MouseX - d->sx, _minwidth(obj) + ew, _maxwidth(obj) >= MUI_MAXMAX ? 32767 : _maxwidth(obj) + ew,
-                                  w->WScreen->Width - w->LeftEdge);
-        int nh = mui_aa_grip_size(w->Height, im->MouseY - d->sy, _minheight(obj) + eh, _maxheight(obj) >= MUI_MAXMAX ? 32767 : _maxheight(obj) + eh,
-                                  w->WScreen->Height - w->TopEdge);
+        /* the limits are read on every move, never kept: a page change relayouts and MUI's WindowLimits moves them */
+        int nw = mui_aa_grip_size(w->Width, im->MouseX - d->sx, aapanel_lim(_minwidth(obj) + ew, w->MinWidth, 1),
+                                  aapanel_lim(_maxwidth(obj) >= MUI_MAXMAX ? 32767 : _maxwidth(obj) + ew, w->MaxWidth, 0), w->WScreen->Width - w->LeftEdge);
+        int nh = mui_aa_grip_size(w->Height, im->MouseY - d->sy, aapanel_lim(_minheight(obj) + eh, w->MinHeight, 1),
+                                  aapanel_lim(_maxheight(obj) >= MUI_MAXMAX ? 32767 : _maxheight(obj) + eh, w->MaxHeight, 0), w->WScreen->Height - w->TopEdge);
         if (nw != d->rw || nh != d->rh) {
             aapanel_outline(d);
             d->rw = nw, d->rh = nh;
