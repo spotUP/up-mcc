@@ -127,6 +127,8 @@ mcc_test_exe(mui_palette_test)
 mcc_test(mui-palette COMMAND mui_palette_test)
 mcc_test_exe(mui_cycle_test)
 mcc_test(mui-cycle-empty COMMAND mui_cycle_test)
+mcc_test_exe(mui_aascroller_test)
+mcc_test(mui-scroller-press COMMAND mui_aascroller_test)
 
 mcc_test_exe(mui_image_fit_test)
 mcc_test(mui-image-fit COMMAND mui_image_fit_test)

@@ -27,6 +27,7 @@ ULONG UP_TipSuperSet(void* cl, void* obj, void* msg, ULONG off) { g.fn = "tipsup
 LONG UP_TipGet(void* msg, void* slot) { g.fn = "tipget"; g.calls++; g.ctx = msg; g.rp = slot; return 1; }
 void UP_TipEvent(void* obj, void* slot, void* imsg, LONG in) { g.fn = "tipevent"; g.calls++; g.obj = obj; g.ctx = slot; g.rp = imsg; g.v0 = in; }
 void UP_TipDrop(void* obj) { g.fn = "tipdrop"; g.calls++; g.obj = obj; }
+LONG UP_DrawBar(void* ctx, void* rp, void* bar) { g.fn = "bar"; g.calls++; g.ctx = ctx; g.rp = rp; g.obj = bar; return 17; }
 
 #define IS(name) (g.calls == 1 && strcmp(g.fn, name) == 0)
 #define NEXT() memset(&g, 0, sizeof g)
@@ -80,6 +81,10 @@ int main(void) {
     NEXT(); aatip_event((Object*)&m[1], &slot, (const struct IntuiMessage*)&m[2], 1); CHECK(IS("tipevent") && g.ctx == &slot && g.v0 == 1, "tip event");
     NEXT(); CHECK(aatip_fire((Object*)&m[1], &c, &slot) == 4 && IS("tipfire") && g.ctx == &c && g.rp == &slot, "tip fire");
     NEXT(); aatip_drop((Object*)&m[1]); CHECK(IS("tipdrop") && g.obj == &m[1], "tip drop");
+    {
+        struct up_bar b = {UP_BAR_PRESS};
+        NEXT(); CHECK(aa_bar(&c, (struct RastPort*)&m[3], &b) == 17 && IS("bar") && g.ctx == &c && g.rp == &m[3] && g.obj == &b, "bar");
+    }
     puts(g_fail ? "FAIL" : "OK");
     return g_fail;
 }

@@ -608,6 +608,20 @@ int mui_aa_scroller_geom(const up_scroller_t* m, int h, long first, long visible
     return 1;
 }
 
+long mui_aa_scroller_press(const up_scroller_t* m, int h, int y, long first, long visible, long entries, int* grab) {
+    int ty, th;
+    *grab = -1;
+    if (!mui_aa_scroller_geom(m, h, first, visible, entries, &ty, &th)) {
+        return first;
+    }
+    if (y >= ty && y < ty + th) {
+        *grab = y - ty;
+        return first;
+    }
+    first += y < ty ? -visible : visible; /* a click on the track pages towards the pointer */
+    return first < 0 ? 0 : first > entries - visible ? entries - visible : first;
+}
+
 long mui_aa_scroller_first_at(const up_scroller_t* m, int h, int thumb_h_grab, int y, long visible, long entries) {
     long range, travel, th;
     int ty, thh;

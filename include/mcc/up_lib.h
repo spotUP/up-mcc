@@ -92,4 +92,22 @@ LONG UP_TipGet(void* msg, void* slot);
 void UP_TipEvent(void* obj, void* slot, void* imsg, LONG in);
 void UP_TipDrop(void* obj);
 
+/* UP_DrawBar(ctx, rp, bar): the flat thumb-only UP-Scroller bar for every class that has one (UP-Scroller, UP-TextArea), so the bar's
+ * metrics, pens, paint and pointer maths are one copy in this library. The metrics come from ctx (font_px, aspect_q8) on every call.
+ * bar->op: UP_BAR_SETUP holds the pens (MUIM_Setup) and returns width | min_h << 16; UP_BAR_PAINT draws the bar in the box x, y, w, h
+ * for first/visible/entries in the colours of state (MUI_AA_NORMAL/HOVER/PRESSED), returns 0; UP_BAR_PRESS: a button press at row py
+ * of a bar h high returns the new first (a page on the track) and sets grab to the pointer offset in the thumb, -1 off it;
+ * UP_BAR_DRAG: the first that puts the thumb grabbed at grab under row py. SETUP and PAINT do nothing on a context UP_DrawSetup refused.
+ * struct up_bar is ABI (append only). */
+enum { UP_BAR_SETUP = 0, UP_BAR_PAINT, UP_BAR_PRESS, UP_BAR_DRAG };
+struct up_bar {
+    UWORD op;
+    WORD state;
+    WORD x, y, w, h;
+    WORD py;
+    WORD grab;
+    LONG first, visible, entries;
+};
+LONG UP_DrawBar(void* ctx, void* rp, void* bar);
+
 #endif

@@ -15,7 +15,7 @@ static int g_fail;
 #define CHECK(c, ...) do { if (!(c)) { g_fail = 1; printf("FAIL %s:%d: ", __FILE__, __LINE__); printf(__VA_ARGS__); putchar('\n'); } } while (0)
 
 enum { F_NONE, F_SETUP, F_CLEANUP, F_FONT_PX, F_PLAIN, F_HOLD, F_NEAREST, F_RECT, F_FILL, F_FRAME, F_CORNERS, F_HOLE, F_HOLES, F_LOW, F_RUNS,
-       F_ERASE, F_TEXT_W, F_TEXT_H, F_TEXT, F_LIVE, F_TIP_FIRE, F_TIP_SUPER, F_TIP_GET, F_TIP_EVENT, F_TIP_DROP };
+       F_ERASE, F_TEXT_W, F_TEXT_H, F_TEXT, F_LIVE, F_TIP_FIRE, F_TIP_SUPER, F_TIP_GET, F_TIP_EVENT, F_TIP_DROP, F_BAR };
 static struct {
     int fn, calls;
     const void *c, *rp, *obj;
@@ -90,6 +90,7 @@ void aatip_event(Object* obj, aatip_slot* t, const struct IntuiMessage* im, int 
     rec(F_TIP_EVENT, NULL); g_rec.obj = obj; g_rec.p0 = t; g_rec.p1 = im; g_rec.a[0] = in;
 }
 void aatip_drop(Object* obj) { rec(F_TIP_DROP, NULL); g_rec.obj = obj; }
+LONG aa_bar(aa_ctx* c, struct RastPort* rp, struct up_bar* b) { rec(F_BAR, c); g_rec.rp = rp; g_rec.p0 = b; return 42; }
 
 static aa_ctx g_ctx;
 static aatip_slot g_slot;
@@ -169,6 +170,10 @@ static void entry(void) {
     reset(); UP_TipEvent(OBJ, &g_slot, &g_marker[8], 1);
     CHECK(g_rec.fn == F_TIP_EVENT && g_rec.p0 == &g_slot && g_rec.p1 == &g_marker[8] && g_rec.a[0] == 1, "tip event");
     reset(); UP_TipDrop(OBJ); CHECK(g_rec.fn == F_TIP_DROP && g_rec.obj == OBJ, "tip drop");
+    {
+        struct up_bar b = {UP_BAR_PAINT};
+        reset(); CHECK(UP_DrawBar(&g_ctx, RP, &b) == 42 && g_rec.fn == F_BAR && g_rec.c == &g_ctx && g_rec.rp == RP && g_rec.p0 == &b, "bar");
+    }
     reset(); UP_DrawCleanup(&g_ctx); CHECK(g_rec.fn == F_CLEANUP && g_rec.c == &g_ctx, "cleanup");
 }
 
@@ -183,6 +188,15 @@ static void size(void) {
     UP_DrawFont(&other, OBJ, 12, 0);
     UP_DrawText(&other, OBJ, RP, &(struct up_text){1, 2, (STRPTR)"x", 3, 4});
     CHECK(UP_DrawTextSize(&other, OBJ, NULL) == 0 && UP_DrawPen(&other, 1, 0) == 0 && g_rec.calls == 0, "an unset-up ctx draws and measures nothing");
+    {
+        struct up_bar b = {UP_BAR_SETUP};
+        CHECK(UP_DrawBar(&other, RP, &b) == 0 && g_rec.calls == 0, "an unset-up ctx holds no bar pens");
+        b.op = UP_BAR_PAINT;
+        CHECK(UP_DrawBar(&other, RP, &b) == 0 && g_rec.calls == 0, "an unset-up ctx paints no bar");
+        b.op = UP_BAR_PRESS;
+        CHECK(UP_DrawBar(&other, RP, &b) == 42 && g_rec.calls == 1, "bar pointer maths need no set-up ctx");
+        reset();
+    }
     CHECK(UP_DrawSetup(&other, OBJ, rgb, UP_DRAW_NSIZE(1, sizeof(aa_ctx), sizeof(aatip_slot))) == 1, "the right sizes pass");
 }
 

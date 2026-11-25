@@ -18,7 +18,7 @@ if(SEL_AMIGA)
 endif()
 set(MCC_MAP_SOURCES src/up_metrics.c src/map/mui_aa.c src/map/mui_aa_paint.c src/map/mui_aasel.c src/map/mui_aascr.c src/map/mui_aatip.c src/map/mui_theme_pure.c src/map/mui_theme.c src/map/mui_icons.c src/map/mui_fontprobe.c src/map/mui_log.c src/map/up_prefs_map.c src/map/up_origin.c src/map/up_store.c)
 list(APPEND MCC_MAP_SOURCES src/map/mui_aalistsel.c) # G1: UP-List multi-selection and column hit
-set(MCC_AMIGA_SOURCES src/mui_aa_draw.c src/mui_aa_clip.c src/mui_aatip.c
+set(MCC_AMIGA_SOURCES src/mui_aa_draw.c src/mui_aa_clip.c src/mui_aatip.c src/mui_aasbar.c
   src/class/mui_aabtn_class.c src/class/mui_aatext_class.c src/class/mui_aapanel_class.c src/class/mui_aatabs_class.c
   src/class/mui_aabalance_class.c src/class/mui_aaslider_class.c src/class/mui_aacycle_class.c src/class/mui_aalist_class.c
   src/class/mui_aascroller_class.c src/class/mui_aafield_class.c src/class/mui_aacheckmark_class.c src/class/mui_aaradio_class.c src/class/mui_aapopstring_class.c
