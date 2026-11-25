@@ -391,6 +391,47 @@ static int aapanel_holes(Object* grp, int* holes, int n, int depth, int max_dept
     return n;
 }
 
+/* The face in exact RGB around the leaves, the margin ring (root) and the frame ring: a truecolour screen only. */
+static void aapanel_face(aapanel_data* d, Object* obj, int rad) {
+    if (d->aa.tc) { /* I685w: MUI's background spec snaps to a pen; paint the face in exact RGB around the children, whatever MUI filled */
+        int holes[MUI_AA_PAINT_MAX_HOLES * 4], n = 0, full = 0;
+        Object* grp = d->inner != NULL ? d->inner : obj;
+        n = aapanel_holes(grp, holes, 0, 0, 8, &full);
+        if (full) { /* I1355: too many leaves; the direct children as holes (gaps inside plain groups keep MUI's fill) */
+            full = 0;
+            n = aapanel_holes(grp, holes, 0, 0, 0, &full);
+        }
+        {   /* I685w: the window margin around the root object is filled by MUI with the snapped spec too; the root repaints the ring in exact RGB */
+            ULONG root = 0, wptr = 0;
+            GetAttr(MUIA_Window_RootObject, _win(obj), &root);
+            GetAttr(MUIA_Window_Window, _win(obj), &wptr);
+            if ((Object*)root == obj && wptr != 0) {
+                struct Window* w = (struct Window*)wptr;
+                int ix0 = w->BorderLeft, iy0 = w->BorderTop, ix1 = w->Width - w->BorderRight - 1, iy1 = w->Height - w->BorderBottom - 1;
+                int ox0 = _left(obj), oy0 = _top(obj), ox1 = _left(obj) + _width(obj) - 1, oy1 = _top(obj) + _height(obj) - 1;
+                uint32_t face = mui_aa_panel_rgb(d->aa.tok, d->role);
+                if (oy0 > iy0) aa_rect(&d->aa, _rp(obj), ix0, iy0, ix1, oy0 - 1, face);
+                if (oy1 < iy1) aa_rect(&d->aa, _rp(obj), ix0, oy1 + 1, ix1, iy1, face);
+                if (ox0 > ix0) aa_rect(&d->aa, _rp(obj), ix0, oy0, ox0 - 1, oy1, face);
+                if (ox1 < ix1) aa_rect(&d->aa, _rp(obj), ox1 + 1, oy0, ix1, oy1, face);
+            }
+        }
+        {   /* I685w: the object's own frame and inner spacing (outer box minus the inner box) is MUI-filled with the snapped spec as well */
+            int ox0 = _left(obj), oy0 = _top(obj), ox1 = _left(obj) + _width(obj) - 1, oy1 = _top(obj) + _height(obj) - 1;
+            int mx0 = _mleft(obj), my0 = _mtop(obj), mx1 = _mright(obj), my1 = _mbottom(obj);
+            uint32_t face = mui_aa_panel_rgb(d->aa.tok, d->role);
+            if (my0 > oy0) aa_rect(&d->aa, _rp(obj), ox0, oy0, ox1, my0 - 1, face);
+            if (my1 < oy1) aa_rect(&d->aa, _rp(obj), ox0, my1 + 1, ox1, oy1, face);
+            if (mx0 > ox0) aa_rect(&d->aa, _rp(obj), ox0, my0, mx0 - 1, my1, face);
+            if (mx1 < ox1) aa_rect(&d->aa, _rp(obj), mx1 + 1, my0, ox1, my1, face);
+        }
+        if (!full) { /* I1355: still over the cap: leave MUI's fill rather than cover a child */
+            aa_round_fill_holes(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad,
+                                mui_aa_panel_rgb(d->aa.tok, d->role), holes, n);
+        }
+    }
+}
+
 static ULONG aapanel_paint(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     aapanel_data* d = INST_DATA(cl, obj);
     int rad = d->popup ? 0 : mui_aa_panel_radius(d->aa.tok, d->aa.font_px); /* I1349: a popup window is a rectangle */
@@ -400,46 +441,11 @@ static ULONG aapanel_paint(struct IClass* cl, Object* obj, struct MUIP_Draw* msg
     int face = (msg->flags & MADF_DRAWOBJECT) || d->resized == 2; /* after a grip resize the root paints the face the skipped erase left */
     d->resized = 0;
     if (face) {
-        if (d->aa.tc) { /* I685w: MUI's background spec snaps to a pen; paint the face in exact RGB around the children, whatever MUI filled */
-            int holes[MUI_AA_PAINT_MAX_HOLES * 4], n = 0, full = 0;
-            Object* grp = d->inner != NULL ? d->inner : obj;
-            n = aapanel_holes(grp, holes, 0, 0, 8, &full);
-            if (full) { /* I1355: too many leaves; the direct children as holes (gaps inside plain groups keep MUI's fill) */
-                full = 0;
-                n = aapanel_holes(grp, holes, 0, 0, 0, &full);
-            }
-            {   /* I685w: the window margin around the root object is filled by MUI with the snapped spec too; the root repaints the ring in exact RGB */
-                ULONG root = 0, wptr = 0;
-                GetAttr(MUIA_Window_RootObject, _win(obj), &root);
-                GetAttr(MUIA_Window_Window, _win(obj), &wptr);
-                if ((Object*)root == obj && wptr != 0) {
-                    struct Window* w = (struct Window*)wptr;
-                    int ix0 = w->BorderLeft, iy0 = w->BorderTop, ix1 = w->Width - w->BorderRight - 1, iy1 = w->Height - w->BorderBottom - 1;
-                    int ox0 = _left(obj), oy0 = _top(obj), ox1 = _left(obj) + _width(obj) - 1, oy1 = _top(obj) + _height(obj) - 1;
-                    uint32_t face = mui_aa_panel_rgb(d->aa.tok, d->role);
-                    if (oy0 > iy0) aa_rect(&d->aa, _rp(obj), ix0, iy0, ix1, oy0 - 1, face);
-                    if (oy1 < iy1) aa_rect(&d->aa, _rp(obj), ix0, oy1 + 1, ix1, iy1, face);
-                    if (ox0 > ix0) aa_rect(&d->aa, _rp(obj), ix0, oy0, ox0 - 1, oy1, face);
-                    if (ox1 < ix1) aa_rect(&d->aa, _rp(obj), ox1 + 1, oy0, ix1, oy1, face);
-                }
-            }
-            {   /* I685w: the object's own frame and inner spacing (outer box minus the inner box) is MUI-filled with the snapped spec as well */
-                int ox0 = _left(obj), oy0 = _top(obj), ox1 = _left(obj) + _width(obj) - 1, oy1 = _top(obj) + _height(obj) - 1;
-                int mx0 = _mleft(obj), my0 = _mtop(obj), mx1 = _mright(obj), my1 = _mbottom(obj);
-                uint32_t face = mui_aa_panel_rgb(d->aa.tok, d->role);
-                if (my0 > oy0) aa_rect(&d->aa, _rp(obj), ox0, oy0, ox1, my0 - 1, face);
-                if (my1 < oy1) aa_rect(&d->aa, _rp(obj), ox0, my1 + 1, ox1, oy1, face);
-                if (mx0 > ox0) aa_rect(&d->aa, _rp(obj), ox0, my0, mx0 - 1, my1, face);
-                if (mx1 < ox1) aa_rect(&d->aa, _rp(obj), mx1 + 1, my0, ox1, my1, face);
-            }
-            if (!full) { /* I1355: still over the cap: leave MUI's fill rather than cover a child */
-                aa_round_fill_holes(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad,
-                                    mui_aa_panel_rgb(d->aa.tok, d->role), holes, n);
-            }
-        }
+        aapanel_face(d, obj, rad);
     }
     r = DoSuperMethodA(cl, obj, (Msg)msg);
     if (msg->flags & MADF_DRAWOBJECT) {
+        aapanel_face(d, obj, rad); /* again over the super's pass: a card showed the snapped SURFACE pen around its leaves after it */
         aa_round_corners(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad, d->aa.bg_rgb); /* the face the panel sits on (a card on a SURFACE panel: SURFACE, not BACKGROUND); a retheme resets it */
         aa_low_outline(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad);
         if (d->flat_tl && rad > 0) { /* square the top left: the face over the wedge the round corner left in the parent colour */
