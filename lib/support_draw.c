@@ -16,6 +16,7 @@
 #if defined(__m68k__)
 /* The ABI of the class libraries' instance data (up_lib.h): a change is a version bump of up-mcc.library. */
 _Static_assert(sizeof(aatip_slot) == 12, "aatip_slot ABI 2 changed");
+_Static_assert(sizeof(struct up_bar) == 28, "up_bar ABI changed");
 #endif
 
 LONG UP_DrawSetup(void* ctx, void* obj, const ULONG* rgb, ULONG nsize) {
@@ -123,4 +124,12 @@ void UP_TipEvent(void* obj, void* slot, void* imsg, LONG in) {
 
 void UP_TipDrop(void* obj) {
     aatip_drop((Object*)obj);
+}
+
+LONG UP_DrawBar(void* ctx, void* rp, void* bar) {
+    struct up_bar* b = (struct up_bar*)bar;
+    if (ctx == NULL || b == NULL || (!CTX(ctx)->linked && b->op <= UP_BAR_PAINT)) {
+        return 0;
+    }
+    return aa_bar(CTX(ctx), (struct RastPort*)rp, b);
 }

@@ -1308,6 +1308,39 @@
 *
 ******/
 
+/****** up-mcc.library/UP_DrawBar ******
+*
+*   NAME
+*       UP_DrawBar -- up-mcc.library function
+*
+*   SYNOPSIS
+*       result = UP_DrawBar(ctx, rp, bar)
+*       D0                  A0   A1  A2
+*
+*   FUNCTION
+*       The flat thumb-only UP-Scroller bar for every class that draws one (UP-Scroller, UP-TextArea): metrics, pens, paint and
+*       pointer maths in one copy. The metrics come from the context (font_px, aspect_q8) on every call. bar->op selects:
+*       UP_BAR_SETUP  hold the pens of every state (MUIM_Setup); returns width | min_h << 16.
+*       UP_BAR_PAINT  draw the bar in the box x, y, w, h for first/visible/entries in the colours of state
+*                     (MUI_AA_NORMAL, MUI_AA_HOVER, MUI_AA_PRESSED); returns 0.
+*       UP_BAR_PRESS  a button press at row py of a bar h high: returns the new first (a click on the track pages towards the
+*                     pointer) and sets grab to the pointer offset inside the thumb, -1 when the press missed it.
+*       UP_BAR_DRAG   returns the first that puts the thumb, held at grab, under row py.
+*       SETUP and PAINT do nothing on a context UP_DrawSetup refused.
+*
+*   INPUTS
+*       ctx - the aa_ctx of the calling class (UP_DrawSetup).
+*       rp  - struct RastPort* for UP_BAR_PAINT, else ignored.
+*       bar - struct up_bar* (<mcc/up_lib.h>, ABI, append only).
+*
+*   RESULT
+*       See FUNCTION.
+*
+*   SEE ALSO
+*       UP_DrawSetup, <mcc/up_lib.h>, dist/sfd/up-mcc_lib.sfd
+*
+******/
+
 /****** up-mcc.library/UP_Log ******
 *
 *   NAME

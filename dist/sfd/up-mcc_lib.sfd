@@ -34,4 +34,6 @@ VOID UP_TipEvent(APTR obj, APTR slot, APTR imsg, LONG in) (a0,a1,a2,d0)
 VOID UP_TipDrop(APTR obj) (a0)
 * U3: appended after the v2 draw vectors, so every earlier vector stays put (the version bump is U6).
 VOID UP_SetLogHook(APTR hook) (a0)
+* The UP-Scroller bar (UP-Scroller, UP-TextArea), appended so every earlier vector stays put.
+LONG UP_DrawBar(APTR ctx, APTR rp, APTR bar) (a0,a1,a2)
 ==end

@@ -20,7 +20,7 @@
 typedef struct aascroller_data {
     long first, visible, entries;
     int hover, drag, grab;
-    up_scroller_t m;
+    LONG bar; /* aa_bar UP_BAR_SETUP: width | min_h << 16 */
     aa_ctx aa;
     int shown; /* MUIM_Show seen, MUIM_Hide not yet (AA_SHOWN_CASES); outside aa_ctx, whose ABI 2 layout is frozen */
     struct MUI_EventHandlerNode ehn;
@@ -35,17 +35,13 @@ static int aascroller_state(const aascroller_data* d) {
 
 static ULONG aascroller_setup(struct IClass* cl, Object* obj, Msg msg) {
     aascroller_data* d = INST_DATA(cl, obj);
-    int st;
-    uint32_t track, thumb;
     if (!DoSuperMethodA(cl, obj, msg)) {
         return FALSE;
     }
     aa_setup(obj, &d->aa, NULL, 0);
-    up_scroller_metrics(d->aa.font_px, d->aa.aspect_q8, &d->m);
-    for (st = MUI_AA_NORMAL; st <= MUI_AA_PRESSED; st++) {
-        mui_aa_scroller_rgb(d->aa.tok, st, &track, &thumb);
-        aa_hold(&d->aa, track);
-        aa_hold(&d->aa, thumb);
+    {
+        struct up_bar b = {UP_BAR_SETUP};
+        d->bar = aa_bar(&d->aa, NULL, &b);
     }
     d->hover = d->drag = 0;
     d->ehn.ehn_Priority = 0;
@@ -68,27 +64,21 @@ static ULONG aascroller_cleanup(struct IClass* cl, Object* obj, Msg msg) {
 static ULONG aascroller_askminmax(struct IClass* cl, Object* obj, struct MUIP_AskMinMax* msg) {
     aascroller_data* d = INST_DATA(cl, obj);
     DoSuperMethodA(cl, obj, (Msg)msg);
-    msg->MinMaxInfo->MinWidth += d->m.width;
-    msg->MinMaxInfo->DefWidth += d->m.width;
-    msg->MinMaxInfo->MaxWidth += d->m.width;
-    msg->MinMaxInfo->MinHeight += d->m.min_h;
-    msg->MinMaxInfo->DefHeight += d->m.min_h;
+    msg->MinMaxInfo->MinWidth += (WORD)d->bar;
+    msg->MinMaxInfo->DefWidth += (WORD)d->bar;
+    msg->MinMaxInfo->MaxWidth += (WORD)d->bar;
+    msg->MinMaxInfo->MinHeight += d->bar >> 16;
+    msg->MinMaxInfo->DefHeight += d->bar >> 16;
     msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
     return 0;
 }
 
 static ULONG aascroller_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     aascroller_data* d = INST_DATA(cl, obj);
-    int ty, th;
-    uint32_t track, thumb;
     DoSuperMethodA(cl, obj, (Msg)msg);
-    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) {
-        return 0;
-    }
-    mui_aa_scroller_rgb(d->aa.tok, aascroller_state(d), &track, &thumb);
-    aa_round_fill(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), 0, track);
-    if (mui_aa_scroller_geom(&d->m, _mheight(obj), d->first, d->visible, d->entries, &ty, &th)) {
-        aa_round_fill(&d->aa, _rp(obj), _mleft(obj), _mtop(obj) + ty, _mwidth(obj), th, d->m.radius, thumb);
+    if (msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)) {
+        struct up_bar b = {UP_BAR_PAINT, (WORD)aascroller_state(d), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), 0, 0, d->first, d->visible, d->entries};
+        aa_bar(&d->aa, _rp(obj), &b);
     }
     return 0;
 }
@@ -100,14 +90,15 @@ static int aascroller_in(const aascroller_data* d, Object* obj, const struct Int
 static ULONG aascroller_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* msg) {
     aascroller_data* d = INST_DATA(cl, obj);
     struct IntuiMessage* im = msg->imsg;
-    int ty, th, in;
+    int in;
     if (im == NULL || (im->Class != IDCMP_MOUSEMOVE && im->Class != IDCMP_MOUSEBUTTONS)) {
         return DoSuperMethodA(cl, obj, (Msg)msg);
     }
     in = aascroller_in(d, obj, im);
     if (im->Class == IDCMP_MOUSEMOVE) {
         if (d->drag) {
-            long nf = mui_aa_scroller_first_at(&d->m, _mheight(obj), d->grab, im->MouseY - _mtop(obj), d->visible, d->entries);
+            struct up_bar b = {UP_BAR_DRAG, 0, 0, 0, 0, _mheight(obj), im->MouseY - _mtop(obj), (WORD)d->grab, 0, d->visible, d->entries};
+            long nf = aa_bar(&d->aa, NULL, &b);
             if (nf != d->first) {
                 set(obj, UPA_Scroller_First, (ULONG)nf);
             }
@@ -118,14 +109,12 @@ static ULONG aascroller_handle(struct IClass* cl, Object* obj, struct MUIP_Handl
         }
         return 0;
     }
-    if (im->Code == SELECTDOWN && in && mui_aa_scroller_geom(&d->m, _mheight(obj), d->first, d->visible, d->entries, &ty, &th)) {
-        int y = im->MouseY - _mtop(obj);
-        if (y >= ty && y < ty + th) {
-            d->drag = 1;
-            d->grab = y - ty;
-        } else { /* a click on the track pages towards the pointer */
-            long nf = d->first + (y < ty ? -d->visible : d->visible);
-            nf = nf < 0 ? 0 : nf > d->entries - d->visible ? d->entries - d->visible : nf;
+    if (im->Code == SELECTDOWN && in && d->visible < d->entries) {
+        struct up_bar b = {UP_BAR_PRESS, 0, 0, 0, 0, _mheight(obj), im->MouseY - _mtop(obj), 0, d->first, d->visible, d->entries};
+        long nf = aa_bar(&d->aa, NULL, &b);
+        d->grab = b.grab;
+        d->drag = d->grab >= 0;
+        if (nf != d->first) {
             set(obj, UPA_Scroller_First, (ULONG)nf);
         }
         aa_redraw(obj, MADF_DRAWOBJECT);

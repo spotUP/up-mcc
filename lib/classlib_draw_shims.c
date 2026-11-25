@@ -138,3 +138,7 @@ ULONG aatip_fire(Object* obj, aa_ctx* aa, const aatip_slot* t) {
 void aatip_drop(Object* obj) {
     UP_TipDrop(obj);
 }
+
+LONG aa_bar(aa_ctx* c, struct RastPort* rp, struct up_bar* b) {
+    return UP_DrawBar(c, rp, b);
+}
