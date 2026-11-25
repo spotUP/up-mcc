@@ -33,6 +33,14 @@ int main(void) {
     CHECK(mui_aa_parent_rgb(tok, MUI_AA_PANEL_SURFACE) != tok[SEL_GUI_TOKEN_BACKGROUND]);
     CHECK(mui_aa_parent_rgb(tok, MUI_AA_PANEL_RAISED) == tok[SEL_GUI_TOKEN_SURFACE_RAISED]);
     CHECK(mui_aa_parent_rgb(tok, -1) == tok[SEL_GUI_TOKEN_BACKGROUND]);
+    {
+        /* a prefilled field (the release date) shows its contents in the theme TEXT, not the prefs pen, while not focused */
+        uint32_t rgb = 0;
+        CHECK(mui_aa_field_text(tok, "2026-11-25", 0, &rgb) == 1 && rgb == tok[SEL_GUI_TOKEN_TEXT]);
+        CHECK(mui_aa_field_text(tok, "2026-11-25", 1, &rgb) == 0); /* focused: the active gadget renders it */
+        CHECK(mui_aa_field_text(tok, "", 0, &rgb) == 0);           /* empty: the placeholder shows instead */
+        CHECK(mui_aa_field_text(tok, NULL, 0, &rgb) == 0);
+    }
     puts("mui_aafield_test: ok");
     return 0;
 }

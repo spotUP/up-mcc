@@ -564,6 +564,14 @@ int mui_aa_field_placeholder(const uint32_t* token, const char* contents, int fo
     return 1;
 }
 
+int mui_aa_field_text(const uint32_t* token, const char* contents, int focus, uint32_t* rgb) {
+    if (focus || contents == NULL || contents[0] == '\0') {
+        return 0;
+    }
+    *rgb = token[SEL_GUI_TOKEN_TEXT];
+    return 1;
+}
+
 uint32_t mui_aa_field_placeholders(void) {
     return g_field_placeholders;
 }

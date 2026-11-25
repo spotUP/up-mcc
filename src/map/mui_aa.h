@@ -235,6 +235,10 @@ int mui_aa_field_text_top(const mui_aa_field_t* m, int h, int ch);
  * and the field is not the active object, else 0. Every 1 counts on mui_aa_field_placeholders(), the sentinel that the draw painted one. */
 int mui_aa_field_placeholder(const uint32_t* token, const char* contents, int focus, uint32_t* rgb);
 uint32_t mui_aa_field_placeholders(void);
+/* D3: the contents of a filled, unfocused field. MUI 3.8 String renders its inactive contents in its own MUI prefs pen (black on the
+ * dark face), past MPEN_TEXT and the StringExtend pens; only the active gadget (typing) uses those. Returns 1 and the theme TEXT
+ * colour when contents is not empty and the field is not the active object, else 0 (the String draws it while active). */
+int mui_aa_field_text(const uint32_t* token, const char* contents, int focus, uint32_t* rgb);
 /* Calls of the field maths above: the sentinel that the class (and not a copy) runs it. */
 uint32_t mui_aa_field_calls(void);
 

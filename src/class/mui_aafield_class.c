@@ -36,6 +36,7 @@ typedef struct aafield_data {
     int esc_close; /* I1360: Esc in the active String requests the window close */
     int error;     /* UPA_Field_Error: ERROR outline until the next edit */
     LONG key; /* UPA_Field_Key: last Up, Down, Esc or Tab raw code */
+    int secret;      /* MUIA_String_Secret: the own contents render shows '*' per character */
     int pens_logged; /* the old String pens went to stderr once (I667n evidence) */
     struct MUI_EventHandlerNode ehn; /* I731: pointer and key events for the flat tooltip only; it never eats one */
     aatip_slot tip;
@@ -190,14 +191,7 @@ static ULONG aafield_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
     if (text >= 0) {
         _pens(obj)[MPEN_TEXT] = (UWORD)text;
     }
-    {
-        /* D3: the String's own draw still put the text in its prefs pen (a set contents such as the prefilled date stayed black;
-         * only typing, which Intuition renders from the gadget pens, was light). Render the gadget again from the theme pens. */
-        struct Gadget* g = aafield_string_pens(d);
-        if (g != NULL && (msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)) && _window(obj) != NULL) {
-            RefreshGList(g, _window(obj), NULL, 1);
-        }
-    }
+    aafield_string_pens(d); /* the super rewrote the gadget pens; typing (Intuition renders the active gadget) takes them back */
     if (msg->flags & MADF_DRAWOBJECT) {
         mui_aa_check_op_t ops[MUI_AA_FIELD_OPS];
         struct RastPort* rp = _rp(obj);
@@ -212,19 +206,37 @@ static ULONG aafield_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
         }
         aa_low_outline(&d->aa, rp, _left(obj), _top(obj), _width(obj), _height(obj), n > 0 ? ops[0].radius : 0);
     }
-    if ((msg->flags & MADF_DRAWOBJECT) && d->placeholder != NULL) { /* I733 (design 3.4): after the super, so it lands on the String's box */
+    if (msg->flags & MADF_DRAWOBJECT) { /* I733 (design 3.4): after the super, so it lands on the String's box */
         ULONG cont = 0;
         uint32_t rgb;
+        const char* show = NULL;
+        int focus = aafield_focus(obj, d), filled;
+        char secret[80];
         GetAttr(MUIA_String_Contents, d->str, &cont);
-        if (mui_aa_field_placeholder(d->aa.tok, (const char*)cont, aafield_focus(obj, d), &rgb)) {
+        /* D3: MUI 3.8 String paints its inactive contents in its own prefs pen (black on the dark face; rig 3 measured 000000 with the
+         * gadget pens, MPEN_TEXT and a RefreshGList all on the theme), so the field paints them over it, as it does the placeholder. */
+        filled = mui_aa_field_text(d->aa.tok, (const char*)cont, focus, &rgb);
+        if (filled) {
+            show = (const char*)cont;
+            if (d->secret) {
+                size_t n = strlen(show) < sizeof secret - 1 ? strlen(show) : sizeof secret - 1;
+                memset(secret, '*', n);
+                secret[n] = '\0';
+                show = secret;
+            }
+        } else if (d->placeholder != NULL && mui_aa_field_placeholder(d->aa.tok, (const char*)cont, focus, &rgb)) {
+            show = d->placeholder;
+        }
+        if (show != NULL) {
             int th = aa_text_height(&d->aa, obj);
             char fit[160];
             aafield_fit af;
             af.d = d;
             af.self = obj;
-            mui_aa_text_fit(d->placeholder, (int)_width(d->str) - 4, aafield_width, &af, fit, (int)sizeof fit); /* I1479: cut with "..." at the String box, never drawn past it */
-            if (d->aa.tc) {
-                /* I685x: the empty String box carries the snapped face pen; on truecolour the face under the placeholder is the exact FACE RGB. */
+            mui_aa_text_fit(show, (int)_width(d->str) - 4, aafield_width, &af, fit, (int)sizeof fit); /* I1479: cut with "..." at the String box, never drawn past it */
+            if (d->aa.tc || filled) {
+                /* I685x: the empty String box carries the snapped face pen; on truecolour the face is the exact FACE RGB. Filled: the String's
+                 * black text goes under the face on every screen. */
                 aa_rect(&d->aa, _rp(obj), _left(d->str), _top(d->str), _left(d->str) + _width(d->str) - 1, _top(d->str) + _height(d->str) - 1, d->aa.tok[MUI_AA_FIELD_FACE]);
             }
             aa_text(&d->aa, obj, _rp(obj), _left(d->str), _top(d->str) + (_height(d->str) - th) / 2, fit, rgb, d->aa.tok[MUI_AA_FIELD_FACE]);
@@ -338,6 +350,7 @@ static ULONG aafield_new(struct IClass* cl, Object* obj, struct opSet* msg) {
         d->str = str;
         d->max_w = (int)GetTagData(UPA_Field_MaxWidth, 0, tags);
         d->placeholder = (const char*)GetTagData(UPA_Field_Placeholder, 0, tags);
+        d->secret = GetTagData(MUIA_String_Secret, FALSE, tags) != 0;
     }
     return (ULONG)obj;
 }
@@ -422,6 +435,7 @@ Object* UP_NewField(const struct TagItem* tags) {
     ((aafield_data*)INST_DATA(g_class->mcc_Class, o))->str = str;
     ((aafield_data*)INST_DATA(g_class->mcc_Class, o))->max_w = (int)GetTagData(UPA_Field_MaxWidth, 0, (struct TagItem*)tags);
     ((aafield_data*)INST_DATA(g_class->mcc_Class, o))->placeholder = (const char*)GetTagData(UPA_Field_Placeholder, 0, (struct TagItem*)tags);
+    ((aafield_data*)INST_DATA(g_class->mcc_Class, o))->secret = GetTagData(MUIA_String_Secret, FALSE, (struct TagItem*)tags) != 0;
     g_made++;
     return o;
 }
