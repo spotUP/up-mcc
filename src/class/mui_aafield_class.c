@@ -191,7 +191,15 @@ static ULONG aafield_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg)
     if (text >= 0) {
         _pens(obj)[MPEN_TEXT] = (UWORD)text;
     }
-    aafield_string_pens(d); /* the super rewrote the gadget pens; typing (Intuition renders the active gadget) takes them back */
+    {
+        /* the super rewrote the gadget pens; typing (Intuition renders the active gadget) takes them back. D8: while active the
+         * super's own render left the contents in the prefs pen (black on the face after a click), so the active gadget renders
+         * once more from the theme ActivePens. Inactive contents are the field's own draw below (RefreshGList is still black there, D3). */
+        struct Gadget* g = aafield_string_pens(d);
+        if (g != NULL && (msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)) && _window(obj) != NULL && aafield_focus(obj, d)) {
+            RefreshGList(g, _window(obj), NULL, 1);
+        }
+    }
     if (msg->flags & MADF_DRAWOBJECT) {
         mui_aa_check_op_t ops[MUI_AA_FIELD_OPS];
         struct RastPort* rp = _rp(obj);
