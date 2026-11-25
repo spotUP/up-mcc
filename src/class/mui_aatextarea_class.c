@@ -385,9 +385,23 @@ static ULONG ta_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     h = _mheight(obj);
     focus = d->error ? MUI_AA_FIELD_ERROR : ta_focus(obj);
     n = mui_aa_field_plan(d->aa.tok, &d->m, focus, ops);
-    aa_erase(&d->aa, obj, l, t, w, h);
+    /* Paint each pixel once before the text: erasing the box, filling it in the outline colour and then in the face made every
+     * keystroke flash the parent and ring colours across the whole box. Corners get the parent colour, the ring leaves the face
+     * (a cross of two holes, so its rounded corners still sit on the ring), the face is filled once. */
+    if (n > 0) {
+        aa_round_corners(&d->aa, rp, l, t, w, h, ops[0].radius, d->aa.bg_rgb);
+    }
     for (k = 0; k < n; k++) {
-        aa_round_fill(&d->aa, rp, l + ops[k].inset, t + ops[k].inset, w - 2 * ops[k].inset, h - 2 * ops[k].inset, ops[k].radius, ops[k].rgb);
+        int x = l + ops[k].inset, y = t + ops[k].inset, bw = w - 2 * ops[k].inset, bh = h - 2 * ops[k].inset;
+        if (k + 1 < n) {
+            int fx = l + ops[k + 1].inset, fy = t + ops[k + 1].inset, fw = w - 2 * ops[k + 1].inset, fh = h - 2 * ops[k + 1].inset, r = ops[k + 1].radius;
+            int holes[8];
+            holes[0] = fx, holes[1] = fy + r, holes[2] = fw, holes[3] = fh - 2 * r;
+            holes[4] = fx + r, holes[5] = fy, holes[6] = fw - 2 * r, holes[7] = fh;
+            aa_round_fill_holes(&d->aa, rp, x, y, bw, bh, ops[k].radius, ops[k].rgb, holes, 2);
+        } else {
+            aa_round_fill(&d->aa, rp, x, y, bw, bh, ops[k].radius, ops[k].rgb);
+        }
     }
     aa_low_outline(&d->aa, rp, l, t, w, h, n > 0 ? ops[0].radius : 0);
 
@@ -591,7 +605,8 @@ static ULONG ta_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     LONG maxlen = (LONG)GetTagData(UPA_TextArea_MaxLen, TA_DEF_MAXLEN, tags);
     def[0].ti_Tag = MUIA_Frame, def[0].ti_Data = (ULONG)MUIV_Frame_None;
     def[1].ti_Tag = MUIA_CycleChain, def[1].ti_Data = (ULONG)TRUE;
-    def[2].ti_Tag = TAG_MORE, def[2].ti_Data = (ULONG)(uintptr_t)tags;
+    def[2].ti_Tag = MUIA_FillArea, def[2].ti_Data = (ULONG)FALSE; /* the draw paints every pixel; a MUI fill first would flash */
+    def[3].ti_Tag = TAG_MORE, def[3].ti_Data = (ULONG)(uintptr_t)tags;
     nm = *msg;
     nm.ops_AttrList = def;
     obj = (Object*)aatip_super_set(cl, obj, &nm, offsetof(ta_data, tip));
