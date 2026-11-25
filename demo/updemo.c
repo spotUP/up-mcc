@@ -52,11 +52,12 @@ static void demo_requester(const char* text) {
     EasyRequest(NULL, &es, NULL, (APTR)text);
 }
 
-#define CLASS_COUNT 23 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
+#define CLASS_COUNT 25 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
 
 static const char* const g_names[CLASS_COUNT] = {"Button", "Text", "Panel", "Tabs", "Balance", "Slider",
                                                  "Progress", "Cycle", "Field", "Scroller", "List", "Checkmark", "Radio", "Popstring", "Poplist",
-                                                 "Numericbutton", "Scale", "Colorfield", "Palette", "Image", "Menu", "Virtgroup", "Scrollgroup"};
+                                                 "Numericbutton", "Scale", "Colorfield", "Palette", "Image", "Menu", "Virtgroup", "Scrollgroup",
+                                                 "Knob", "Levelmeter"};
 static const char* const g_cycle_entries[] = {"First", "Second", "Third", NULL};
 static const char* const g_tab_captions[] = {"Songs", "Albums", "Artists", "Playlists", NULL};
 static const char* const g_radio_entries[] = {"Low", "Medium", "High", NULL};
@@ -183,6 +184,10 @@ static Object* make(int index) {
         return MUI_NewObject(path, MUIA_Group_Child, (ULONG)label("Virtgroup: contents at their own size", UPV_Text_Tone_Normal), TAG_DONE);
     case 22:
         return MUI_NewObject(path, MUIA_Group_Child, (ULONG)label("Scrollgroup: scroller shows when taller", UPV_Text_Tone_Normal), TAG_DONE);
+    case 23:
+        return MUI_NewObject(path, MUIA_Numeric_Min, 0UL, MUIA_Numeric_Max, 100UL, MUIA_Numeric_Value, 65UL, TAG_DONE);
+    case 24:
+        return MUI_NewObject(path, MUIA_Numeric_Min, 0UL, MUIA_Numeric_Max, 100UL, MUIA_Numeric_Value, 30UL, MUIA_Levelmeter_Label, (ULONG) "Level", TAG_DONE);
     default:
         g_row_hook.h_Entry = (__typeof__(g_row_hook.h_Entry))(void (*)(void))HookEntry;
         g_row_hook.h_SubEntry = (__typeof__(g_row_hook.h_SubEntry))(void (*)(void))demo_cell;
@@ -270,7 +275,7 @@ static int demo_body(int argc, char** argv) {
                        box(FALSE, obj[6], tier == 0 ? NULL : label("Scroll position", UPV_Text_Tone_Muted), obj[9], NULL, NULL, NULL));
             if (tier == 2) {
                 Object* more = card("More controls", box(TRUE, obj[11], obj[12], NULL, NULL, NULL, NULL), box(TRUE, obj[13], obj[14], obj[20], NULL, NULL, NULL),
-                                    box(TRUE, obj[15], obj[16], obj[17], obj[18], obj[19], NULL), box(TRUE, obj[21], obj[22], NULL, NULL, NULL, NULL));
+                                    box(TRUE, obj[15], obj[16], obj[17], obj[18], obj[19], NULL), box(TRUE, obj[21], obj[22], obj[23], obj[24], NULL, NULL));
                 Object* left = card("Library", box(FALSE, obj[3], tab_pages(obj[3]), NULL, NULL, NULL, NULL), label("128 songs in your library", UPV_Text_Tone_Muted), obj[2], obj[10]);
                 root = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Panel, MUIA_Group_Child, (ULONG)label("UP-Demo", UPV_Text_Tone_Heading),
                                      MUIA_Group_Child, (ULONG)obj[1], MUIA_Group_Child, (ULONG)ctl,

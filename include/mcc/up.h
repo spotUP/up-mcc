@@ -86,6 +86,8 @@ struct Hook { /* the three fields the package reads; the Amiga struct has a MinN
 #define UP_CLS_SCROLLGROUP 0x0E
 #define UP_CLS_VIRTGROUP 0x10
 #define UP_CLS_SHARED 0x0F /* tooltip and shared */
+#define UP_CLS_KNOB 0x1A       /* UP-Knob: MUIA_Numeric_* tags and methods, no own tags */
+#define UP_CLS_LEVELMETER 0x1B /* UP-Levelmeter: MUIA_Numeric_* plus MUIA_Levelmeter_Label (ISG STRPTR, must outlive the object) */
 
 /* ---- Attributes (UPA_), methods (UPM_) and enumeration values (UPV_) of every class (design 8.3). The numbers are written here
  * and nowhere else. I/S/G: settable at construction / later / readable. ---- */
@@ -313,6 +315,8 @@ enum { UPV_Panel_Role_Panel, UPV_Panel_Role_Surface, UPV_Panel_Role_Raised, UPV_
 #define MUIC_UP_Balance "UP-Balance.mcc"
 #define MUIC_UP_Rectangle "UP-Rectangle.mcc"
 #define MUIC_UP_Floattext "UP-Floattext.mcc"
+#define MUIC_UP_Knob "UP-Knob.mcc"
+#define MUIC_UP_Levelmeter "UP-Levelmeter.mcc"
 
 /* ---- Constructors: the tag list is the whole interface. Defaults a caller does not give (no frame, cycle chain) are the class's. ----
  * A client gets inlines over MUI_NewObjectA: the class library loads from MUI:Libs/mui, no class code is linked in. The class build
@@ -342,6 +346,8 @@ Object* UP_NewCheckmark(const struct TagItem* tags);
 Object* UP_NewRadio(const struct TagItem* tags);
 Object* UP_NewVirtgroup(const struct TagItem* tags);   /* MUIA_Group_Child / MUIA_Group_Horiz describe the contents */
 Object* UP_NewScrollgroup(const struct TagItem* tags); /* MUIA_Group_Child / MUIA_Group_Horiz describe the contents */
+Object* UP_NewKnob(const struct TagItem* tags);       /* MUIC_Knob: Numeric subclass, drag or cursor keys */
+Object* UP_NewLevelmeter(const struct TagItem* tags); /* MUIC_Levelmeter: Numeric subclass, MUIA_Levelmeter_Label */
 Object* UP_NewList(const struct TagItem* tags, Object** list_out); /* returns the list+scroller group; *list_out the list */
 Object* UP_NewRectangle(const struct TagItem* tags);
 Object* UP_NewFloattext(const struct TagItem* tags, Object** ft_out); /* returns the text+scroller group; *ft_out the text */
@@ -361,6 +367,8 @@ UP_CLIENT_CTOR(UP_NewField, MUIC_UP_Field)
 UP_CLIENT_CTOR(UP_NewPanel, MUIC_UP_Panel)
 UP_CLIENT_CTOR(UP_NewBalance, MUIC_UP_Balance)
 UP_CLIENT_CTOR(UP_NewRectangle, MUIC_UP_Rectangle)
+UP_CLIENT_CTOR(UP_NewKnob, MUIC_UP_Knob)
+UP_CLIENT_CTOR(UP_NewLevelmeter, MUIC_UP_Levelmeter)
 #undef UP_CLIENT_CTOR
 /* The list is a UP-List and a UP-Scroller in a horizontal group; the scroller follows the list through UPA_List_First. Returns the group; *list_out the list. */
 static inline Object* UP_NewList(const struct TagItem* tags, Object** list_out) {
