@@ -68,6 +68,13 @@ list(APPEND MCC_CLASS_LIBS
   "Pendisplay|src/class/mui_aapendisplay_class.c|aapendisplay_class_desc"
   "Poppen|src/class/mui_aapendisplay_class.c|aapoppen_class_desc"
   "Penadjust|src/class/mui_aapenadjust_class.c|aapenadjust_class_desc")
+# MUI gap E: UP-Imagedisplay/Popimage/Imageadjust (0x22), UP-Framedisplay/Popframe/Frameadjust (0x23); one .mcc per class, two shared sources.
+list(APPEND MCC_MAP_SOURCES src/map/up_specs.c)
+list(APPEND MCC_AMIGA_SOURCES src/class/mui_aaimagedisplay_class.c src/class/mui_aaimageadjust_class.c)
+list(APPEND MCC_CLASS_LIBS "Imagedisplay|src/class/mui_aaimagedisplay_class.c|aaimagedisplay_class_desc"
+  "Framedisplay|src/class/mui_aaimagedisplay_class.c|aaframedisplay_class_desc" "Popimage|src/class/mui_aaimagedisplay_class.c|aapopimage_class_desc"
+  "Popframe|src/class/mui_aaimagedisplay_class.c|aapopframe_class_desc" "Imageadjust|src/class/mui_aaimageadjust_class.c|aaimageadjust_class_desc"
+  "Frameadjust|src/class/mui_aaimageadjust_class.c|aaframeadjust_class_desc")
 set(_mcc_lib_sources "")
 foreach(row ${MCC_CLASS_LIBS})
   string(REPLACE "|" ";" cols "${row}")
@@ -261,6 +268,7 @@ add_custom_target(up_mcc_classes DEPENDS up_mcc_Button up_mcc_Text up_mcc_Panel 
   up_mcc_Cycle up_mcc_Field up_mcc_Scroller up_mcc_List up_mcc_Checkmark up_mcc_Radio up_mcc_Popstring up_mcc_Poplist up_mcc_Numericbutton up_mcc_Scale up_mcc_Colorfield up_mcc_Palette up_mcc_Image up_mcc_Menu up_mcc_Virtgroup up_mcc_Scrollgroup up_mcc_Textarea up_mcc_Rectangle up_mcc_Floattext up_mcc_Knob up_mcc_Levelmeter up_mcc_Popobject up_mcc_Popasl up_mcc_Popscreen up_mcc_prefs)
 
 add_dependencies(up_mcc_classes up_mcc_Pendisplay up_mcc_Poppen up_mcc_Penadjust) # MUI gap D
+add_dependencies(up_mcc_classes up_mcc_Imagedisplay up_mcc_Framedisplay up_mcc_Popimage up_mcc_Popframe up_mcc_Imageadjust up_mcc_Frameadjust) # MUI gap E
 
 # I685k: UP-Demo (demo/updemo.c). Headers: the release set staged here (include/mcc/*.h plus the one header up.h needs,
 # selecta/uimodel/tokens.h, which the release archive carries as Developer/include/selecta/uimodel/tokens.h) and the sfdc headers. No Selecta

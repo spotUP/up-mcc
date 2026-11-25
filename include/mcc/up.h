@@ -441,6 +441,39 @@ Object* UP_NewPoppen(const struct TagItem* tags);
 Object* UP_NewPenadjust(const struct TagItem* tags);
 #endif
 
+/* MUI gap E: UP-Imagedisplay, UP-Popimage, UP-Imageadjust (0x22) and UP-Framedisplay, UP-Popframe, UP-Frameadjust (0x23), the MUI 3.8
+ * classes of those names. The spec is a string: image "<d>:<value>", frame "TSLRTB" (src/map/up_specs.h). The MUI 3.8 mui.h keeps these
+ * classes private and names no attribute; the ids below are the ones MUI uses (as published by Zune), not checked against MUI 3.8 itself. */
+#define UP_CLS_IMAGEDISPLAY 0x22
+#define UP_CLS_FRAMEDISPLAY 0x23
+#ifndef MUIA_Imagedisplay_Spec
+#define MUIA_Imagedisplay_Spec 0x8042a547UL /* ISG char*: image spec; Imagedisplay, Popimage, Imageadjust. A value <= 0xFFFF on display/pop is an MUII_ number */
+#endif
+#ifndef MUIA_Framedisplay_Spec
+#define MUIA_Framedisplay_Spec 0x80421794UL /* ISG char*: frame spec; Framedisplay, Popframe, Frameadjust */
+#endif
+#ifndef MUIA_Imageadjust_Type
+#define MUIA_Imageadjust_Type 0x80422f2bUL /* I ULONG: MUIV_Imageadjust_Type_All / _Image / _Background / _Pen, the kinds offered */
+#endif
+#define UPM_Imageadjust_Changed UP_TAG(UP_CLS_IMAGEDISPLAY, 0x10) /* method: a child changed. Internal */
+#define UPM_Popimage_Changed UP_TAG(UP_CLS_IMAGEDISPLAY, 0x11)    /* method: the popup's spec changed. Internal */
+#define UPM_Frameadjust_Changed UP_TAG(UP_CLS_FRAMEDISPLAY, 0x10) /* method: a child changed. Internal */
+#define UPM_Popframe_Changed UP_TAG(UP_CLS_FRAMEDISPLAY, 0x11)    /* method: the popup's spec changed. Internal */
+#define MUIC_UP_Imagedisplay "UP-Imagedisplay.mcc"
+#define MUIC_UP_Popimage "UP-Popimage.mcc"
+#define MUIC_UP_Imageadjust "UP-Imageadjust.mcc"
+#define MUIC_UP_Framedisplay "UP-Framedisplay.mcc"
+#define MUIC_UP_Popframe "UP-Popframe.mcc"
+#define MUIC_UP_Frameadjust "UP-Frameadjust.mcc"
+#if (defined(__amigaos__) || defined(AMIGA)) && (defined(UP_MCC_LIBRARY) || defined(UP_MCC_STATIC_CTORS))
+Object* UP_NewImagedisplay(const struct TagItem* tags);
+Object* UP_NewPopimage(const struct TagItem* tags);
+Object* UP_NewImageadjust(const struct TagItem* tags);
+Object* UP_NewFramedisplay(const struct TagItem* tags);
+Object* UP_NewPopframe(const struct TagItem* tags);
+Object* UP_NewFrameadjust(const struct TagItem* tags);
+#endif
+
 /* Theme token names (I685d2): UPTOK_<id> equals SEL_GUI_TOKEN_<id> for every token of the SEL_GUI_TOKENS list in
  * selecta/uimodel/tokens.h. The names are generated from that list, so a token added or removed there appears or goes here. */
 #include <selecta/uimodel/tokens.h>

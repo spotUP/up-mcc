@@ -133,3 +133,7 @@ mcc_test(mui-dial COMMAND mui_dial_test)
 
 mcc_test_exe(up_penspec_test)
 mcc_test(up-penspec COMMAND up_penspec_test)
+
+# MUI gap E: image and frame spec strings (src/map/up_specs.c)
+mcc_test_exe(up_specs_test)
+mcc_test(up-specs COMMAND up_specs_test)

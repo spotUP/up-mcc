@@ -36,5 +36,8 @@ extern const struct aa_class_desc aabtn_class_desc, aatext_class_desc, aapanel_c
 extern const struct aa_class_desc aaknob_class_desc, aalevelmeter_class_desc,
     aapopobject_class_desc, aapopasl_class_desc, aapopscreen_class_desc;
 extern const struct aa_class_desc aapendisplay_class_desc, aapoppen_class_desc, aapenadjust_class_desc; /* MUI gap D */
+/* MUI gap E */
+extern const struct aa_class_desc aaimagedisplay_class_desc, aaframedisplay_class_desc, aapopimage_class_desc, aapopframe_class_desc,
+    aaimageadjust_class_desc, aaframeadjust_class_desc;
 
 #endif
