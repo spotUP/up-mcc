@@ -341,6 +341,15 @@ int mui_aa_palette_move(int active, int n, int cols, int dx, int dy);
 /* UP-Image (host test mui-image-fit). Size of an sw x sh picture shown in a bw x bh box: fit=0 the picture size, fit=1 scaled to the box
  * keeping the aspect (never below 1 pixel); the offsets centre it in the box (may be negative when the picture is larger). */
 void mui_aa_image_fit(int sw, int sh, int bw, int bh, int fit, int* dw, int* dh, int* ox, int* oy);
+/* UP-Image body (host test mui-image-body). Unpack an ILBM BODY of w x h, depth planes (compression 0 none, 1 ByteRun1) into planes[p]
+ * rows of bpr bytes. has_mask: a mask plane follows each row's planes; it goes to mask (rows of mbpr bytes) or is skipped when mask is NULL.
+ * Returns 0 for an unknown compression or bad sizes. ByteRun1 reads no length: the body must hold all rows. */
+int mui_aa_body_unpack(const unsigned char* body, int compression, int w, int h, int depth, int has_mask, unsigned char* const* planes, int bpr,
+                       unsigned char* mask, int mbpr);
+
+/* UP-Menu check state (host test mui-menu-check). Mask of checked items after item i (0..31) is picked: no checkit = unchanged; unchecked
+ * = checked and the exclude items cleared; checked = unchecked with toggle, else unchanged. */
+unsigned long mui_aa_menu_pick(unsigned long checked, int i, int checkit, int toggle, unsigned long exclude);
 
 /* UP-Knob / UP-Levelmeter dial maths (host test mui-dial). Angles are whole degrees, 0 = right, counter clockwise positive; a dial
  * starts at start_deg for lo and turns clockwise through sweep_deg to hi. Knob: 225 / 270 (lower left round to lower right);

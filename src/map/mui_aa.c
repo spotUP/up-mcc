@@ -1179,3 +1179,64 @@ int mui_aa_icon_name(const char* name) {
     size_t n = strlen(name);
     return n >= 5 && aa_stricmp(name + n - 5, ".info") == 0;
 }
+
+/* One body row of n bytes into dst (NULL = skip). ByteRun1: n >= 0 copies n+1 bytes, -127..-1 repeats the next byte 1-n times, -128 is a
+ * no-op. A run past the row end is cut there (well formed ILBM never crosses rows). */
+static const unsigned char* mui_aa_body_row(const unsigned char* s, int compression, unsigned char* dst, int n) {
+    int o = 0;
+    if (compression == 0) {
+        if (dst != NULL) {
+            memcpy(dst, s, (size_t)n);
+        }
+        return s + n;
+    }
+    while (o < n) {
+        int c = (signed char)*s++, k;
+        if (c >= 0) {
+            for (k = 0; k <= c; k++, s++) {
+                if (o < n && dst != NULL) {
+                    dst[o] = *s;
+                }
+                o++;
+            }
+        } else if (c != -128) {
+            for (k = 0; k <= -c; k++, o++) {
+                if (o < n && dst != NULL) {
+                    dst[o] = *s;
+                }
+            }
+            s++;
+        }
+    }
+    return s;
+}
+
+int mui_aa_body_unpack(const unsigned char* body, int compression, int w, int h, int depth, int has_mask, unsigned char* const* planes, int bpr,
+                       unsigned char* mask, int mbpr) {
+    int rb = ((w + 15) >> 4) << 1, y, p;
+    if (body == NULL || (compression != 0 && compression != 1) || w <= 0 || h <= 0 || depth < 1 || depth > 8 || bpr < rb ||
+        (mask != NULL && mbpr < rb)) {
+        return 0;
+    }
+    for (y = 0; y < h; y++) {
+        for (p = 0; p < depth; p++) {
+            body = mui_aa_body_row(body, compression, planes[p] + (long)y * bpr, rb);
+        }
+        if (has_mask) {
+            body = mui_aa_body_row(body, compression, mask != NULL ? mask + (long)y * mbpr : NULL, rb);
+        }
+    }
+    return 1;
+}
+
+unsigned long mui_aa_menu_pick(unsigned long checked, int i, int checkit, int toggle, unsigned long exclude) {
+    unsigned long bit;
+    if (!checkit || i < 0 || i > 31) {
+        return checked;
+    }
+    bit = 1UL << i;
+    if (checked & bit) {
+        return toggle ? checked & ~bit : checked;
+    }
+    return (checked | bit) & ~(exclude & ~bit);
+}
