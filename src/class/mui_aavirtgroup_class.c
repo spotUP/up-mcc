@@ -23,6 +23,7 @@ typedef struct aavirtgroup_data {
     long left, top;
     long cw, ch; /* the contents' own minimum size */
     int live;    /* between MUIM_Setup and MUIM_Cleanup */
+    int shown;   /* between MUIM_Show and MUIM_Hide: only then may the scroll touch the rastport */
 } aavirtgroup_data;
 
 static struct MUI_CustomClass* g_class;
@@ -86,6 +87,65 @@ static ULONG aavirtgroup_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* 
     return r;
 }
 
+/* Strip (x0,y0)-(x1,y1) of the view repainted in one clipped full draw of the group (background, then every child). */
+static void aavirtgroup_paint(Object* obj, int x0, int y0, int x1, int y1) {
+    APTR clip;
+    if (x0 > x1 || y0 > y1) {
+        return;
+    }
+    clip = MUI_AddClipping(muiRenderInfo(obj), x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+    MUI_Redraw(obj, MADF_DRAWOBJECT);
+    MUI_RemoveClipping(muiRenderInfo(obj), clip);
+}
+
+/* D7: one paint per scroll step. The group relays the contents out (the hook clamps left/top) with every repaint MUI makes
+ * during ExitChange clipped away by an empty region: ExitChange repaints the group, and may repaint moved children
+ * directly, past this class's MUIM_Draw, so a view clip alone let it paint the view once and the explicit redraw paint it
+ * again, each pass erasing the background first (the flicker). Then the pixels that stay in the view are blitted to their
+ * new place and only the strips the scroll exposed are drawn, so no moved child is erased (D4: nothing leaves the view;
+ * D5: the tab strip comes back as part of an exposed strip). A jump of a whole view or more repaints the view. */
+static void aavirtgroup_scroll(Object* obj, aavirtgroup_data* d, long ol, long ot) {
+    long dx, dy;
+    int l = _mleft(obj), t = _mtop(obj), r = _mright(obj), b = _mbottom(obj), x0, y0, x1, y1;
+    struct Region* none = NewRegion();
+    APTR clip = none != NULL ? MUI_AddClipRegion(muiRenderInfo(obj), none) : NULL; /* MUI frees the region on removal */
+    DoMethod(obj, MUIM_Group_InitChange);
+    DoMethod(obj, MUIM_Group_ExitChange);
+    if (none != NULL) {
+        MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+    }
+    if (!d->shown || !aa_visible(obj, &x0, &y0, &x1, &y1)) {
+        return; /* the next MUIM_Draw paints it */
+    }
+    l = x0 > l ? x0 : l; /* a view inside another scrolled view: blit and paint only its visible part */
+    t = y0 > t ? y0 : t;
+    r = x1 < r ? x1 : r;
+    b = y1 < b ? y1 : b;
+    if (l > r || t > b) {
+        return;
+    }
+    dx = d->left - ol;
+    dy = d->top - ot;
+    if (none == NULL || dx <= -(r - l + 1) || dx >= r - l + 1 || dy <= -(b - t + 1) || dy >= b - t + 1) {
+        aavirtgroup_paint(obj, l, t, r, b);
+        return;
+    }
+    if (dx == 0 && dy == 0) {
+        return;
+    }
+    ScrollRasterBF(_rp(obj), dx, dy, l, t, r, b);
+    if (dy > 0) {
+        aavirtgroup_paint(obj, l, b - (int)dy + 1, r, b);
+    } else if (dy < 0) {
+        aavirtgroup_paint(obj, l, t, r, t - (int)dy - 1);
+    }
+    if (dx > 0) {
+        aavirtgroup_paint(obj, r - (int)dx + 1, t, r, b);
+    } else if (dx < 0) {
+        aavirtgroup_paint(obj, l, t, l - (int)dx - 1, b);
+    }
+}
+
 static ULONG aavirtgroup_set(struct IClass* cl, Object* obj, struct opSet* msg) {
     aavirtgroup_data* d = INST_DATA(cl, obj);
     struct TagItem *tl = FindTagItem(UPA_Virtgroup_Left, msg->ops_AttrList), *tt = FindTagItem(UPA_Virtgroup_Top, msg->ops_AttrList);
@@ -93,18 +153,11 @@ static ULONG aavirtgroup_set(struct IClass* cl, Object* obj, struct opSet* msg) 
     nl = nl < 0 ? 0 : nl;
     nt = nt < 0 ? 0 : nt;
     if (nl != d->left || nt != d->top) {
+        long ol = d->left, ot = d->top;
         d->left = nl;
         d->top = nt;
-        if (d->live) { /* the group lays the contents out again (the hook clamps) and redraws */
-            /* D4/D5: a scroll keeps the view's box, so whatever MUI repaints during ExitChange (it may redraw moved children
-             * directly, past this class's MUIM_Draw) is clipped to the view; then one clipped full draw puts every child back,
-             * which ExitChange alone left undone for the tab strip on the way back up. */
-            APTR clip;
-            DoMethod(obj, MUIM_Group_InitChange);
-            clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
-            DoMethod(obj, MUIM_Group_ExitChange);
-            MUI_RemoveClipping(muiRenderInfo(obj), clip);
-            aa_redraw(obj, MADF_DRAWOBJECT);
+        if (d->live) {
+            aavirtgroup_scroll(obj, d, ol, ot);
         }
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -204,6 +257,12 @@ static ULONG __attribute__((used)) aavirtgroup_dispatch_c(struct IClass* cl, Obj
         return aavirtgroup_setup(cl, obj, msg);
     case MUIM_Cleanup:
         return aavirtgroup_cleanup(cl, obj, msg);
+    case MUIM_Show:
+    case MUIM_Hide: {
+        aavirtgroup_data* d = INST_DATA(cl, obj);
+        d->shown = msg->MethodID == MUIM_Show;
+        break;
+    }
     case MUIM_Draw:
         return aavirtgroup_draw(cl, obj, (struct MUIP_Draw*)msg);
     case OM_ADDMEMBER:
