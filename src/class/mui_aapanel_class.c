@@ -15,14 +15,18 @@
 #include <proto/exec.h>
 #include "mui_gfxbase.h"
 #include <proto/intuition.h>
+#define LayersBase aapanel_LayersBase /* own name, as mui_gfxbase.h does for GfxBase: opened only for a grip drag */
+#include <proto/layers.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
 
 #include "map/mui_theme.h"
 #include "mui_aa_draw.h"
 #include "map/mui_aa_paint.h"
+#include "map/mui_aascr.h"
 
 extern struct Library* MUIMasterBase;
+struct Library* LayersBase;
 
 typedef struct aapanel_data {
     int role;
@@ -30,6 +34,15 @@ typedef struct aapanel_data {
     int popup;      /* I1349: root of a borderless popup window: square corners, no card pad */
     int fixed;      /* > 0: the art frame, no pad */
     Object* inner;  /* I685e5: the plain vertical group that holds the program's children */
+    int grip;       /* UPA_Panel_SizeGrip: the root of a borderless window draws a size grip in its bottom right corner */
+    int shown;      /* MUIM_Show seen, MUIM_Hide not yet (AA_SHOWN_CASES); outside aa_ctx, whose ABI 2 layout is frozen */
+    int drag;       /* the grip is held: sx, sy the mouse at the press; ox, oy the window on the screen; rw, rh the outline drawn */
+    int sx, sy, ox, oy, rw, rh;
+    struct Screen* scr; /* the screen the outline is drawn on */
+    int resized;        /* 1: the grip resized the window, MUI's relayout pending; 2: shown again, its whole-window erase not yet drawn over */
+    int hooked;         /* fill is the window layer's backfill hook, old the one it replaced (LAYERS_BACKFILL is NULL) */
+    struct Hook fill, *old;
+    struct MUI_EventHandlerNode ehn;
     aa_ctx aa;
 } aapanel_data;
 
@@ -108,6 +121,177 @@ static void aapanel_space(Object* grp, int gx, int gy, int depth) {
     }
 }
 
+/* The size grip square, bottom right of the window's inner area (the MUI window margin and the shell's right band: right of the
+ * footer buttons). 12 px at 1:1, rows scaled to the pixel aspect. False when the panel is not the grip root of an open window. */
+#define AAPANEL_GRIP_PX 12
+static int aapanel_grip_box(aapanel_data* d, Object* obj, struct Window** wp, int* x0, int* y0, int* x1, int* y1) {
+    ULONG wptr = 0;
+    struct Window* w;
+    if (!d->grip || !d->shown || !aa_live(obj)) {
+        return 0;
+    }
+    GetAttr(MUIA_Window_Window, _win(obj), &wptr);
+    if (wptr == 0) {
+        return 0;
+    }
+    w = (struct Window*)wptr;
+    *x1 = w->Width - w->BorderRight - 1;
+    *y1 = w->Height - w->BorderBottom - 1;
+    *x0 = *x1 - AAPANEL_GRIP_PX + 1;
+    *y0 = *y1 - up_rows(AAPANEL_GRIP_PX, d->aa.aspect_q8) + 1;
+    *wp = w;
+    return 1;
+}
+
+/* The grip: a triangle of six square dots in the muted text colour, the corner dot last, on the face the panel paints. */
+static void aapanel_grip_paint(aapanel_data* d, Object* obj) {
+    struct Window* w;
+    int x0, y0, x1, y1, i, j, dw = 2, dh = up_rows(2, d->aa.aspect_q8), step = 4, rstep = up_rows(4, d->aa.aspect_q8);
+    uint32_t ink = d->aa.tok[SEL_GUI_TOKEN_TEXT_MUTED];
+    if (!aapanel_grip_box(d, obj, &w, &x0, &y0, &x1, &y1)) {
+        return;
+    }
+    x1 -= 1; /* one px off the window edge, as the dots of a size gadget sit */
+    y1 -= up_rows(1, d->aa.aspect_q8);
+    for (j = 0; j < 3; j++) {         /* row from the bottom */
+        for (i = 0; i <= 2 - j; i++) { /* dot from the right: 3, 2, 1 per row */
+            int rx = x1 - i * step, by = y1 - j * rstep;
+            aa_rect(&d->aa, _rp(obj), rx - dw + 1, by - dh + 1, rx, by, ink);
+        }
+    }
+}
+
+/* The drag outline: a one px frame of the new window box, complemented on the screen's own RastPort (a copy, so the screen's
+ * draw mode stays as it is), as Intuition's size gadget draws it. Four strips that do not overlap, so drawing it twice erases it.
+ * shortcut: the layers are locked only while one frame is drawn, not across the drag (the input.device task must stay free to
+ * deliver the release); a window of another task that repaints under the frame mid-drag can leave a trace. */
+static void aapanel_outline(aapanel_data* d) {
+    struct RastPort rp;
+    int x0 = d->ox, y0 = d->oy, x1 = d->ox + d->rw - 1, y1 = d->oy + d->rh - 1;
+    rp = d->scr->RastPort;
+    SetDrMd(&rp, COMPLEMENT);
+    if (LayersBase != NULL) {
+        LockLayers(&d->scr->LayerInfo);
+    }
+    RectFill(&rp, x0, y0, x1, y0);
+    RectFill(&rp, x0, y1, x1, y1);
+    if (y1 - y0 > 1) {
+        RectFill(&rp, x0, y0 + 1, x0, y1 - 1);
+        RectFill(&rp, x1, y0 + 1, x1, y1 - 1);
+    }
+    if (LayersBase != NULL) {
+        UnlockLayers(&d->scr->LayerInfo);
+    }
+}
+
+/* End of a drag: the outline erased, then the window takes the outline's size when w is given (the release) and differs. */
+static void aapanel_drag_end(aapanel_data* d, struct Window* w) {
+    if (!d->drag) {
+        return;
+    }
+    d->drag = 0;
+    aapanel_outline(d);
+    if (w != NULL && (d->rw != w->Width || d->rh != w->Height)) {
+        d->resized = 1;
+        ChangeWindowBox(w, w->LeftEdge, w->TopEdge, d->rw, d->rh);
+    }
+}
+
+/* The tighter of the MUI layout limit and the Intuition window limit (MUI's WindowLimits from the same layout; 0 there: none). */
+static int aapanel_lim(int mui, int win, int is_min) {
+    return win <= 0 ? mui : is_min ? (win > mui ? win : mui) : (win < mui ? win : mui);
+}
+
+/* Drag of the grip: an outline of the new box follows the mouse, kept in the root object's MUI limits plus the window margin, and
+ * on screen; the window is resized once, on the release, and MUI lays it out again on IDCMP_NEWSIZE. Esc, the menu button or the
+ * window going inactive cancels. */
+static ULONG aapanel_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* msg) {
+    aapanel_data* d = INST_DATA(cl, obj);
+    struct IntuiMessage* im = msg->imsg;
+    struct Window* w;
+    int x0, y0, x1, y1;
+    if (im == NULL || !aapanel_grip_box(d, obj, &w, &x0, &y0, &x1, &y1)) {
+        aapanel_drag_end(d, NULL);
+        return 0;
+    }
+    if (im->Class == IDCMP_INACTIVEWINDOW) {
+        aapanel_drag_end(d, NULL);
+        return 0;
+    }
+    if (im->Class == IDCMP_MOUSEBUTTONS) {
+        if (im->Code == SELECTDOWN && !d->drag && im->MouseX >= x0 && im->MouseX <= x1 && im->MouseY >= y0 && im->MouseY <= y1) {
+            d->drag = 1;
+            d->sx = im->MouseX, d->sy = im->MouseY;
+            d->ox = w->LeftEdge, d->oy = w->TopEdge;
+            d->rw = w->Width, d->rh = w->Height;
+            d->scr = w->WScreen;
+            aapanel_outline(d);
+            return MUI_EventHandlerRC_Eat;
+        }
+        if (d->drag && (im->Code == SELECTUP || im->Code == MENUDOWN)) {
+            aapanel_drag_end(d, im->Code == SELECTUP ? w : NULL);
+            return MUI_EventHandlerRC_Eat;
+        }
+        return 0;
+    }
+    if (im->Class == IDCMP_RAWKEY && d->drag && im->Code == 0x45u /* Esc down */) {
+        aapanel_drag_end(d, NULL);
+        return MUI_EventHandlerRC_Eat;
+    }
+    if (im->Class == IDCMP_MOUSEMOVE && d->drag) {
+        int ew = w->Width - _width(obj), eh = w->Height - _height(obj); /* the window margin around the root object */
+        /* the limits are read on every move, never kept: a page change relayouts and MUI's WindowLimits moves them */
+        int nw = mui_aa_grip_size(w->Width, im->MouseX - d->sx, aapanel_lim(_minwidth(obj) + ew, w->MinWidth, 1),
+                                  aapanel_lim(_maxwidth(obj) >= MUI_MAXMAX ? 32767 : _maxwidth(obj) + ew, w->MaxWidth, 0), w->WScreen->Width - w->LeftEdge);
+        int nh = mui_aa_grip_size(w->Height, im->MouseY - d->sy, aapanel_lim(_minheight(obj) + eh, w->MinHeight, 1),
+                                  aapanel_lim(_maxheight(obj) >= MUI_MAXMAX ? 32767 : _maxheight(obj) + eh, w->MaxHeight, 0), w->WScreen->Height - w->TopEdge);
+        if (nw != d->rw || nh != d->rh) {
+            aapanel_outline(d);
+            d->rw = nw, d->rh = nh;
+            aapanel_outline(d);
+        }
+        return MUI_EventHandlerRC_Eat;
+    }
+    return 0;
+}
+
+/* The window layer's backfill: the area a resize exposes is filled with the face at once. Layers' default fills it with pen 0,
+ * which showed until MUI's relayout reached the new strip: the flash on the grip's release. Called by layers in the task that
+ * sizes the window (input.device for ChangeWindowBox), rp without a layer, bounds in rp's bitmap. */
+struct aapanel_fill_msg {
+    struct Layer* layer;
+    struct Rectangle bounds;
+    LONG ox, oy;
+};
+static ULONG aapanel_fill(struct Hook* h, struct RastPort* rp, struct aapanel_fill_msg* m) {
+    aapanel_data* d = (aapanel_data*)h->h_Data;
+    if (d->resized == 2 && d->aa.tc) { /* a palette screen has no face pass of its own: MUI's fill stays */
+        return 0; /* MUI's erase after the relayout: the old pixels stay until the root and children paint over them */
+    }
+    aa_rect(&d->aa, rp, m->bounds.MinX, m->bounds.MinY, m->bounds.MaxX, m->bounds.MaxY, mui_aa_panel_rgb(d->aa.tok, d->role));
+    return 0;
+}
+
+/* MUIM_Show installs the hook on the open window's layer, MUIM_Hide (the window still open) puts the old one back. */
+static void aapanel_show(aapanel_data* d, Object* obj, int show) {
+    d->shown = show;
+    if (d->resized) {
+        d->resized = show ? 2 : 1;
+    }
+    if (!d->grip || LayersBase == NULL || _window(obj) == NULL || show == d->hooked) {
+        return;
+    }
+    if (show) {
+        d->fill.h_Entry = (__typeof__(d->fill.h_Entry))(void (*)(void))HookEntry;
+        d->fill.h_SubEntry = (__typeof__(d->fill.h_SubEntry))(void (*)(void))aapanel_fill;
+        d->fill.h_Data = d;
+        d->old = InstallLayerHook(_window(obj)->WLayer, &d->fill);
+    } else {
+        InstallLayerHook(_window(obj)->WLayer, d->old);
+    }
+    d->hooked = show;
+}
+
 static ULONG aapanel_setup(struct IClass* cl, Object* obj, Msg msg) {
     aapanel_data* d = INST_DATA(cl, obj);
     if (!DoSuperMethodA(cl, obj, msg)) {
@@ -119,11 +303,33 @@ static ULONG aapanel_setup(struct IClass* cl, Object* obj, Msg msg) {
         up_panel_gap(mui_aa_panel_spacing(d->aa.tok), d->aa.aspect_q8, d->role == MUI_AA_PANEL_PANEL, &gx, &gy);
         aapanel_space(d->inner, gx, gy, 0);
     }
+    if (d->grip) {
+        aa_hold(&d->aa, d->aa.tok[SEL_GUI_TOKEN_TEXT_MUTED]);
+        aa_hold(&d->aa, mui_aa_panel_rgb(d->aa.tok, d->role)); /* the backfill hook's face on a palette screen */
+        if (LayersBase == NULL) { /* the outline locks the screen's layers; the backfill hook is installed on the window's layer */
+            LayersBase = OpenLibrary((CONST_STRPTR) "layers.library", 39);
+        }
+        d->drag = 0;
+        d->ehn.ehn_Priority = 0;
+        d->ehn.ehn_Flags = 0;
+        d->ehn.ehn_Object = obj;
+        d->ehn.ehn_Class = cl;
+        d->ehn.ehn_Events = IDCMP_MOUSEMOVE | IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_INACTIVEWINDOW;
+        DoMethod(_win(obj), MUIM_Window_AddEventHandler, (ULONG)&d->ehn);
+    }
     return TRUE;
 }
 
 static ULONG aapanel_cleanup(struct IClass* cl, Object* obj, Msg msg) {
     aapanel_data* d = INST_DATA(cl, obj);
+    if (d->grip) {
+        DoMethod(_win(obj), MUIM_Window_RemEventHandler, (ULONG)&d->ehn);
+        aapanel_drag_end(d, NULL);
+        if (LayersBase != NULL) {
+            CloseLibrary(LayersBase);
+            LayersBase = NULL;
+        }
+    }
     aa_cleanup(&d->aa);
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -187,9 +393,13 @@ static int aapanel_holes(Object* grp, int* holes, int n, int depth, int max_dept
 
 static ULONG aapanel_paint(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     aapanel_data* d = INST_DATA(cl, obj);
-    ULONG r = DoSuperMethodA(cl, obj, (Msg)msg);
-    if (msg->flags & MADF_DRAWOBJECT) {
-        int rad = d->popup ? 0 : mui_aa_panel_radius(d->aa.tok, d->aa.font_px); /* I1349: a popup window is a rectangle */
+    int rad = d->popup ? 0 : mui_aa_panel_radius(d->aa.tok, d->aa.font_px); /* I1349: a popup window is a rectangle */
+    ULONG r;
+    /* The face first, around the children's new boxes (the super fills nothing: FillArea FALSE): painted after them, the gaps and
+     * the margin ring kept the old layout's pixels for the whole child pass of a relayout, a flicker on every resize. */
+    int face = (msg->flags & MADF_DRAWOBJECT) || d->resized == 2; /* after a grip resize the root paints the face the skipped erase left */
+    d->resized = 0;
+    if (face) {
         if (d->aa.tc) { /* I685w: MUI's background spec snaps to a pen; paint the face in exact RGB around the children, whatever MUI filled */
             int holes[MUI_AA_PAINT_MAX_HOLES * 4], n = 0, full = 0;
             Object* grp = d->inner != NULL ? d->inner : obj;
@@ -227,12 +437,16 @@ static ULONG aapanel_paint(struct IClass* cl, Object* obj, struct MUIP_Draw* msg
                                     mui_aa_panel_rgb(d->aa.tok, d->role), holes, n);
             }
         }
+    }
+    r = DoSuperMethodA(cl, obj, (Msg)msg);
+    if (msg->flags & MADF_DRAWOBJECT) {
         aa_round_corners(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad, d->aa.bg_rgb); /* the face the panel sits on (a card on a SURFACE panel: SURFACE, not BACKGROUND); a retheme resets it */
         aa_low_outline(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), rad);
         if (d->flat_tl && rad > 0) { /* square the top left: the face over the wedge the round corner left in the parent colour */
             aa_rect(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mleft(obj) + rad - 1, _mtop(obj) + up_rows(rad, d->aa.aspect_q8) - 1,
                     mui_aa_panel_rgb(d->aa.tok, d->role));
         }
+        aapanel_grip_paint(d, obj); /* last: over the face and the window margin ring */
     }
     return r;
 }
@@ -318,6 +532,7 @@ static ULONG aapanel_new_by_name(struct IClass* cl, Object* obj, struct opSet* o
         d->role = role;
         d->popup = GetTagData(UPA_Panel_Popup, FALSE, ops->ops_AttrList) ? 1 : 0;
         d->flat_tl = GetTagData(UPA_Panel_FlatTopLeft, FALSE, ops->ops_AttrList) ? 1 : 0;
+        d->grip = GetTagData(UPA_Panel_SizeGrip, FALSE, ops->ops_AttrList) ? 1 : 0;
         d->inner = inner;
         g_made++;
     }
@@ -362,6 +577,12 @@ static ULONG __attribute__((used)) aapanel_dispatch_c(struct IClass* cl, Object*
         return aapanel_cleanup(cl, obj, msg);
     case MUIM_Draw:
         return aapanel_draw(cl, obj, (struct MUIP_Draw*)msg);
+    case MUIM_HandleEvent:
+        return aapanel_handle(cl, obj, (struct MUIP_HandleEvent*)msg);
+    case MUIM_Show:
+    case MUIM_Hide:
+        aapanel_show(INST_DATA(cl, obj), obj, msg->MethodID == MUIM_Show);
+        break;
     case OM_ADDMEMBER:
     case OM_REMMEMBER: {
         aapanel_data* d = INST_DATA(cl, obj);

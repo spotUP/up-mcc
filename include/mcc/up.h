@@ -388,6 +388,7 @@ enum { UPV_Button_Align_Left, UPV_Button_Align_Centre, UPV_Button_Align_Right };
                                                             children, so a Role answer counts only when Self names the asked object */
 #define UPA_Panel_Popup UP_TAG(UP_CLS_PANEL, 0x06)       /* I BOOL: root of a borderless popup window: square corners, no card padding (I1349) */
 #define UPA_Panel_FlatTopLeft UP_TAG(UP_CLS_PANEL, 0x07) /* I BOOL: square top left corner, so the card sits flush against the first tab */
+#define UPA_Panel_SizeGrip UP_TAG(UP_CLS_PANEL, 0x08)    /* I BOOL: on the root of a borderless window: a size grip in the bottom right corner that resizes the window */
 enum { UPV_Panel_Role_Panel, UPV_Panel_Role_Surface, UPV_Panel_Role_Raised, UPV_Panel_Role_Popup, UPV_Panel_Role_Count }; /* Popup: lighter than Raised, so a dropdown stands out from the card */
 /* I1371: MUIA_UserData value of a plain MUI Group inside a panel that keeps the spacing it was created with (a tool row of buttons). */
 #define UPV_Panel_KeepSpacing 0x55505331UL

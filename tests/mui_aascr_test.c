@@ -13,6 +13,11 @@
 
 int main(void) {
     int w, h, need, vw;
+    CHECK(mui_aa_grip_size(400, 50, 200, 800, 640) == 450);
+    CHECK(mui_aa_grip_size(400, -300, 200, 800, 640) == 200); /* not under the minimum */
+    CHECK(mui_aa_grip_size(400, 500, 200, 800, 640) == 640);  /* not past the screen */
+    CHECK(mui_aa_grip_size(400, 500, 200, 600, 640) == 600);  /* not past the maximum */
+    CHECK(mui_aa_grip_size(400, 0, 300, 800, 250) == 300);    /* minimum wins over a short screen */
     CHECK(mui_aa_scr_clamp(-5, 100, 40) == 0);
     CHECK(mui_aa_scr_clamp(30, 100, 40) == 30);
     CHECK(mui_aa_scr_clamp(99, 100, 40) == 60);

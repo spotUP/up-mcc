@@ -28,6 +28,18 @@ void mui_aa_scr_split(int w, int h, int content_h, int bar_w, int* need_bar, int
     *view_w = *need_bar ? w - bar_w : w;
 }
 
+int mui_aa_grip_size(int start, int delta, int min, int max, int room) {
+    int v = start + delta;
+    g_calls++;
+    if (room < max) {
+        max = room;
+    }
+    if (v > max) {
+        v = max;
+    }
+    return v < min ? min : v;
+}
+
 uint32_t mui_aascr_calls(void) {
     return g_calls;
 }

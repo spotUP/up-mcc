@@ -1992,6 +1992,29 @@
 *
 ******/
 
+/****** UP-Panel.mcc/UPA_Panel_SizeGrip ******
+*
+*   NAME
+*       UPA_Panel_SizeGrip -- attribute of UP-Panel.mcc
+*
+*   FUNCTION
+*       BOOL: on the root of a borderless window: a size grip in the bottom right corner that resizes the window. The grip is a
+*       triangle of dots in the muted text colour of the theme, in a 12 px square inside the window margin. Dragging it draws an
+*       outline of the new window box, kept within the MUI minimum and maximum of the root object and the screen; the window takes
+*       that size on the release and MUI lays it out once. Esc or the right mouse button cancels the drag.
+*       Read once when the object is created
+*
+*   INPUTS
+*       UPA_Panel_SizeGrip - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Panel.mcc, UPA_Panel_Popup
+*
+******/
+
 /****** UP-Popstring.mcc/UPA_Popstring_String ******
 *
 *   NAME
