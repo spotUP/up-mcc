@@ -39,6 +39,7 @@ typedef struct aapanel_data {
     int drag;       /* the grip is held: sx, sy the mouse at the press; ox, oy the window on the screen; rw, rh the outline drawn */
     int sx, sy, ox, oy, rw, rh;
     struct Screen* scr; /* the screen the outline is drawn on */
+    int resized;        /* 1: the grip resized the window, MUI's relayout pending; 2: shown again, its whole-window erase not yet drawn over */
     int hooked;         /* fill is the window layer's backfill hook, old the one it replaced (LAYERS_BACKFILL is NULL) */
     struct Hook fill, *old;
     struct MUI_EventHandlerNode ehn;
@@ -191,6 +192,7 @@ static void aapanel_drag_end(aapanel_data* d, struct Window* w) {
     d->drag = 0;
     aapanel_outline(d);
     if (w != NULL && (d->rw != w->Width || d->rh != w->Height)) {
+        d->resized = 1;
         ChangeWindowBox(w, w->LeftEdge, w->TopEdge, d->rw, d->rh);
     }
 }
@@ -263,6 +265,9 @@ struct aapanel_fill_msg {
 };
 static ULONG aapanel_fill(struct Hook* h, struct RastPort* rp, struct aapanel_fill_msg* m) {
     aapanel_data* d = (aapanel_data*)h->h_Data;
+    if (d->resized == 2 && d->aa.tc) { /* a palette screen has no face pass of its own: MUI's fill stays */
+        return 0; /* MUI's erase after the relayout: the old pixels stay until the root and children paint over them */
+    }
     aa_rect(&d->aa, rp, m->bounds.MinX, m->bounds.MinY, m->bounds.MaxX, m->bounds.MaxY, mui_aa_panel_rgb(d->aa.tok, d->role));
     return 0;
 }
@@ -270,6 +275,9 @@ static ULONG aapanel_fill(struct Hook* h, struct RastPort* rp, struct aapanel_fi
 /* MUIM_Show installs the hook on the open window's layer, MUIM_Hide (the window still open) puts the old one back. */
 static void aapanel_show(aapanel_data* d, Object* obj, int show) {
     d->shown = show;
+    if (d->resized) {
+        d->resized = show ? 2 : 1;
+    }
     if (!d->grip || LayersBase == NULL || _window(obj) == NULL || show == d->hooked) {
         return;
     }
@@ -389,7 +397,9 @@ static ULONG aapanel_paint(struct IClass* cl, Object* obj, struct MUIP_Draw* msg
     ULONG r;
     /* The face first, around the children's new boxes (the super fills nothing: FillArea FALSE): painted after them, the gaps and
      * the margin ring kept the old layout's pixels for the whole child pass of a relayout, a flicker on every resize. */
-    if (msg->flags & MADF_DRAWOBJECT) {
+    int face = (msg->flags & MADF_DRAWOBJECT) || d->resized == 2; /* after a grip resize the root paints the face the skipped erase left */
+    d->resized = 0;
+    if (face) {
         if (d->aa.tc) { /* I685w: MUI's background spec snaps to a pen; paint the face in exact RGB around the children, whatever MUI filled */
             int holes[MUI_AA_PAINT_MAX_HOLES * 4], n = 0, full = 0;
             Object* grp = d->inner != NULL ? d->inner : obj;
