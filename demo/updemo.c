@@ -52,11 +52,12 @@ static void demo_requester(const char* text) {
     EasyRequest(NULL, &es, NULL, (APTR)text);
 }
 
-#define CLASS_COUNT 23 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
+#define CLASS_COUNT 29 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
 
 static const char* const g_names[CLASS_COUNT] = {"Button", "Text", "Panel", "Tabs", "Balance", "Slider",
                                                  "Progress", "Cycle", "Field", "Scroller", "List", "Checkmark", "Radio", "Popstring", "Poplist",
-                                                 "Numericbutton", "Scale", "Colorfield", "Palette", "Image", "Menu", "Virtgroup", "Scrollgroup"};
+                                                 "Numericbutton", "Scale", "Colorfield", "Palette", "Image", "Menu", "Virtgroup", "Scrollgroup",
+                                                 "Imagedisplay", "Framedisplay", "Popimage", "Popframe", "Imageadjust", "Frameadjust"};
 static const char* const g_cycle_entries[] = {"First", "Second", "Third", NULL};
 static const char* const g_tab_captions[] = {"Songs", "Albums", "Artists", "Playlists", NULL};
 static const char* const g_radio_entries[] = {"Low", "Medium", "High", NULL};
@@ -183,6 +184,14 @@ static Object* make(int index) {
         return MUI_NewObject(path, MUIA_Group_Child, (ULONG)label("Virtgroup: contents at their own size", UPV_Text_Tone_Normal), TAG_DONE);
     case 22:
         return MUI_NewObject(path, MUIA_Group_Child, (ULONG)label("Scrollgroup: scroller shows when taller", UPV_Text_Tone_Normal), TAG_DONE);
+    case 23: /* MUI gap E */
+    case 25:
+    case 27:
+        return MUI_NewObject(path, MUIA_Imagedisplay_Spec, (ULONG) "2:r3E3E3E3E,63636363,DDDDDDDD", TAG_DONE);
+    case 24:
+    case 26:
+    case 28:
+        return MUI_NewObject(path, MUIA_Framedisplay_Spec, (ULONG) "910202", TAG_DONE);
     default:
         g_row_hook.h_Entry = (__typeof__(g_row_hook.h_Entry))(void (*)(void))HookEntry;
         g_row_hook.h_SubEntry = (__typeof__(g_row_hook.h_SubEntry))(void (*)(void))demo_cell;

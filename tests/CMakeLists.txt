@@ -126,3 +126,7 @@ mcc_test(mui-cycle-empty COMMAND mui_cycle_test)
 
 mcc_test_exe(mui_image_fit_test)
 mcc_test(mui-image-fit COMMAND mui_image_fit_test)
+
+# MUI gap E: image and frame spec strings (src/map/up_specs.c)
+mcc_test_exe(up_specs_test)
+mcc_test(up-specs COMMAND up_specs_test)

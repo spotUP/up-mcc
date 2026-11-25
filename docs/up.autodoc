@@ -2688,3 +2688,60 @@
 *       <mcc/up.h>, UP-Field.mcc
 *
 ******/
+
+/****** UP-Imagedisplay.mcc/MUIA_Imagedisplay_Spec ******
+*
+*   NAME
+*       MUIA_Imagedisplay_Spec -- attribute of UP-Imagedisplay.mcc
+*
+*   FUNCTION
+*       char*: the image spec "<d>:<value>": 0 pattern, 1 vector image, 2 pen spec (r<8 hex>,<8 hex>,<8 hex> / pN / mN), 3 image class, 4 brush file, 5 picture file, 6 preset (MUII_ number). A value 0xFFFF or less is taken as an MUII_ number. UP-Popimage and UP-Imageadjust take it too, and notify it on a change. The preview shows the colour of a pen spec, a raised fill for a pattern or preset, and the file or class name for the rest (the image itself is not drawn).
+*
+*   INPUTS
+*       MUIA_Imagedisplay_Spec - access ISG. Tag value from <mcc/up.h> (the MUI id; MUI 3.8's mui.h keeps the class private).
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popimage.mcc, UP-Imageadjust.mcc
+*
+******/
+
+/****** UP-Framedisplay.mcc/MUIA_Framedisplay_Spec ******
+*
+*   NAME
+*       MUIA_Framedisplay_Spec -- attribute of UP-Framedisplay.mcc
+*
+*   FUNCTION
+*       char*: the frame spec "TSLRTB", one hex digit each: frame type (0 none), state (1 recessed), inner spacing left, right, top, bottom. UP-Popframe and UP-Frameadjust take it too, and notify it on a change. The preview is a themed frame, raised or recessed, with the spacing shown as an inner accent rectangle.
+*
+*   INPUTS
+*       MUIA_Framedisplay_Spec - access ISG. Tag value from <mcc/up.h> (the MUI id; MUI 3.8's mui.h keeps the class private).
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Popframe.mcc, UP-Frameadjust.mcc
+*
+******/
+
+/****** UP-Imageadjust.mcc/MUIA_Imageadjust_Type ******
+*
+*   NAME
+*       MUIA_Imageadjust_Type -- attribute of UP-Imageadjust.mcc
+*
+*   FUNCTION
+*       ULONG: the spec kinds the kind cycle offers: MUIV_Imageadjust_Type_All (default), _Image (vector, class, brush, picture, preset), _Background (pattern, pen, picture), _Pen (pen spec only). The value after "<d>:" is edited in a UP-Field.
+*
+*   INPUTS
+*       MUIA_Imageadjust_Type - access I. Tag value from <mcc/up.h> (the MUI id; MUI 3.8's mui.h keeps the class private).
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Imagedisplay.mcc, UP-Popimage.mcc
+*
+******/
