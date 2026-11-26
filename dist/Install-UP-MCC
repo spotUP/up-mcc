@@ -96,6 +96,9 @@
   (
     (makedir "ENVARC:OpenMUI")
     (makedir "ENV:OpenMUI")
+    ; The OpenMUI twin of every theme stays in ENVARC:UP-MCC/OpenMUI, so the UP-MCC preferences can switch OpenMUI with the theme.
+    (makedir "ENVARC:UP-MCC/OpenMUI")
+    (copyfiles (source (tackon #src "Themes/OpenMUI")) (dest "ENVARC:UP-MCC/OpenMUI") (pattern "#?.prefs"))
     (if (= 1 (exists "ENVARC:OpenMUI/global.prefs" (noreq)))
       (if (= 0 (exists "ENVARC:OpenMUI/global.prefs.bak" (noreq)))
         (copyfiles (source "ENVARC:OpenMUI/global.prefs") (dest "ENVARC:OpenMUI") (newname "global.prefs.bak"))

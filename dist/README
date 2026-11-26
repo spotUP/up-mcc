@@ -17,6 +17,7 @@ Install
     Libs/up-mcc.library                to  LIBS:
     Fonts/Inter-Regular.ttf            to  FONTS:
     Themes/*.theme                     to  ENVARC:UP-MCC/ and ENV:UP-MCC/
+    Themes/OpenMUI/*.prefs             to  ENVARC:UP-MCC/OpenMUI/ (Dark.prefs also as ENVARC: and ENV:OpenMUI/global.prefs)
   It also offers the programmer headers, the documentation and the demonstration program.
   Check the result with:  Version LIBS:up-mcc.library
 
@@ -45,7 +46,9 @@ Theme files and ENV:UP-MCC/
 
 Preferences
   UP-MCC.mcp is a MUI preferences class. Its edits recolour every running program that uses the classes, at once, through
-  up-mcc.library.
+  up-mcc.library. When the theme saved is Dark or Light unchanged, its OpenMUI twin (ENVARC:UP-MCC/OpenMUI/<name>.prefs)
+  also replaces ENV: and ENVARC:OpenMUI/global.prefs, so other OpenMUI programs follow; a global.prefs of your own is kept
+  once as global.prefs.bak. A custom theme leaves OpenMUI alone. Workbench colours (palette.prefs) are never changed.
 
 Using the classes from C
   Include <mcc/up.h> (it pulls in <mcc/up_lib.h>). Create an object by class name, no UP_New* function is needed:

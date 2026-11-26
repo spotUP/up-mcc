@@ -3,7 +3,8 @@
  * radius and a reset button. Configuration to gadgets reads the theme in force (built-in, then ENV:UP-MCC/theme); gadgets to
  * configuration writes ENV:UP-MCC/theme and ENVARC:UP-MCC/theme through txt_theme_write (the one writer, beside the one parser) and
  * calls UP_ThemeReload. The gadget/token mapping is src/map/up_prefs_map.c, host-tested (ctest mcc-prefs-*).
- * MUI calls GadgetsToConfig for both Use and Save and the page cannot tell them apart, so both files are written every time. */
+ * MUI calls GadgetsToConfig for both Use and Save and the page cannot tell them apart, so both files are written every time.
+ * When the theme written is a shipped one (Dark, Light), its OpenMUI twin replaces OpenMUI's global.prefs too (openmui_follow). */
 #if defined(__amigaos__) || defined(AMIGA)
 
 #include "mui_aa_class.h"
@@ -40,6 +41,15 @@ extern struct Library* UPMCCBase;
 #define PREFS_ENV_FILE "ENV:UP-MCC/theme"
 #define PREFS_ENVARC_DIR "ENVARC:UP-MCC"
 #define PREFS_ENVARC_FILE "ENVARC:UP-MCC/theme"
+/* OpenMUI follows the theme: the installer keeps the OpenMUI twin of each shipped theme (Themes/OpenMUI/<name>.prefs, made by
+ * makerelease theme2prefs.py) in PREFS_OPENMUI_SRC; the page copies the twin of the theme it writes over OpenMUI's global.prefs. */
+#define PREFS_THEME_DIR "ENVARC:UP-MCC/"
+#define PREFS_OPENMUI_SRC "ENVARC:UP-MCC/OpenMUI/"
+#define OPENMUI_ENV_DIR "ENV:OpenMUI"
+#define OPENMUI_ENV_FILE "ENV:OpenMUI/global.prefs"
+#define OPENMUI_ENVARC_DIR "ENVARC:OpenMUI"
+#define OPENMUI_ENVARC_FILE "ENVARC:OpenMUI/global.prefs"
+#define OPENMUI_ENVARC_BAK "ENVARC:OpenMUI/global.prefs.bak"
 
 typedef struct prefs_data {
     Object *file, *accent, *surface, *text, *background, *radius;
@@ -170,6 +180,103 @@ static void write_theme_file(const char* dir, const char* path, const char* text
     }
 }
 
+/* Reads the whole file into buf. Returns its length, or -1 when it is missing, unreadable or does not fit. */
+static LONG read_small_file(const char* path, char* buf, LONG cap) {
+    BPTR fh = Open((CONST_STRPTR)path, MODE_OLDFILE);
+    LONG n;
+    if (fh == 0) {
+        return -1;
+    }
+    n = Read(fh, (APTR)buf, cap);
+    Close(fh);
+    return (n < 0 || n >= cap) ? -1 : n;
+}
+
+/* The theme name of a theme file path: its base name without ".theme" (any case), into dst. 0 when the path names no .theme file. */
+static int theme_name_of(const char* path, char* dst, size_t cap) {
+    const char* base = path;
+    const char* p;
+    size_t n, i;
+    for (p = path; *p != '\0'; ++p) {
+        if (*p == '/' || *p == ':') {
+            base = p + 1;
+        }
+    }
+    n = strlen(base);
+    if (n <= 6 || n - 6 >= cap) {
+        return 0;
+    }
+    for (i = 0; i < 6; ++i) {
+        if ((base[n - 6 + i] | 0x20) != ".theme"[i]) {
+            return 0;
+        }
+    }
+    memcpy(dst, base, n - 6);
+    dst[n - 6] = '\0';
+    return 1;
+}
+
+/* 1 when the installed theme file name (PREFS_THEME_DIR<name>.theme) resolves to exactly the tokens tok. */
+static int theme_is(const char* name, const uint32_t* tok) {
+    char path[96];
+    txt_theme t;
+    if (strlen(name) > sizeof path - sizeof PREFS_THEME_DIR - 7) {
+        return 0;
+    }
+    strcpy(path, PREFS_THEME_DIR);
+    strcat(path, name);
+    strcat(path, ".theme");
+    txt_theme_default(&t);
+    return mui_theme_load(&t, NULL, path) == 1 && memcmp(t.token, tok, sizeof t.token) == 0;
+}
+
+/* OpenMUI follows the theme just written (tokens tok). The theme is named by the file the page loaded (the Theme file gadget) when its
+ * tokens are unchanged, else by the shipped theme whose tokens it equals; a custom theme names none and OpenMUI is left alone. The
+ * named theme's OpenMUI twin replaces ENV: and ENVARC:OpenMUI/global.prefs (both, as for the theme: MUI sends Use and Save through
+ * GadgetsToConfig alike); a user's own ENVARC global.prefs is first kept once as global.prefs.bak, as Install-UP-MCC does. Only
+ * global.prefs is written: palette.prefs and the Workbench colours are never touched. buf is scratch of cap bytes. */
+static void openmui_follow(prefs_data* d, const uint32_t* tok, char* buf, LONG cap) {
+    static const char* const shipped[] = {"Dark", "Light"};
+    char path[256];
+    char name[32];
+    char src[96];
+    LONG n;
+    size_t i;
+    int found = 0;
+    copy_string(d->file, path, sizeof path);
+    if (theme_name_of(path, name, sizeof name) && theme_is(name, tok)) {
+        found = 1;
+    }
+    for (i = 0; !found && i < sizeof shipped / sizeof shipped[0]; ++i) {
+        if (theme_is(shipped[i], tok)) {
+            strcpy(name, shipped[i]);
+            found = 1;
+        }
+    }
+    if (!found || strlen(name) > sizeof src - sizeof PREFS_OPENMUI_SRC - 7) {
+        return;
+    }
+    strcpy(src, PREFS_OPENMUI_SRC);
+    strcat(src, name);
+    strcat(src, ".prefs");
+    if (read_small_file(src, buf, cap) < 0) {
+        return; /* no OpenMUI twin for this theme */
+    }
+    n = read_small_file(OPENMUI_ENVARC_BAK, buf, cap);
+    if (n < 0) {
+        n = read_small_file(OPENMUI_ENVARC_FILE, buf, cap);
+        if (n >= 0) {
+            write_theme_file(OPENMUI_ENVARC_DIR, OPENMUI_ENVARC_BAK, buf, (size_t)n);
+        }
+    }
+    n = read_small_file(src, buf, cap);
+    if (n < 0) {
+        return;
+    }
+    write_theme_file(OPENMUI_ENV_DIR, OPENMUI_ENV_FILE, buf, (size_t)n);
+    write_theme_file(OPENMUI_ENVARC_DIR, OPENMUI_ENVARC_FILE, buf, (size_t)n);
+}
+
 static ULONG prefs_gadgets_to_config(struct IClass* cl, Object* obj) {
     prefs_data* d = INST_DATA(cl, obj);
     txt_theme out = d->th;
@@ -185,6 +292,7 @@ static ULONG prefs_gadgets_to_config(struct IClass* cl, Object* obj) {
     write_theme_file(PREFS_ENV_DIR, PREFS_ENV_FILE, text, (size_t)n);
     write_theme_file(PREFS_ENVARC_DIR, PREFS_ENVARC_FILE, text, (size_t)n);
     d->th = out;
+    openmui_follow(d, out.token, text, (LONG)sizeof text);
     /* The library's store, shared by every process: UP_ThemeReload reads the file just written and recolours all registered objects. */
     (void)UP_ThemeReload();
     return 0;
