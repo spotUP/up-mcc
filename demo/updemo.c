@@ -14,6 +14,7 @@
  * I1349: the window covers the screen and the content is one of three tiers by screen height (256, 512, 700+ lines), so it opens under MUI 3.8
  * (which refuses a window whose minimum size exceeds the screen) without a Scrollgroup; the program asks for 48 KB of stack (MUI 5 warns below 32000). */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <clib/alib_protos.h>
@@ -315,12 +316,12 @@ static int demo_body(int argc, char** argv) {
         {   /* I1349: the window covers the screen and the content is chosen to fit it, no scrolling: three tiers by screen height */
             Object* ctl;
             Object* pbk;
-            ctl = card("Controls",
+            ctl = mode != 0 ? NULL : card("Controls", /* CASE mode builds its own tree; an unattached card would never be disposed */
                        box(TRUE, obj[0], MUI_NewObject((char*)"UP-Button.mcc", UPA_Button_Caption, (ULONG) "Shuffle", UPA_Button_Icon, (ULONG) "shuffle", TAG_DONE),
                            MUI_NewObject((char*)"UP-Button.mcc", UPA_Button_Caption, (ULONG) "Queue", UPA_Button_Role, (ULONG)UPV_Button_Role_Ghost, TAG_DONE),
                            MUI_NewObject((char*)"UP-Button.mcc", UPA_Button_Role, (ULONG)UPV_Button_Role_Toggle, TAG_DONE), label("Repeat", UPV_Text_Tone_Normal), NULL),
                        box(FALSE, tier == 0 ? NULL : label("Search", UPV_Text_Tone_Muted), obj[8], obj[7], NULL, NULL, NULL), NULL, NULL);
-            pbk = card("Playback", tier == 0 ? NULL : label("Volume 40", UPV_Text_Tone_Muted), obj[5], tier == 0 ? NULL : label("Elapsed 2:05 of 3:22", UPV_Text_Tone_Muted),
+            pbk = mode != 0 ? NULL : card("Playback", tier == 0 ? NULL : label("Volume 40", UPV_Text_Tone_Muted), obj[5], tier == 0 ? NULL : label("Elapsed 2:05 of 3:22", UPV_Text_Tone_Muted),
                        box(FALSE, obj[6], tier == 0 ? NULL : label("Scroll position", UPV_Text_Tone_Muted), obj[9], NULL, NULL, NULL));
             if (mode != 0) {
                 Object* a = NULL;
@@ -371,6 +372,11 @@ static int demo_body(int argc, char** argv) {
                 }
                 root = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Panel, MUIA_Group_Child, (ULONG)label("UP-Demo case", UPV_Text_Tone_Heading),
                                      MUIA_Group_Child, (ULONG)box(TRUE, a, b, c, d, e, f), TAG_DONE);
+                for (i = 0; i < CLASS_COUNT; i++) { /* the app disposes only its tree: the samples left out go now, or their classes stay open */
+                    if (obj[i] != a && obj[i] != b && obj[i] != c && obj[i] != d && obj[i] != e && obj[i] != f) {
+                        demo_drop(obj, i);
+                    }
+                }
             } else if (tier == 2) {
                 Object* more = card("More controls", box(TRUE, obj[11], obj[12], NULL, NULL, NULL, NULL), box(TRUE, obj[13], obj[14], obj[20], NULL, NULL, NULL),
                                     box(TRUE, obj[15], obj[16], obj[17], obj[18], obj[19], NULL), box(FALSE, box(TRUE, obj[21], obj[22], obj[23], obj[24], NULL, NULL), box(TRUE, obj[25], obj[26], obj[27], NULL, NULL, NULL), NULL, NULL, NULL, NULL));
@@ -463,7 +469,7 @@ static int demo_body(int argc, char** argv) {
             }
             while (!quit_now && (!auto_close || ticks < 30) && is_open) { /* until the close gadget; AUTO: about 3 s */
                 ULONG id = DoMethod(app, MUIM_Application_NewInput, (ULONG)&sigs);
-                if (id == (ULONG)MUIV_Application_ReturnID_Quit || (SetSignal(0, 0) & SIGBREAKF_CTRL_C) != 0) { /* close gadget or Ctrl-C from a script */
+                if (id == (ULONG)MUIV_Application_ReturnID_Quit || (SetSignal(0, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C) != 0) { /* close gadget or Ctrl-C from a script; the break is consumed so the exit flush does not abort */
                     break;
                 }
                 Delay(5);
@@ -480,6 +486,11 @@ static int demo_body(int argc, char** argv) {
     }
     CloseLibrary(MUIMasterBase);
     return ok == CLASS_COUNT ? 0 : 20;
+}
+
+/* libnix read()/write() call __chkabort, which turns a pending Ctrl-C into exit(20) inside printf and skips the
+ * dispose below (the classes leak). This empty one keeps Ctrl-C pending until the main loop ends the demo cleanly. */
+void __chkabort(void) {
 }
 
 static int demo_main(int argc, char** argv) {
