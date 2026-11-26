@@ -84,7 +84,7 @@ static const char* aamenu_row(struct Hook* hook, Object* obj, UP_ListCell* cell)
     if (d->ent != NULL && cell->col != 1) { /* the check column and the shortcut column */
         return cell->col == 0 ? (d->checked & (1UL << cell->row) ? "*" : " ") : d->keys[cell->row];
     }
-    /* shortcut: a separator is a dashed row, not a thin rule; a disabled item is not greyed (UP-List has no per-row tone) */
+    /* shortcut: a separator is a dashed row, not a thin rule */
     return aamenu_is_sep(d, cell->row) ? "--------------" : aamenu_title(d, cell->row);
 }
 
@@ -155,6 +155,7 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act) {
         aamenu_place(obj, d);
         set(d->list, UPA_List_Active, (ULONG)-1);
     }
+    set(d->list, UPA_List_Disabled, d->disabled); /* grey rows; the mask may have changed since the last open */
     mui_aa_pop_opened(&d->pop);
     set(d->popup, MUIA_Window_Open, TRUE);
     set(obj, UPA_Menu_Open, TRUE);

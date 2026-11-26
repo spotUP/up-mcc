@@ -740,8 +740,15 @@ void mui_aa_list_row_rgb(const uint32_t* token, int row_state, int playing, uint
         *face = row_state == MUI_AA_SELECTED ? token[SEL_GUI_TOKEN_SURFACE_PRESSED] : row_state == MUI_AA_HOVER ? token[SEL_GUI_TOKEN_SURFACE_HOVER] : token[SEL_GUI_TOKEN_SURFACE];
     }
     if (text != NULL) {
-        *text = playing ? token[SEL_GUI_TOKEN_ACCENT] : token[SEL_GUI_TOKEN_TEXT];
+        *text = row_state == MUI_AA_DISABLED ? token[SEL_GUI_TOKEN_TEXT_DISABLED] : playing ? token[SEL_GUI_TOKEN_ACCENT] : token[SEL_GUI_TOKEN_TEXT];
     }
+}
+
+int mui_aa_list_row_state(unsigned long dis, long row, int sel, long hover) {
+    if (row >= 0 && row < 32 && ((dis >> row) & 1UL)) {
+        return MUI_AA_DISABLED;
+    }
+    return sel ? MUI_AA_SELECTED : row == hover ? MUI_AA_HOVER : MUI_AA_NORMAL;
 }
 
 /* I1079b: a thin wrapper over the shared splitter sel_uim_cols_split (design 2026-11-05-I1079 section 3.4). A column with

@@ -712,6 +712,25 @@
 *
 ******/
 
+/****** UP-List.mcc/UPA_List_Disabled ******
+*
+*   NAME
+*       UPA_List_Disabled -- attribute of UP-List.mcc
+*
+*   FUNCTION
+*       ULONG: bit i = row i (rows 0..31) is disabled: drawn in TEXT_DISABLED with no hover or selection highlight, and a click or Return on it picks nothing (no UPA_List_Picked, no UPA_List_DoubleClick). Rows 32 and up are never disabled. Default 0; may change while the list is shown. UP-Menu passes UPA_Menu_Disabled here.
+*
+*   INPUTS
+*       UPA_List_Disabled - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-List.mcc
+*
+******/
+
 /****** UP-List.mcc/UPM_List_Select ******
 *
 *   NAME
@@ -3260,7 +3279,7 @@
 *       UPA_Menu_Disabled -- attribute of UP-Menu.mcc
 *
 *   FUNCTION
-*       ULONG: bit i = item i is disabled (MUIA_Menuitem_Enabled inverted); a disabled item cannot be chosen; not drawn grey
+*       ULONG: bit i = item i is disabled (MUIA_Menuitem_Enabled inverted); a disabled item is drawn grey and cannot be chosen (UPA_List_Disabled of the popup list)
 *
 *   INPUTS
 *       UPA_Menu_Disabled - access ISG. Tag value from <mcc/up.h>.
