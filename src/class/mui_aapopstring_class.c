@@ -659,21 +659,22 @@ const struct aa_class_desc aapoplist_class_desc = {MUIC_Group, sizeof(aapop_data
 const struct aa_class_desc aapopobject_class_desc = {MUIC_Group, sizeof(aapop_data), aapopobject_dispatch, &g_popobject_class};
 const struct aa_class_desc aapopasl_class_desc = {MUIC_Group, sizeof(aapop_data), aapopasl_dispatch, &g_popasl_class};
 const struct aa_class_desc aapopscreen_class_desc = {MUIC_Group, sizeof(aapop_data), aapopscreen_dispatch, &g_popscreen_class};
-__asm__(".text\n.even\n.globl _aapopstring_dispatch\n_aapopstring_dispatch:\n"
+/* One section per stub: in one shared .text, --gc-sections kept all five dispatchers in every UP-Pop*.mcc. */
+__asm__(".pushsection .text._aapopstring_dispatch,\"ax\"\n.even\n.globl _aapopstring_dispatch\n_aapopstring_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aapopstring_dispatch_c\n\tlea 12(sp),sp\n\trts\n"
-        ".globl _aapoplist_dispatch\n_aapoplist_dispatch:\n"
+        "\tjbsr _aapopstring_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n"
+        ".pushsection .text._aapoplist_dispatch,\"ax\"\n.even\n.globl _aapoplist_dispatch\n_aapoplist_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aapoplist_dispatch_c\n\tlea 12(sp),sp\n\trts\n"
-        ".globl _aapopobject_dispatch\n_aapopobject_dispatch:\n"
+        "\tjbsr _aapoplist_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n"
+        ".pushsection .text._aapopobject_dispatch,\"ax\"\n.even\n.globl _aapopobject_dispatch\n_aapopobject_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aapopobject_dispatch_c\n\tlea 12(sp),sp\n\trts\n"
-        ".globl _aapopasl_dispatch\n_aapopasl_dispatch:\n"
+        "\tjbsr _aapopobject_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n"
+        ".pushsection .text._aapopasl_dispatch,\"ax\"\n.even\n.globl _aapopasl_dispatch\n_aapopasl_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aapopasl_dispatch_c\n\tlea 12(sp),sp\n\trts\n"
-        ".globl _aapopscreen_dispatch\n_aapopscreen_dispatch:\n"
+        "\tjbsr _aapopasl_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n"
+        ".pushsection .text._aapopscreen_dispatch,\"ax\"\n.even\n.globl _aapopscreen_dispatch\n_aapopscreen_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aapopscreen_dispatch_c\n\tlea 12(sp),sp\n\trts\n");
+        "\tjbsr _aapopscreen_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n");
 
 static Object* aapop_make(struct MUI_CustomClass** slot, const struct aa_class_desc* desc, const struct TagItem* tags) {
     if (*slot == NULL) {
