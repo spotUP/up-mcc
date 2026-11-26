@@ -42,4 +42,16 @@ extern const struct aa_class_desc aaimagedisplay_class_desc, aaframedisplay_clas
     aadirlist_class_desc, aavolumelist_class_desc, aascrmodelist_class_desc;
 extern const struct aa_class_desc aamenustrip_class_desc; /* UP-Menustrip */
 
+/* A class that queues MUIM_Application_PushMethod unpushes it at MUIM_DisconnectParent, the last point where the
+ * application is known live (UP-Menustrip, UP-Scrollgroup); these IDs are missing from the MUI 3.8 SDK. */
+#ifndef MUIM_Application_UnpushMethod
+#define MUIM_Application_UnpushMethod 0x804211dd /* V20; the MUI 3.8 SDK (V19) lacks it, 3.8 ignores it */
+#endif
+#ifndef MUIM_ConnectParent
+#define MUIM_ConnectParent 0x90421d00    /* Zune/OpenMUI Notify (MUIB_ZUNE|0x1d00); the MUI 3.8 SDK lacks it, 3.8 never sends it */
+#endif
+#ifndef MUIM_DisconnectParent
+#define MUIM_DisconnectParent 0x90421d01 /* Zune/OpenMUI Notify (MUIB_ZUNE|0x1d01) */
+#endif
+
 #endif

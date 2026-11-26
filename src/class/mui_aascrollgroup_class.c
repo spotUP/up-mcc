@@ -1,6 +1,8 @@
 /* UP-Scrollgroup: MUIC_Scrollgroup equivalent. Group subclass of one UP-Virtgroup (the contents) and one UP-Scroller. A layout hook
  * gives the bar the right edge while the contents are taller than the view and zero width otherwise (mui_aa_scr_split); after layout
- * it pushes first/visible/entries to the bar. The bar drives UPA_Virtgroup_Top by notify. Vertical bar only. */
+ * it pushes first/visible/entries to the bar. The bar drives UPA_Virtgroup_Top by notify. Vertical bar only.
+ * MUIM_DisconnectParent drops a MUIA_ShowMe set still queued for the bar (as UP-Menustrip), so a scrollgroup removed and disposed
+ * while the application runs leaves no dangling target. */
 #include "mui_aascrollgroup_class.h"
 #include "mui_aa_class.h"
 #include "mui_aascroller_class.h"
@@ -25,6 +27,7 @@ typedef struct aascrollgroup_data {
     Object *virt, *bar;
     long s_first, s_vis, s_ent; /* last values pushed to the bar */
     int bar_on;                 /* MUIA_ShowMe last asked of the bar, -1 before the first layout */
+    Object* app;                /* the application seen at MUIM_ConnectParent, cleared at the unpush (as UP-Menustrip) */
 } aascrollgroup_data;
 
 static struct MUI_CustomClass* g_class;
@@ -180,6 +183,22 @@ static ULONG __attribute__((used)) aascrollgroup_dispatch_c(struct IClass* cl, O
         return aascrollgroup_set(cl, obj, (struct opSet*)msg);
     case OM_GET:
         return aascrollgroup_get(cl, obj, (struct opGet*)msg);
+    case MUIM_ConnectParent: {
+        aascrollgroup_data* d = INST_DATA(cl, obj);
+        ULONG r = DoSuperMethodA(cl, obj, msg); /* copies the parent's global info */
+        d->app = muiGlobalInfo(obj) != NULL ? _app(obj) : NULL;
+        return r;
+    }
+    case MUIM_DisconnectParent: {
+        /* The ShowMe set pushed by the layout targets the bar, disposed with the group: drop it while the application is known live. */
+        aascrollgroup_data* d = INST_DATA(cl, obj);
+        if (d->app != NULL && d->bar != NULL) {
+            DoMethod(d->app, MUIM_Application_UnpushMethod, (ULONG)(uintptr_t)d->bar, 0, 0);
+        }
+        d->app = NULL;
+        d->bar_on = -1; /* a dropped push left ShowMe unapplied: the next layout after a re-add asks again */
+        break;
+    }
     case OM_ADDMEMBER:
     case OM_REMMEMBER: {
         aascrollgroup_data* d = INST_DATA(cl, obj);
