@@ -4011,7 +4011,7 @@
 *       UPA_Menustrip_Trigger -- attribute of UP-Menustrip.mcc
 *
 *   FUNCTION
-*       ULONG: the last pick as (menu index << 8) | item index, both counted from 0; the menu index is the position in the bar. Notifies on every pick, from the bar or from a shortcut (MUIA_Menuitem_Trigger): use MUIM_Notify with MUIV_EveryTime, or with one value for one item.
+*       ULONG: the last pick as (menu index << 8) | item index, both counted from 0; the menu index is the position in the bar. Notifies on every pick, from the bar or from a shortcut (MUIA_Menuitem_Trigger): use MUIM_Notify with MUIV_EveryTime, or with one value for one item. The set is delivered through MUIM_Application_PushMethod after the pick returns, so a notify on it may close or iconify the application's windows; a get() right after the pick (from inside a UPA_Menu_Chosen notify) still returns the previous pick.
 *
 *   INPUTS
 *       UPA_Menustrip_Trigger - access ..G. Tag value from <mcc/up.h>.

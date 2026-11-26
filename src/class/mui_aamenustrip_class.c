@@ -10,7 +10,8 @@
  * activates none, so the right button would never reach the application window again. A bar that lost the activation to another
  * window leaves it there.
  * The bar is never closed inside a notification of a menu or of a popup window: closing runs MUIM_Cleanup of the menus, which disposes
- * the popup whose notification is running. Every close goes through MUIM_Application_PushMethod.
+ * the popup whose notification is running. Every close goes through MUIM_Application_PushMethod, and so does the UPA_Menustrip_Trigger
+ * set of a pick, since an application notify on it may close the windows (MUIA_Application_Iconified).
  * Two styles: click (press and release the right button, then click a title and an item) and hold-drag-release (hold the right button,
  * move over the titles, release over an item). While the button is held the bar and the menu popups open inactive, so the application
  * window keeps getting the pointer moves and the release; the strip hit-tests the titles and hands moves and the release to the open menu
@@ -426,7 +427,13 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
             while (st != NULL && (o = NextObject((APTR)&st)) != NULL && o != (Object*)m[1]) {
                 i++;
             }
-            SetAttrs(obj, UPA_Menustrip_Trigger, (i << 8) | m[2], TAG_DONE); /* notifies */
+            /* Deferred: this runs inside the popup list's notify or HandleEvent, and an application notify on the Trigger may close
+             * the windows (Iconify), whose Cleanup disposes that popup. Pushed before the close, so the pick runs first. */
+            if (aa_live(obj)) {
+                DoMethod(_app(obj), MUIM_Application_PushMethod, (ULONG)obj, 3, MUIM_Set, UPA_Menustrip_Trigger, (i << 8) | m[2]);
+            } else {
+                SetAttrs(obj, UPA_Menustrip_Trigger, (i << 8) | m[2], TAG_DONE); /* notifies */
+            }
             aamenustrip_close(obj, d); /* the bar's Open FALSE notify gives the activation back */
         }
         return 0;
