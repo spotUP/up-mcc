@@ -52,7 +52,7 @@ Using the classes from C
     Object *b = MUI_NewObject("UP-Button.mcc", UPA_Button_Caption, (IPTR)"Play", UPA_Button_Icon, (IPTR)"play", TAG_DONE);
   Attributes are UPA_<Class>_<Name> tags, methods are UPM_<Class>_<Name>. Docs/UP-<Class>.mcc.doc lists every one with its
   access letters (I set at creation, S settable later, G readable). Library functions (UP_ThemeLoad, UP_ThemeReload,
-  UP_IconFind and others) are in Docs/up-mcc.library.doc; open up-mcc.library version 1 or use the inline headers in Developer/include/.
+  UP_IconFind and others) are in Docs/up-mcc.library.doc; open up-mcc.library version 3 or use the inline headers in Developer/include/.
   Demo/updemo.c is a complete example that creates forty of the classes.
 
 Running the demo

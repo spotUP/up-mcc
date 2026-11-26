@@ -154,7 +154,7 @@ endif()
 # sys-include/stabs.h, no startup code. Not libinit.o itself: its Resident has rt_Version 0, and ramlib refuses
 # OpenLibrary(name, n) for a disk library whose Resident version is below n (I685p). MCC_LIB_VERSION is the one version
 # source: the Resident (UP_LIB_VERSION in up_libinit.c) and LibVersion in each header file. Post-build check: cmake/mcc_check_romtag.cmake.
-set(MCC_LIB_VERSION 2)
+set(MCC_LIB_VERSION 3)
 set(MCC_LIBINIT_SRC lib/up_libinit.c)
 set_source_files_properties(${MCC_LIBINIT_SRC} PROPERTIES COMPILE_OPTIONS "-fasm")
 function(up_mcc_lib_skeleton tgt)

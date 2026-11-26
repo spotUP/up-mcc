@@ -1,5 +1,5 @@
 /* Host test of the UP-Field and UP-Panel colour and width rules (src/map/mui_aa.c):
- * typed text is the theme TEXT, not the MUI prefs pen (black on a dark face);
+ * a prefilled field shows its text in the theme TEXT, not the MUI prefs pen;
  * a field is never narrower than its placeholder; a rounded corner wedge takes
  * the colour of the panel the object sits on, not the window BACKGROUND. */
 #include "map/mui_aa.h"
@@ -21,9 +21,6 @@ int main(void) {
     for (i = 0; i < SEL_GUI_TOKEN_COUNT; i++) {
         tok[i] = 0x102030u + (uint32_t)i * 0x010101u;
     }
-    /* input text is drawn in the theme text colour, which differs from the field face */
-    CHECK(mui_aa_field_string_fg(tok) == tok[SEL_GUI_TOKEN_TEXT]);
-    CHECK(mui_aa_field_string_fg(tok) != mui_aa_field_string_bg(tok, 0));
     /* placeholder fits: text width + the 4 px the draw keeps + both inner paddings */
     mui_aa_field_metrics(0, 256, &m);
     CHECK(mui_aa_field_min_width(&m, 100) == 104 + 2 * m.pad_x);

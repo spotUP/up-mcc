@@ -529,23 +529,8 @@ int mui_aa_field_plan(const uint32_t* token, const mui_aa_field_t* m, int focus,
     return MUI_AA_FIELD_OPS;
 }
 
-uint32_t mui_aa_field_string_bg(const uint32_t* token, int focus) {
-    (void)focus; /* focus moves the outline only (op 0); the face stays */
-    g_field_calls++;
-    return token[MUI_AA_FIELD_FACE];
-}
-
-uint32_t mui_aa_field_string_fg(const uint32_t* token) {
-    return token[SEL_GUI_TOKEN_TEXT];
-}
-
 int mui_aa_field_min_width(const mui_aa_field_t* m, int pw) {
     return pw > 0 ? pw + 4 + 2 * m->pad_x : 0;
-}
-
-int mui_aa_field_string_gadget(unsigned gadget_type) {
-    unsigned t = gadget_type & 0x0007u; /* GTYP_GTYPEMASK */
-    return t == 0x0004u || t == 0x0005u;  /* GTYP_STRGADGET, GTYP_CUSTOMGADGET */
 }
 
 int mui_aa_field_height(const mui_aa_field_t* m, int ch) {

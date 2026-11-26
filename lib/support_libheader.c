@@ -18,7 +18,7 @@ void up_draw_init(void); /* src/mui_aa_draw.c, library copy (I1491a2) */
 #define LIB_NAME "up-mcc.library"
 #define LIB_VER UP_LIB_VERSION
 #define LIB_REV 0
-#define LIB_ID "$VER: up-mcc.library 2.0 (22.11.2026) UP- MUI class package support library"
+#define LIB_ID "$VER: up-mcc.library 3.0 (26.11.2026) UP- MUI class package support library"
 
 const UWORD LibVersion = LIB_VER;
 const UWORD LibRevision = LIB_REV;
