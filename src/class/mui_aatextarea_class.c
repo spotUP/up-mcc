@@ -39,6 +39,8 @@ typedef struct ta_data {
     int cap, len, caret, anchor, pref_x, top;
     int dragging; /* left button held after a click inside: 1 mouse moves extend the selection, 2 they drag the scroll bar thumb */
     int sb_grab;  /* thumb drag: pointer offset below the thumb top */
+    int clicks, click_off; /* as UP-Field: quick clicks on one spot (1 caret, 2 word, 3 line) and the text offset of the last one */
+    ULONG click_s, click_us;
     int sbw; /* width of the UP-Scroller bar the class draws on its right (aa_bar) */
     MtlLine* lines;
     int nlines, line_cap, wrap_w;
@@ -164,7 +166,8 @@ static int ta_set_text(ta_data* d, const char* s) {
     return 1;
 }
 
-static void ta_moved(Object* obj, ta_data* d, int off, int keep_pref, int extend) {
+/* noinline here and on ta_offset_at: -O2 copies them into every call site, which the slim limit cannot afford */
+static void __attribute__((noinline)) ta_moved(Object* obj, ta_data* d, int off, int keep_pref, int extend) {
     d->caret = off;
     if (!extend) {
         d->anchor = off;
@@ -390,12 +393,21 @@ static ULONG ta_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     return 0;
 }
 
+/* The text offset under the pointer. Above the view a drag gives one line up per move (the draw scrolls it into view), a press the top line. */
+static int __attribute__((noinline)) ta_offset_at(Object* obj, ta_data* d, const ta_geom* g, const struct IntuiMessage* im, int drag) {
+    ta_fit f;
+    int line = im->MouseY < g->y ? d->top - drag : d->top + (im->MouseY - g->y) / g->lh;
+    f.d = d;
+    f.obj = obj;
+    return mtl_offset_at(d->buf, d->len, d->lines, d->nlines, line < 0 ? 0 : line, im->MouseX - g->x, ta_width, &f);
+}
+
 static ULONG ta_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* msg) {
     ta_data* d = INST_DATA(cl, obj);
     struct IntuiMessage* im = msg->imsg;
     ta_geom g;
     ta_fit f;
-    int in, off, code, shift, has_sel, lo, hi;
+    int in, off, code, shift, has_sel, lo, hi, keep;
     if (im == NULL) {
         return 0;
     }
@@ -405,7 +417,6 @@ static ULONG ta_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* 
     f.obj = obj;
     if (im->Class == IDCMP_MOUSEBUTTONS) {
         if (im->Code == SELECTDOWN && in) {
-            int line;
             if (aa_live(obj)) {
                 set(_win(obj), MUIA_Window_ActiveObject, (ULONG)obj);
             }
@@ -418,12 +429,25 @@ static ULONG ta_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* 
                 ta_redraw(obj);
                 return MUI_EventHandlerRC_Eat;
             }
-            line = d->top + (im->MouseY - g.y) / g.lh;
-            line = line < d->top ? d->top : line;
-            off = mtl_offset_at(d->buf, d->len, d->lines, d->nlines, line, im->MouseX - g.x, ta_width, &f);
-            ta_moved(obj, d, off, 0, im->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
+            off = ta_offset_at(obj, d, &g, im, 0);
+            d->clicks = d->clicks && off - d->click_off <= 1 && d->click_off - off <= 1 && DoubleClick(d->click_s, d->click_us, im->Seconds, im->Micros) ? d->clicks % 3 + 1 : 1;
+            d->click_off = off;
+            d->click_s = im->Seconds;
+            d->click_us = im->Micros;
+            if (d->clicks == 1) {
+                ta_moved(obj, d, off, 0, im->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
+            } else {
+                if (d->clicks == 2) {
+                    mtl_word_range(d->buf, d->len, off, &lo, &hi);
+                } else { /* the wrapped line under the pointer, as Home and End see it */
+                    lo = mtl_line_home(d->lines, d->nlines, off);
+                    hi = mtl_line_end(d->buf, d->len, d->lines, d->nlines, off);
+                }
+                d->anchor = lo;
+                ta_moved(obj, d, hi, 0, 1);
+            }
             d->reveal = 0; /* a click inside the view must not scroll it */
-            d->dragging = 1;
+            d->dragging = d->clicks == 1; /* pointer jitter in a double click must not drag the word selection away */
             return MUI_EventHandlerRC_Eat;
         }
         if (im->Code == (SELECTDOWN | IECODE_UP_PREFIX) && d->dragging) {
@@ -441,13 +465,8 @@ static ULONG ta_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* 
             d->top = (int)aa_bar(&d->aa, NULL, &b);
             ta_redraw(obj);
         } else if (d->dragging) {
-            int line;
             ta_ensure(obj, d, &g);
-            line = d->top + (im->MouseY - g.y) / g.lh;
-            line = im->MouseY < g.y ? d->top - 1 : line; /* above the view: one line up per move, the draw scrolls it into view */
-            line = line < 0 ? 0 : line;
-            off = mtl_offset_at(d->buf, d->len, d->lines, d->nlines, line, im->MouseX - g.x, ta_width, &f);
-            ta_moved(obj, d, off, 0, 1);
+            ta_moved(obj, d, ta_offset_at(obj, d, &g, im, 1), 0, 1);
         }
         return 0;
     }
@@ -471,26 +490,30 @@ static ULONG ta_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* 
         ta_ensure(obj, d, &g);
         shift = im->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT);
         has_sel = ta_selection(d, &lo, &hi);
+        keep = 0;
         switch (code) {
         case 0x4C: /* up */
         case 0x4D: /* down */
             off = mtl_move_vertical(d->buf, d->len, d->lines, d->nlines, d->caret, code == 0x4C ? -1 : 1, &d->pref_x, ta_width, &f);
-            ta_moved(obj, d, off, 1, shift);
-            return MUI_EventHandlerRC_Eat;
+            keep = 1;
+            break;
         case 0x4E: /* right: without Shift a selection collapses to its end */
-            ta_moved(obj, d, !shift && has_sel ? hi : d->caret < d->len ? d->caret + 1 : d->caret, 0, shift);
-            return MUI_EventHandlerRC_Eat;
+            off = !shift && has_sel ? hi : d->caret < d->len ? d->caret + 1 : d->caret;
+            break;
         case 0x4F: /* left: ... or to its start */
-            ta_moved(obj, d, !shift && has_sel ? lo : d->caret > 0 ? d->caret - 1 : 0, 0, shift);
-            return MUI_EventHandlerRC_Eat;
+            off = !shift && has_sel ? lo : d->caret > 0 ? d->caret - 1 : 0;
+            break;
         case 0x70: /* Home, as aalist */
-            ta_moved(obj, d, mtl_line_home(d->lines, d->nlines, d->caret), 0, shift);
-            return MUI_EventHandlerRC_Eat;
+            off = mtl_line_home(d->lines, d->nlines, d->caret);
+            break;
         case 0x71: /* End */
-            ta_moved(obj, d, mtl_line_end(d->buf, d->len, d->lines, d->nlines, d->caret), 0, shift);
-            return MUI_EventHandlerRC_Eat;
+            off = mtl_line_end(d->buf, d->len, d->lines, d->nlines, d->caret);
+            break;
+        default:
+            return 0;
         }
-        return 0;
+        ta_moved(obj, d, off, keep, shift);
+        return MUI_EventHandlerRC_Eat;
     }
     if (im->Class == IDCMP_VANILLAKEY && ta_focus(obj)) {
         char c = (char)code;

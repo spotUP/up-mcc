@@ -51,6 +51,10 @@ int main(void) {
     assert(mtl_line_home(l, n, 6) == 4);
     assert(mtl_line_end("aaa bbb ccc", 11, l, n, 5) == 7);  /* soft line: before its trailing space */
     assert(mtl_line_end("aaa bbb ccc", 11, l, n, 9) == 11); /* last line: true end */
+    { /* UP-Textarea triple click on wrapped line 1: the click offset stays in that line, home..end is the line without its space */
+        int off = mtl_offset_at("aaa bbb ccc", 11, l, n, 1, 999, mw, 0);
+        assert(mtl_line_home(l, n, off) == 4 && mtl_line_end("aaa bbb ccc", 11, l, n, off) == 7);
+    }
     assert(mtl_offset_at("aaa bbb ccc", 11, l, n, 1, 0, mw, 0) == 4);
     assert(mtl_offset_at("aaa bbb ccc", 11, l, n, 1, 14, mw, 0) == 5);  /* 14 is nearer to x=10 than 20 */
     assert(mtl_offset_at("aaa bbb ccc", 11, l, n, 1, 16, mw, 0) == 6);
