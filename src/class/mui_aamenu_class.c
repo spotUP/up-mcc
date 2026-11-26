@@ -6,7 +6,16 @@
  * Amiga+key through an IDCMP_RAWKEY handler mapped with keymap.library (opened per use); it picks the item like a click.
  * The items are a copy of the Entries array, so MUIM_Family_AddHead / AddTail / Insert / Remove can change them (MUIC_Menuitem children);
  * the popup is built again at the next open, since UP-List takes its row count limit at creation.
- * Left and Right in the open popup set UPA_Menu_Step (a second RAWKEY handler, on the popup window); UP-Menustrip moves to the next menu. */
+ * Left and Right in the open popup set UPA_Menu_Step (a second RAWKEY handler, on the popup window); UP-Menustrip moves to the next menu.
+ * The popup is never closed inside its own notification (a pick, Esc, the loss of activation): the close goes through
+ * MUIM_Application_PushMethod (aamenu_push_close). OpenMUI reports IDCMP_INACTIVEWINDOW as MUIA_Window_Activate FALSE while that
+ * IntuiMessage is still unreplied, then copies and replies it (window.c HandleWindowEvent, HandleInputEvent); a close in between runs
+ * CloseWindow under the message, so the reply writes to a freed message and a freed port (guest hang or reset loop after a click
+ * outside the popup or on another menu title). Queued closes are dropped (MUIM_Application_UnpushMethod) before the popup is
+ * disposed and before it opens again.
+ * shortcut: MUI 3.8 ignores UnpushMethod, so there a close still queued when the popup is disposed hits a dead object; the pick close
+ * is queued before the UPA_Menu_Chosen notify so that UP-Menustrip's own queued bar close (which disposes the popup) runs after it.
+ * Upgrade: keep closed popups alive until OM_DISPOSE if MUI 3.8 becomes a target again. */
 #include "mui_aamenu_class.h"
 #include "mui_aa_class.h"
 
@@ -73,6 +82,7 @@ static void aamenu_drop(Object* obj, aamenu_data* d) {
     }
     set(d->popup, MUIA_Window_Open, FALSE);
     DoMethod(d->popup, MUIM_Window_RemEventHandler, (ULONG)&d->phn);
+    aa_pop_unpush(obj, d->popup); /* a queued close must not reach the disposed popup */
     if (app != NULL) {
         DoMethod(app, OM_REMMEMBER, (ULONG)d->popup);
     }
@@ -144,8 +154,8 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act, int keys) {
         act = MUI_AA_POP_OPEN_NEW;
     }
     d->stale = 0;
+    GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
     if (act == MUI_AA_POP_OPEN_NEW) {
-        GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
         if (app == NULL || !aamenu_build(d)) {
             return;
         }
@@ -161,12 +171,14 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act, int keys) {
         d->phn.ehn_Priority = 0, d->phn.ehn_Flags = 0, d->phn.ehn_Object = obj, d->phn.ehn_Class = g_menu_class->mcc_Class;
         d->phn.ehn_Events = IDCMP_RAWKEY;
         DoMethod(d->popup, MUIM_Window_AddEventHandler, (ULONG)&d->phn);
+        /* the close first: it must be queued ahead of whatever the UPA_Menu_Chosen notify queues (see the header) */
+        DoMethod(d->list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, obj, 1, UPM_Menu_PushClose);
         DoMethod(d->list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, obj, 3, MUIM_Set, UPA_Menu_Chosen, MUIV_TriggerValue);
-        DoMethod(d->list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
-        DoMethod(d->list, MUIM_Notify, UPA_List_Cancelled, TRUE, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+        DoMethod(d->list, MUIM_Notify, UPA_List_Cancelled, TRUE, obj, 1, UPM_Menu_PushClose);
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, obj, 1, UPM_Menu_Deactivated);
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Open, FALSE, obj, 1, UPM_Menu_Closed);
     } else {
+        aa_pop_unpush(obj, d->popup); /* a close queued for the last open must not shut this one */
         aamenu_place(obj, d);
         set(d->list, UPA_List_Active, (ULONG)-1);
     }
@@ -183,6 +195,14 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act, int keys) {
 static void aamenu_close(aamenu_data* d) {
     if (d->popup != NULL && d->pop.open) {
         set(d->popup, MUIA_Window_Open, FALSE); /* the Open notify runs UPM_Menu_Closed */
+    }
+}
+
+/* The close for the popup's own notifications: queued, never run inside them. Closing a closed window does nothing, so a second
+ * queued close (a pick that also deactivates) is harmless. Not open (the Activate FALSE set of aamenu_open): nothing to close. */
+static void aamenu_push_close(Object* obj, aamenu_data* d) {
+    if (d->pop.open) {
+        aa_pop_push_close(obj, d->popup);
     }
 }
 
@@ -493,7 +513,9 @@ static ULONG __attribute__((used)) aamenu_dispatch_c(struct IClass* cl, Object* 
     case UPM_Menu_Deactivated:
         d = INST_DATA(cl, obj);
         d->deact = 1;
-        aamenu_close(d);
+        /* fallthrough */
+    case UPM_Menu_PushClose:
+        aamenu_push_close(obj, INST_DATA(cl, obj));
         return 0;
     case UPM_Menu_Closed:
         aamenu_closed(obj, INST_DATA(cl, obj));
