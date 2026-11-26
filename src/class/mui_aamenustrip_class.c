@@ -4,7 +4,8 @@
  * The items stay the UP_MenuItem arrays of the UP-Menu objects; there is no second item model.
  * An event handler on the application window opens the bar at the window's inner top-left corner on the right mouse button and gives
  * Amiga+key to each menu (UP-Menu's own MUIM_HandleEvent). A pick sets UPA_Menustrip_Trigger and closes the bar. The bar also closes
- * when it is not the active window and no menu popup is open.
+ * when it is not the active window and no menu popup is open. After a pick the application window is activated again (click style moved
+ * the activation into the bar); a bar that lost the activation to another window leaves it there.
  * The bar is never closed inside a notification of a menu or of a popup window: closing runs MUIM_Cleanup of the menus, which disposes
  * the popup whose notification is running. Every close goes through MUIM_Application_PushMethod.
  * Two styles: click (press and release the right button, then click a title and an item) and hold-drag-release (hold the right button,
@@ -347,6 +348,11 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
             }
             SetAttrs(obj, UPA_Menustrip_Trigger, (i << 8) | m[2], TAG_DONE); /* notifies */
             aamenustrip_close(obj, d);
+            /* A click-style pick ran in the activated bar or popup; closing them leaves no window active (OS 3.x), so the right button
+             * never reached this window again. Give the activation back after the close, as an Intuition menu never takes it. */
+            if (aa_live(obj) && _window(obj) != NULL && !(_window(obj)->Flags & WFLG_WINDOWACTIVE)) {
+                DoMethod(_app(obj), MUIM_Application_PushMethod, (ULONG)_win(obj), 3, MUIM_Set, MUIA_Window_Activate, TRUE);
+            }
         }
         return 0;
     case UPM_Menustrip_Check:
