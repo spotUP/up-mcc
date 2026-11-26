@@ -178,18 +178,9 @@ void mui_aa_field_metrics(int font_px, int aspect_q8, mui_aa_field_t* out);
 /* focus: 0 idle, 1 active (FOCUS_RING), MUI_AA_FIELD_ERROR (UPA_Field_Error / UPA_TextArea_Error set: the outline turns ERROR, over focus). */
 #define MUI_AA_FIELD_ERROR 2
 int mui_aa_field_plan(const uint32_t* token, const mui_aa_field_t* m, int focus, mui_aa_check_op_t* out);
-/* I667n: background of the inner String gadget in a focus state: the face of the plan (op 1). MUI 3.8 String fills its box with the
- * gadget's StringExtend background pen (Pens[1], ActivePens[1] when active), not with MUIA_Background, so the class sets that pen. */
-uint32_t mui_aa_field_string_bg(const uint32_t* token, int focus);
-/* Text of the inner String gadget (Pens[0], ActivePens[0]): the theme TEXT. The MUI prefs string pens (black by default) were
- * unreadable on a dark theme face. */
-uint32_t mui_aa_field_string_fg(const uint32_t* token);
 /* Smallest field width that shows the placeholder (ink width pw) uncut: the text fit margin (4) plus the inner pad on both sides.
  * 0 when there is no placeholder. */
 int mui_aa_field_min_width(const mui_aa_field_t* m, int pw);
-/* I667n: the gadget MUIA_Gadget_Gadget hands back carries a StringInfo with the pens: a classic GTYP_STRGADGET, or the
- * GTYP_CUSTOMGADGET (strgclass) MUI 3.8 String really makes (rig 2: GadgetType 0005). */
-int mui_aa_field_string_gadget(unsigned gadget_type);
 /* Field height for a content (text) height ch: the AAButton height, taller when the text needs it. */
 int mui_aa_field_height(const mui_aa_field_t* m, int ch);
 /* Top edge of the text line (height ch) inside a field of height h: the room above and below the line is equal, so the group
