@@ -239,22 +239,17 @@ function(up_check_no_store tgt)
       -P "${PROJECT_SOURCE_DIR}/cmake/mcc_check_classlibs.cmake"
     VERBATIM COMMENT "${tgt}: no theme store symbols")
 endfunction()
-find_program(MCC_SIZE NAMES m68k-amigaos-size HINTS "${AMIGA_GCC_ROOT}/bin" "$ENV{HOME}/opt/amiga/bin" REQUIRED)
 # I1491a: post-build slim gates on every class library (not the prefs library, which writes theme files itself): no theme parser or
-# writer, no libnix stdio, text section under 8 KB (cmake/mcc_check_slim.cmake).
-# Target is 8192 (design I1491a); the draw/AA code (mui_aa*.c) is still linked into each library, so the enforced ratchet is 26624
-# (worst measured 25588, Cycle). Lower it as that code moves behind up-mcc.library.
-# 14848: UP-Textarea.mcc links its own wrap (mui_text_lines) and ftxt codec; measured 14348 after the MUI gap merge (2026-11-25)
-set(UP_MCC_SLIM_MAX_TEXT 14848 CACHE STRING "max text bytes per class library")
+# writer, no libnix stdio, no draw implementation, no sibling dispatcher (cmake/mcc_check_slim.cmake). No size limit (owner 2026-11-26).
 # UP-Textarea's class code is size-bound, not speed-bound: -Os on it saves ~1.3 KB (14928 -> under 14336 with double/triple-click select).
 # gcc honours the last -O, so this overrides the Release -O2.
 set_source_files_properties(src/class/mui_aatextarea_class.c PROPERTIES COMPILE_OPTIONS "-Os")
 function(up_check_slim tgt desc)
   string(REGEX REPLACE "_class_desc$" "" _own "${desc}")
   add_custom_command(TARGET ${tgt} POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" "-DNM=${MCC_NM}" "-DSIZE=${MCC_SIZE}" "-DBINARY=$<TARGET_FILE:${tgt}>" "-DMAX_TEXT=${UP_MCC_SLIM_MAX_TEXT}" "-DOWN=_${_own}_dispatch"
+    COMMAND "${CMAKE_COMMAND}" "-DNM=${MCC_NM}" "-DBINARY=$<TARGET_FILE:${tgt}>" "-DOWN=_${_own}_dispatch"
       -P "${PROJECT_SOURCE_DIR}/cmake/mcc_check_slim.cmake"
-    VERBATIM COMMENT "${tgt}: slim (size and banned symbols)")
+    VERBATIM COMMENT "${tgt}: slim (banned symbols)")
 endfunction()
 foreach(row ${MCC_CLASS_LIBS})
   string(REPLACE "|" ";" cols "${row}")

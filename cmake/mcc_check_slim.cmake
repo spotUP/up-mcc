@@ -1,22 +1,16 @@
-# I1491a (design 2026-11-22-up-mcc-full-component-set.md section 4): a class library stays slim. Two gates:
+# I1491a (design 2026-11-22-up-mcc-full-component-set.md section 4): a class library stays slim. One gate (the size gate was removed, owner 2026-11-26):
 #  - nm gate: no _txt_theme_parse, _txt_theme_write or ___vfprintf_total_size (the theme parser and libnix stdio live in up-mcc.library only),
 #    and none of the draw implementation names below (the draw layer lives in up-mcc.library only)
-#  - size gate: the text section is below MAX_TEXT bytes (default 8192)
-# On the build: cmake -DNM=<nm> -DSIZE=<size> -DBINARY=<.mcc> [-DMAX_TEXT=n] -P mcc_check_slim.cmake
-# Self test (host ctest): cmake -DNM_TEXT=<file of nm output> -DSIZE_TEXT=<file of size output> [-DMAX_TEXT=n] -P mcc_check_slim.cmake
-if(NOT DEFINED MAX_TEXT)
-  set(MAX_TEXT 8192)
-endif()
+# On the build: cmake -DNM=<nm> -DBINARY=<.mcc> [-DOWN=<dispatch>] -P mcc_check_slim.cmake
+# Self test (host ctest): cmake -DNM_TEXT=<file of nm output> [-DOWN=<dispatch>] -P mcc_check_slim.cmake
 if(DEFINED BINARY)
   execute_process(COMMAND "${NM}" "${BINARY}" OUTPUT_VARIABLE nm_out RESULT_VARIABLE rc1)
-  execute_process(COMMAND "${SIZE}" "${BINARY}" OUTPUT_VARIABLE size_out RESULT_VARIABLE rc2)
-  if(NOT rc1 EQUAL 0 OR NOT rc2 EQUAL 0)
-    message(FATAL_ERROR "mcc-slim: nm or size failed on ${BINARY}")
+  if(NOT rc1 EQUAL 0)
+    message(FATAL_ERROR "mcc-slim: nm failed on ${BINARY}")
   endif()
   set(what "${BINARY}")
 else()
   file(READ "${NM_TEXT}" nm_out)
-  file(READ "${SIZE_TEXT}" size_out)
   set(what "${NM_TEXT}")
 endif()
 set(banned "")
@@ -35,14 +29,7 @@ foreach(sym _txt_theme_parse _txt_theme_write ___vfprintf_total_size ${MCC_SLIM_
     list(APPEND banned "${sym}")
   endif()
 endforeach()
-if(NOT size_out MATCHES "text[ \t]+data[ \t]+bss[^\n]*\n[ \t]*([0-9]+)")
-  message(FATAL_ERROR "mcc-slim: no size line for ${what}")
-endif()
-set(text "${CMAKE_MATCH_1}")
 if(banned)
   message(FATAL_ERROR "mcc-slim FAILED: ${what} defines banned symbols: ${banned}")
 endif()
-if(NOT text LESS MAX_TEXT)
-  message(FATAL_ERROR "mcc-slim FAILED: ${what} text is ${text} bytes, limit ${MAX_TEXT}")
-endif()
-message(STATUS "mcc-slim OK: ${what}: text ${text} < ${MAX_TEXT}, no banned symbols")
+message(STATUS "mcc-slim OK: ${what}: no banned symbols")
