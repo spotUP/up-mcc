@@ -12,7 +12,7 @@
  * The bar is never closed inside a notification of a menu or of a popup window: closing runs MUIM_Cleanup of the menus, which disposes
  * the popup whose notification is running. Every close goes through MUIM_Application_PushMethod, and so does the UPA_Menustrip_Trigger
  * set of a pick, since an application notify on it may close the windows (MUIA_Application_Iconified).
- * MUIM_DisconnectParent drops the pushes still queued for the strip and the bar (MUIM_Application_UnpushMethod, MUI V20 and OpenMUI;
+ * MUIM_DisconnectParent drops the pushes still queued for the strip, the bar and the window reactivation (MUIM_Application_UnpushMethod, MUI V20 and OpenMUI;
  * MUI 3.8 has none and ignores the method), so a strip removed and disposed while the application runs leaves no dangling target.
  * Two styles: click (press and release the right button, then click a title and an item) and hold-drag-release (hold the right button,
  * move over the titles, release over an item). While the button is held the bar and the menu popups open inactive, so the application
@@ -40,16 +40,6 @@
 #include <proto/utility.h>
 #include <devices/inputevent.h>
 
-#ifndef MUIM_Application_UnpushMethod
-#define MUIM_Application_UnpushMethod 0x804211dd /* V20; the MUI 3.8 SDK (V19) lacks it, 3.8 ignores it */
-#endif
-#ifndef MUIM_ConnectParent
-#define MUIM_ConnectParent 0x90421d00    /* Zune/OpenMUI Notify (MUIB_ZUNE|0x1d00); the MUI 3.8 SDK lacks it, 3.8 never sends it */
-#endif
-#ifndef MUIM_DisconnectParent
-#define MUIM_DisconnectParent 0x90421d01 /* Zune/OpenMUI Notify (MUIB_ZUNE|0x1d01) */
-#endif
-
 #include "map/mui_aa.h"
 #include "mui_aa_draw.h"
 
@@ -65,6 +55,8 @@ typedef struct aamenustrip_data {
     int px, py;        /* screen point of the right press that opened the bar (cur -1) */
     struct MUI_EventHandlerNode ehn, bhn; /* bhn: the right button pressed in the active click-style bar */
     Object* app;       /* the application seen at MUIM_ConnectParent, cleared at the unpush: a non-NULL _app(obj) is no proof of life */
+    Object* act_win;   /* the window of the last queued MUIA_Window_Activate push, and its PushMethod token (OpenMUI: the queue node) */
+    ULONG act_tok;
 } aamenustrip_data;
 
 static struct MUI_CustomClass* g_menustrip_class;
@@ -205,7 +197,8 @@ static void aamenustrip_check(Object* obj, aamenustrip_data* d) {
     if (!open) {
         aw = ((struct IntuitionBase*)(void*)IntuitionBase)->ActiveWindow; /* a pointer compare only: no LockIBase */
         if ((aw == NULL || aw == bw) && aa_live(obj)) { /* bw: the notify may run before the Intuition window closed */
-            DoMethod(_app(obj), MUIM_Application_PushMethod, (ULONG)_win(obj), 3, MUIM_Set, MUIA_Window_Activate, TRUE);
+            d->act_win = _win(obj);
+            d->act_tok = DoMethod(_app(obj), MUIM_Application_PushMethod, (ULONG)d->act_win, 3, MUIM_Set, MUIA_Window_Activate, TRUE);
         }
         return;
     }
@@ -426,6 +419,13 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
         if (d->app != NULL) {
             DoMethod(d->app, MUIM_Application_UnpushMethod, (ULONG)obj, 0, 0);
             DoMethod(d->app, MUIM_Application_UnpushMethod, (ULONG)d->bar, 0, 0);
+            /* The window is not the strip's own: unpush by token, not by (window, MUIM_Set), which would drop other parties' pushes.
+             * shortcut: a token already run and freed can be reused by another push to the same window; that one is dropped too, which
+             * only happens while the strip leaves the window. Upgrade: clear act_tok from a pushed method that runs first. */
+            if (d->act_tok != 0) {
+                DoMethod(d->app, MUIM_Application_UnpushMethod, (ULONG)d->act_win, d->act_tok, MUIM_Set);
+                d->act_tok = 0;
+            }
             d->app = NULL;
         }
         break;
