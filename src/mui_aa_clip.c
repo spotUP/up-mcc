@@ -1,8 +1,10 @@
-/* aa_visible, aa_redraw, aa_inside, aa_pop_fit: clipping and hit tests in MUI geometry only, no draw code. Own file so a class library compiles it
+/* aa_visible, aa_redraw, aa_inside, aa_pop_fit, aa_pop_push_close / aa_pop_unpush: clipping and hit tests in MUI geometry only, no draw code. Own file so a class library compiles it
  * itself (MCC_CLIENT_SOURCES) next to lib/classlib_draw_shims.c instead of pulling mui_aa_draw.o, and with it the whole draw layer, from
  * the archive. */
 #include "mui_aa_draw.h"
+#include "class/mui_aa_class.h" /* MUIM_Application_UnpushMethod */
 
+#include <clib/alib_protos.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
@@ -55,5 +57,27 @@ void aa_pop_fit(Object* obj, Object* popup) {
     y = mui_aa_pop_fit(pw->TopEdge, win->TopEdge + _top(obj) - 2, pw->Height, scr->Height);
     if (x != pw->LeftEdge || y != pw->TopEdge) {
         MoveWindow(pw, x - pw->LeftEdge, y - pw->TopEdge);
+    }
+}
+
+static Object* aa_pop_app(Object* obj) {
+    Object* app = NULL;
+    if (aa_live(obj)) {
+        GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
+    }
+    return app;
+}
+
+void aa_pop_push_close(Object* obj, Object* popup) {
+    Object* app = popup != NULL ? aa_pop_app(obj) : NULL;
+    if (app != NULL) {
+        DoMethod(app, MUIM_Application_PushMethod, (ULONG)popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+    }
+}
+
+void aa_pop_unpush(Object* obj, Object* popup) {
+    Object* app = popup != NULL ? aa_pop_app(obj) : NULL;
+    if (app != NULL) {
+        DoMethod(app, MUIM_Application_UnpushMethod, (ULONG)popup, 0, 0);
     }
 }

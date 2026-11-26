@@ -65,6 +65,12 @@ void aa_cleanup(aa_ctx* c);
 int aa_live(Object* obj);
 /* Move the open dropdown popup of obj onto the screen: flipped above obj when it does not fit below, clamped otherwise. */
 void aa_pop_fit(Object* obj, Object* popup);
+/* Queue set(popup, MUIA_Window_Open, FALSE) on obj's application. For a close from the popup's own MUIA_Window_Activate FALSE notify:
+ * OpenMUI sends that notify while the IDCMP_INACTIVEWINDOW message is unreplied and replies it afterwards, so a CloseWindow in
+ * between frees the message under it (guest hang / reset loop, up-mcc 71a57ac). Closing a closed window does nothing. */
+void aa_pop_push_close(Object* obj, Object* popup);
+/* Drop closes queued by aa_pop_push_close: before popup is disposed and before it opens again. MUI 3.8 ignores UnpushMethod. */
+void aa_pop_unpush(Object* obj, Object* popup);
 /* True when the mouse of im lies in obj AND obj is on screen. A Setup object on a hidden PageMode page keeps its event handler and its
  * old box, so a bare box test lets a click on the visible page open the hidden page's popups. Every HandleEvent hit test goes here. */
 struct IntuiMessage;

@@ -82,8 +82,8 @@ static void aamenu_drop(Object* obj, aamenu_data* d) {
     }
     set(d->popup, MUIA_Window_Open, FALSE);
     DoMethod(d->popup, MUIM_Window_RemEventHandler, (ULONG)&d->phn);
+    aa_pop_unpush(obj, d->popup); /* a queued close must not reach the disposed popup */
     if (app != NULL) {
-        DoMethod(app, MUIM_Application_UnpushMethod, (ULONG)d->popup, 0, 0); /* a queued close must not reach the disposed popup */
         DoMethod(app, OM_REMMEMBER, (ULONG)d->popup);
     }
     MUI_DisposeObject(d->popup);
@@ -178,9 +178,7 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act, int keys) {
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, obj, 1, UPM_Menu_Deactivated);
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Open, FALSE, obj, 1, UPM_Menu_Closed);
     } else {
-        if (app != NULL) { /* a close queued for the last open must not shut this one */
-            DoMethod(app, MUIM_Application_UnpushMethod, (ULONG)d->popup, 0, 0);
-        }
+        aa_pop_unpush(obj, d->popup); /* a close queued for the last open must not shut this one */
         aamenu_place(obj, d);
         set(d->list, UPA_List_Active, (ULONG)-1);
     }
@@ -203,13 +201,8 @@ static void aamenu_close(aamenu_data* d) {
 /* The close for the popup's own notifications: queued, never run inside them. Closing a closed window does nothing, so a second
  * queued close (a pick that also deactivates) is harmless. Not open (the Activate FALSE set of aamenu_open): nothing to close. */
 static void aamenu_push_close(Object* obj, aamenu_data* d) {
-    Object* app = NULL;
-    if (d->popup == NULL || !d->pop.open || !aa_live(obj)) {
-        return;
-    }
-    GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
-    if (app != NULL) {
-        DoMethod(app, MUIM_Application_PushMethod, (ULONG)d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+    if (d->pop.open) {
+        aa_pop_push_close(obj, d->popup);
     }
 }
 

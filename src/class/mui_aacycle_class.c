@@ -50,6 +50,7 @@ static void aacycle_drop_popup(Object* obj, aacycle_data* d) {
         GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
     }
     set(d->popup, MUIA_Window_Open, FALSE);
+    aa_pop_unpush(obj, d->popup); /* a queued close must not reach the disposed popup */
     if (app != NULL) {
         DoMethod(app, OM_REMMEMBER, (ULONG)d->popup);
     }
@@ -255,7 +256,10 @@ static void aacycle_open_popup(Object* obj, aacycle_data* d) {
     DoMethod(list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, obj, 3, MUIM_Set, UPA_Cycle_Active, MUIV_TriggerValue);
     DoMethod(list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
     DoMethod(list, MUIM_Notify, UPA_List_Cancelled, TRUE, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
-    DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+    /* lost activation: queued, never closed inside the popup's own Activate notify (aa_pop_push_close). Pick / cancel come from the
+     * list's HandleEvent, whose message OpenMUI has already replied, so they close at once. */
+    DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, MUIV_Notify_Application, 5, MUIM_Application_PushMethod, (ULONG)d->popup, 3, MUIM_Set,
+             MUIA_Window_Open, FALSE);
     set(d->popup, MUIA_Window_Open, TRUE);
     aa_pop_fit(obj, d->popup);
 }
