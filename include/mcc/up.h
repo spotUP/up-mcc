@@ -527,7 +527,8 @@ Object* UP_NewPenadjust(const struct TagItem* tags);
 
 /* MUI gap E: UP-Imagedisplay, UP-Popimage, UP-Imageadjust (0x22) and UP-Framedisplay, UP-Popframe, UP-Frameadjust (0x23), the MUI 3.8
  * classes of those names. The spec is a string: image "<d>:<value>", frame "TSLRTB" (src/map/up_specs.h). The MUI 3.8 mui.h keeps these
- * classes private and names no attribute; the ids below are the ones MUI uses (as published by Zune), not checked against MUI 3.8 itself. */
+ * classes private and names no attribute; the ids below are the ones Zune publishes, byte-matched (big-endian) in the MUI 3.8
+ * Imagedisplay/Framedisplay/Imageadjust/Popimage/Popframe/Frameadjust.mui binaries. */
 #define UP_CLS_IMAGEDISPLAY 0x22
 #define UP_CLS_FRAMEDISPLAY 0x23
 #ifndef MUIA_Imagedisplay_Spec

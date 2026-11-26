@@ -35,6 +35,8 @@ int main(void) {
     up_frspec_parse(f, v);
     up_frspec_format(v, f);
     CHECK(!strcmp(f, "9112f0"));
+    CHECK(up_imspec_by_mui(0) && up_imspec_by_mui(1) && up_imspec_by_mui(4) && up_imspec_by_mui(5) && up_imspec_by_mui(6));
+    CHECK(!up_imspec_by_mui(2) && !up_imspec_by_mui(7) && !up_imspec_by_mui(-1));
     if (fails == 0) {
         printf("[OK] up-specs\n");
     }
