@@ -15,7 +15,11 @@
  * move over the titles, release over an item). While the button is held the bar and the menu popups open inactive, so the application
  * window keeps getting the pointer moves and the release; the strip hit-tests the titles and hands moves and the release to the open menu
  * (UPM_Menu_Track). The decision is mui_aa_strip_track (host test mui-menu-check).
- * shortcut: no key opens the bar, only Amiga+key shortcuts work without a mouse; upgrade with an Open attribute when needed. */
+ * Keyboard: a tap of the Right Amiga key (down and up with no key between) in the application window opens the bar with its first enabled
+ * menu's popup active (UPV_Menu_Open_Keys); a second tap closes it. In the popup UP-List takes Up, Down, Return (pick) and Esc (close; the
+ * bar follows by the check below); Left and Right set UPA_Menu_Step and the strip opens the next enabled menu (mui_aa_strip_step, host
+ * test mui-menu-check), the new one first as in the drag.
+ * shortcut: Right Amiga again while a popup is active does not close the bar (the key goes to the popup); Esc does. */
 #include "mui_aamenustrip_class.h"
 #include "mui_aa_class.h"
 
@@ -44,6 +48,7 @@ typedef struct aamenustrip_data {
     int added;         /* the bar window is a member of the application (first open until cleanup) */
     ULONG trigger;
     int cur;           /* mui_aa_strip_track: -2 no hold, -1 held, else the menu the drag opened */
+    int tap;           /* Right Amiga is down with no other key or button since */
     struct MUI_EventHandlerNode ehn, bhn; /* bhn: the right button pressed in the active click-style bar */
 } aamenustrip_data;
 
@@ -147,6 +152,29 @@ static ULONG aamenustrip_drag(Object* obj, aamenustrip_data* d, struct IntuiMess
     return up ? MUI_EventHandlerRC_Eat : 0;
 }
 
+/* Open the menu dir (-1 / +1) from menu from (-1 none) with its popup active, then close from. Disabled menus are skipped. */
+static void aamenustrip_key_open(aamenustrip_data* d, int from, int dir) {
+    Object *st = aamenustrip_head(d), *o;
+    ULONG dis_mask = 0;
+    int n = 0, j;
+    while (st != NULL && (o = NextObject((APTR)&st)) != NULL) {
+        ULONG dis = 0;
+        GetAttr(MUIA_Disabled, o, &dis);
+        dis_mask |= dis && n < 32 ? 1UL << n : 0;
+        n++;
+    }
+    j = mui_aa_strip_step(from, dir, n, dis_mask);
+    if (j < 0 || j == from) {
+        return;
+    }
+    if ((o = aamenustrip_nth(d, j)) != NULL) {
+        set(o, UPA_Menu_Open, UPV_Menu_Open_Keys);
+    }
+    if ((o = aamenustrip_nth(d, from)) != NULL) {
+        set(o, UPA_Menu_Open, FALSE);
+    }
+}
+
 /* The bar lost activation or a menu popup closed: an inactive bar with no open menu goes away.
  * The bar closed: if the activation was in the bar or in a closed popup, it goes back to the strip's window. */
 static void aamenustrip_check(Object* obj, aamenustrip_data* d) {
@@ -179,6 +207,7 @@ static void aamenustrip_add(Object* obj, aamenustrip_data* d, Object* menu) {
     DoMethod(d->row, OM_ADDMEMBER, (ULONG)menu);
     DoMethod(menu, MUIM_Notify, UPA_Menu_Chosen, MUIV_EveryTime, (ULONG)obj, 3, UPM_Menustrip_Picked, (ULONG)menu, MUIV_TriggerValue);
     DoMethod(menu, MUIM_Notify, UPA_Menu_Open, FALSE, (ULONG)obj, 1, UPM_Menustrip_Check);
+    DoMethod(menu, MUIM_Notify, UPA_Menu_Step, MUIV_EveryTime, (ULONG)obj, 3, UPM_Menustrip_Step, (ULONG)menu, MUIV_TriggerValue);
 }
 
 /* MUIM_Family_AddHead / AddTail / Insert / Remove on the menus. m[1] the menu, m[2] the predecessor of Insert (NULL = head). */
@@ -191,6 +220,7 @@ static ULONG aamenustrip_family(Object* obj, aamenustrip_data* d, ULONG* m) {
     if (m[0] == MUIM_Family_Remove) {
         DoMethod(menu, MUIM_KillNotifyObj, UPA_Menu_Chosen, (ULONG)obj);
         DoMethod(menu, MUIM_KillNotifyObj, UPA_Menu_Open, (ULONG)obj);
+        DoMethod(menu, MUIM_KillNotifyObj, UPA_Menu_Step, (ULONG)obj);
         DoMethod(d->row, OM_REMMEMBER, (ULONG)menu);
     } else {
         aamenustrip_add(obj, d, menu); /* now the last child */
@@ -233,6 +263,27 @@ static ULONG aamenustrip_event(Object* obj, aamenustrip_data* d, struct IntuiMes
     }
     if (!d->enabled) {
         return 0;
+    }
+    if (im->Class == IDCMP_RAWKEY && (im->Code & ~IECODE_UP_PREFIX) == 0x67) { /* Right Amiga: a tap opens or closes the bar */
+        if (!(im->Code & IECODE_UP_PREFIX)) {
+            d->tap = 1;
+            return 0;
+        }
+        if (d->tap) {
+            ULONG open = 0;
+            d->tap = 0;
+            GetAttr(MUIA_Window_Open, d->bar, &open);
+            aamenustrip_toggle(obj, d);
+            if (!open) {
+                d->cur = -2; /* no button hold */
+                aamenustrip_key_open(d, -1, 1);
+            }
+            return MUI_EventHandlerRC_Eat;
+        }
+        return 0;
+    }
+    if ((im->Class == IDCMP_RAWKEY && !(im->Code & IECODE_UP_PREFIX)) || im->Class == IDCMP_MOUSEBUTTONS) {
+        d->tap = 0; /* Amiga+key or Amiga+click: no tap */
     }
     if (im->Class == IDCMP_MOUSEBUTTONS && im->Code == MENUDOWN) {
         aamenustrip_toggle(obj, d);
@@ -373,6 +424,19 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
         return 0;
     case UPM_Menustrip_Check:
         aamenustrip_check(obj, INST_DATA(cl, obj));
+        return 0;
+    case UPM_Menustrip_Step: /* m[1] the menu, m[2] its UPA_Menu_Step: -1 Left, +1 Right */
+        d = INST_DATA(cl, obj);
+        {
+            Object *st = aamenustrip_head(d), *o = NULL;
+            int i = 0;
+            while (st != NULL && (o = NextObject((APTR)&st)) != NULL && o != (Object*)m[1]) {
+                i++;
+            }
+            if (o != NULL) {
+                aamenustrip_key_open(d, i, (LONG)m[2] < 0 ? -1 : 1);
+            }
+        }
         return 0;
     }
     return DoSuperMethodA(cl, obj, msg);

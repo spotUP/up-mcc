@@ -3222,7 +3222,7 @@
 *       UPA_Menu_Open -- attribute of UP-Menu.mcc
 *
 *   FUNCTION
-*       BOOL: the popup is open; set TRUE opens, FALSE closes
+*       BOOL: the popup is open; set TRUE opens, FALSE closes. Set UPV_Menu_Open_Keys (2) opens it with the popup active, as the cursor keys of UP-Menustrip do; a plain TRUE activates the popup only when the menu's window is active.
 *
 *   INPUTS
 *       UPA_Menu_Open - access ISG. Tag value from <mcc/up.h>.
@@ -3235,13 +3235,32 @@
 *
 ******/
 
+/****** UP-Menu.mcc/UPA_Menu_Step ******
+*
+*   NAME
+*       UPA_Menu_Step -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       LONG: -1 when Left, +1 when Right is pressed in the open popup; notifies on every press. UP-Menustrip listens and opens the menu to the left or right (wrapping, skipping disabled menus), so the cursor keys move between the titles.
+*
+*   INPUTS
+*       UPA_Menu_Step - access G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc, UP-Menustrip.mcc
+*
+******/
+
 /****** UP-Menu.mcc/UPA_Menu_Entries ******
 *
 *   NAME
 *       UPA_Menu_Entries -- attribute of UP-Menu.mcc
 *
 *   FUNCTION
-*       UP_MenuItem*: the rich item array (MUIC_Menuitem model), ended by a NULL title, at most UP_MENU_MAXITEMS; wins over UPA_Menu_Items. Per item: title ("-" = separator), shortcut (one character = Amiga+key, shown "Amiga+X"; with UPV_MenuItem_CommandString shown as is), flags UPV_MenuItem_Checkit / Toggle / Checked / Disabled / CommandString, exclude bitmask (MUIA_Menuitem_Exclude). A checked item shows "*" left of its title. UPA_Menu_Chosen stands for MUIA_Menuitem_Trigger.
+*       UP_MenuItem*: the rich item array (MUIC_Menuitem model), ended by a NULL title, at most UP_MENU_MAXITEMS; wins over UPA_Menu_Items. Per item: title ("-" = separator), shortcut (one character = Amiga+key, shown "Amiga+X"; with UPV_MenuItem_CommandString shown as is), flags UPV_MenuItem_Checkit / Toggle / Checked / Disabled / CommandString, exclude bitmask (MUIA_Menuitem_Exclude). A checked item shows "*" left of its title. UPA_Menu_Chosen stands for MUIA_Menuitem_Trigger. The menu keeps a copy of the array (the strings stay the application's and must outlive the object). Item Family methods, as MUIC_Menu with MUIC_Menuitem children: MUIM_Family_AddHead, MUIM_Family_AddTail and MUIM_Family_Insert take a UP_MenuItem* (copied; Insert's second argument is the predecessor, NULL or not found = head), MUIM_Family_Remove takes the item to remove. An item is found by its title pointer. Checked and Disabled bits move with the items; exclude masks are item positions and are not renumbered. A full menu (UP_MENU_MAXITEMS) refuses an add (result 0). An open popup shows the change within its row count; the next open builds it again. Without UPA_Menu_Entries the Family methods go to the Group super class.
 *
 *   INPUTS
 *       UPA_Menu_Entries - access I. Tag value from <mcc/up.h>.
@@ -3954,7 +3973,7 @@
 *       UP-Menustrip -- class of UP-Menustrip.mcc
 *
 *   FUNCTION
-*       UP-Menustrip replaces MUIC_Menustrip and MUIA_Window_Menustrip: a window menu bar drawn in the UP-MCC theme. The object is invisible; put it anywhere in the window that gets the menus (MUI's Window class takes only its own Menustrip class as MUIA_Window_Menustrip). Its children are UP-Menu objects, one per menu title: pass each as MUIA_Family_Child in the creation tag list, or use MUIM_Family_AddHead, MUIM_Family_AddTail, MUIM_Family_Insert and MUIM_Family_Remove later (ids of <libraries/mui.h>; a removed menu belongs to the caller again). The strip disposes its menus. The items of a menu are its UPA_Menu_Entries array (struct UP_MenuItem: title, shortcut, Checkit, Toggle, Exclude, Disabled); to change the items of a menu, replace the menu. The right mouse button over the window opens the bar at the window's top-left inner corner. Click style: release the button, then a click on a title opens that menu and a click on an item picks it. Hold style: keep the button down, move over the titles (each opens its menu), release over an item to pick it or anywhere else to close the bar without a pick. The bar closes after a pick, on a second right button press, or when another window gets active. A one-character shortcut is Amiga+key while the window is active. Every pick sets UPA_Menustrip_Trigger and UPA_Menu_Chosen of the menu, both notify. Checkmarks follow UPA_Menu_Checked of each menu. Limits: a disabled item cannot be picked and its shortcut is off; the bar opens with the mouse only; AddHead and Insert keep their position for up to UP_MENUSTRIP_MAXMENUS (16) menus; do not send a Family method from inside a pick notification. The strip sets WFLG_RMBTRAP on the window, so the window cannot have Intuition menus as well.
+*       UP-Menustrip replaces MUIC_Menustrip and MUIA_Window_Menustrip: a window menu bar drawn in the UP-MCC theme. The object is invisible; put it anywhere in the window that gets the menus (MUI's Window class takes only its own Menustrip class as MUIA_Window_Menustrip). Its children are UP-Menu objects, one per menu title: pass each as MUIA_Family_Child in the creation tag list, or use MUIM_Family_AddHead, MUIM_Family_AddTail, MUIM_Family_Insert and MUIM_Family_Remove later (ids of <libraries/mui.h>; a removed menu belongs to the caller again). The strip disposes its menus. The items of a menu are its UPA_Menu_Entries array (struct UP_MenuItem: title, shortcut, Checkit, Toggle, Exclude, Disabled); the item Family methods of UP-Menu (see UPA_Menu_Entries) change the items of a menu. The right mouse button over the window opens the bar at the window's top-left inner corner. Keyboard: a tap of the Right Amiga key (press and release with no other key between) opens the bar with the first enabled menu open and its popup active; Up and Down move over the items, Return picks, Esc closes, Left and Right move to the next menu (UPA_Menu_Step); another tap while the application window is active closes the bar. Click style: release the button, then a click on a title opens that menu and a click on an item picks it. Hold style: keep the button down, move over the titles (each opens its menu), release over an item to pick it or anywhere else to close the bar without a pick. The bar closes after a pick, on a second right button press, or when another window gets active. A one-character shortcut is Amiga+key while the window is active. Every pick sets UPA_Menustrip_Trigger and UPA_Menu_Chosen of the menu, both notify. Checkmarks follow UPA_Menu_Checked of each menu. Limits: a disabled item cannot be picked and its shortcut is off; Right Amiga while a menu popup is active does not close the bar (use Esc); there is no separate menu key, only the Right Amiga tap; exclude masks are not renumbered by the item Family methods; AddHead and Insert keep their position for up to UP_MENUSTRIP_MAXMENUS (16) menus; do not send a Family method from inside a pick notification. The strip sets WFLG_RMBTRAP on the window, so the window cannot have Intuition menus as well.
 *
 *   INPUTS
 *       Create with MUI_NewObject("UP-Menustrip.mcc", MUIA_Family_Child, menu, ..., TAG_DONE) or UP_NewMenustrip() from <mcc/up.h>.
@@ -4034,6 +4053,25 @@
 *
 *   INPUTS
 *       UPM_Menustrip_Check - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menustrip.mcc, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menustrip.mcc/UPM_Menustrip_Step ******
+*
+*   NAME
+*       UPM_Menustrip_Step -- method of UP-Menustrip.mcc
+*
+*   FUNCTION
+*       Internal: Left or Right was pressed in a menu popup (UPA_Menu_Step notify). Arguments: the menu object, -1 or +1. The strip opens the next enabled menu with its popup active, then closes the menu the key came from.
+*
+*   INPUTS
+*       UPM_Menustrip_Step - method id. Tag value from <mcc/up.h>.
 *
 *   RESULT
 *       Send with DoMethod(); the class handles it.

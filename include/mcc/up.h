@@ -220,7 +220,8 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_Menu_Title UP_TAG(UP_CLS_MENU, 0x01)  /* I STRPTR: caption of the menu button; must outlive the object */
 #define UPA_Menu_Items UP_TAG(UP_CLS_MENU, 0x02)  /* I char**: NULL terminated item texts, "-" is a separator row; must outlive the object */
 #define UPA_Menu_Chosen UP_TAG(UP_CLS_MENU, 0x03) /* ISG LONG: index of the item last chosen, -1 before any (notifies on every pick, also the same item again) */
-#define UPA_Menu_Open UP_TAG(UP_CLS_MENU, 0x04)   /* ISG BOOL: the popup is open; set TRUE opens, FALSE closes */
+#define UPA_Menu_Open UP_TAG(UP_CLS_MENU, 0x04)   /* ISG BOOL: the popup is open; set TRUE opens, FALSE closes, UPV_Menu_Open_Keys opens it active */
+#define UPV_Menu_Open_Keys 2                      /* UPA_Menu_Open value: open with the popup active, for the cursor keys (UP-Menustrip keyboard) */
 /* MUIC_Menuitem / MUIC_Menu attributes: a richer item array instead of UPA_Menu_Items, at most UP_MENU_MAXITEMS items (item i = bit i of
  * the masks below). Checked items show "*" left of the title, shortcuts show right of it. Menuitem_Trigger is UPA_Menu_Chosen. */
 #define UPA_Menu_Entries UP_TAG(UP_CLS_MENU, 0x05)  /* I UP_MenuItem*: array ended by a NULL title; wins over UPA_Menu_Items; must outlive the object */
@@ -243,6 +244,10 @@ typedef struct UP_MenuItem {
 #define UPM_Menu_Closed UP_TAG(UP_CLS_MENU, 0x11) /* method: the popup window closed. Internal */
 #define UPM_Menu_Deactivated UP_TAG(UP_CLS_MENU, 0x12) /* method: the popup window lost activation. Internal */
 #define UPM_Menu_Track UP_TAG(UP_CLS_MENU, 0x13) /* method (struct IntuiMessage* of another window): a mouse move hovers the item under the pointer, a button event picks it. Internal (UP-Menustrip drag) */
+#define UPA_Menu_Step UP_TAG(UP_CLS_MENU, 0x09)   /* ..G LONG: -1 Left, +1 Right pressed in the open popup (notifies every time); UP-Menustrip moves to the next menu */
+/* MUIM_Family_AddHead / AddTail / Insert / Remove on a UPA_Menu_Entries menu act on its items (MUIC_Menu with MUIC_Menuitem children):
+ * the argument is a UP_MenuItem* (copied; its strings must outlive the object), Insert's predecessor too (NULL = head); an item is found by
+ * its title pointer. Checked and Disabled bits move with the items; exclude masks are positions and do not. */
 
 /* UP-TextArea: a minimal multi-line text editor (word wrap, caret, vertical scroll, Shift and mouse-drag selection, clipboard text via Ctrl or Amiga + C, X, V), with its own UP-Scroller bar on the right (always shown, a thumb while the text is taller than the view; click pages, drag scrolls). Click or the cycle chain focuses it. */
 #define UPA_TextArea_Text UP_TAG(UP_CLS_TEXTAREA, 0x01)        /* ISG STRPTR: the text, copied in on set; get returns the object's own NUL terminated buffer (valid until the next edit). Notifies on every change: notify with MUIV_EveryTime, the pointer stays the same */
@@ -531,7 +536,8 @@ Object* UP_NewPenadjust(const struct TagItem* tags);
  * An invisible object the application puts anywhere in the window that gets the menus (MUI's Window class takes only its own Menustrip
  * class as MUIA_Window_Menustrip). Children are UP-Menu objects: MUIA_Family_Child in the creation tag list, MUIM_Family_AddHead /
  * AddTail / Insert / Remove later (ids of <libraries/mui.h>). The items stay the UP_MenuItem arrays of the menus (UPA_Menu_Entries).
- * The right mouse button over the window opens the bar; Amiga+key shortcuts work while the window is active.
+ * The right mouse button over the window opens the bar, so does a tap of the Right Amiga key (then the cursor keys, Return and Esc);
+ * Amiga+key shortcuts work while the window is active.
  * Class indices are one byte of the tag (UP_TAG): 0x00..0x27 are taken, 0x28..0xFF are free. */
 #define UP_CLS_MENUSTRIP 0x27 /* UP-Menustrip */
 #define UPA_Menustrip_Enabled UP_TAG(UP_CLS_MENUSTRIP, 0x01) /* ISG BOOL: the bar opens and the shortcuts work (MUIA_Menustrip_Enabled), default TRUE */
@@ -539,6 +545,7 @@ Object* UP_NewPenadjust(const struct TagItem* tags);
 #define UP_MENUSTRIP_MAXMENUS 16 /* AddHead and Insert keep their position up to this many menus */
 #define UPM_Menustrip_Picked UP_TAG(UP_CLS_MENUSTRIP, 0x10) /* method: a menu chose an item (menu object, item index). Internal */
 #define UPM_Menustrip_Check UP_TAG(UP_CLS_MENUSTRIP, 0x11)  /* method: the bar lost activation or a menu popup closed. Internal */
+#define UPM_Menustrip_Step UP_TAG(UP_CLS_MENUSTRIP, 0x12)   /* method: Left/Right in a menu popup (menu object, -1 or +1). Internal */
 #define MUIC_UP_Menustrip "UP-Menustrip.mcc"
 #if (defined(__amigaos__) || defined(AMIGA)) && (defined(UP_MCC_LIBRARY) || defined(UP_MCC_STATIC_CTORS))
 Object* UP_NewMenustrip(const struct TagItem* tags);

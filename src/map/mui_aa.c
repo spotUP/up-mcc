@@ -1278,3 +1278,32 @@ int mui_aa_strip_track(int* cur, int title, int up) {
     }
     return r;
 }
+
+unsigned long mui_aa_mask_insert(unsigned long m, int p, int on) {
+    unsigned long lo;
+    if (p < 0 || p > 31) {
+        return m;
+    }
+    lo = m & ((1UL << p) - 1UL);
+    return (lo | (((m & ~lo) << 1) & 0xFFFFFFFFUL) | (on ? 1UL << p : 0UL)) & 0xFFFFFFFFUL;
+}
+
+unsigned long mui_aa_mask_remove(unsigned long m, int p) {
+    unsigned long lo;
+    if (p < 0 || p > 31) {
+        return m;
+    }
+    lo = m & ((1UL << p) - 1UL);
+    return lo | (p < 31 ? ((m & 0xFFFFFFFFUL) >> (p + 1)) << p : 0UL); /* p 31: no shift by 32 */
+}
+
+int mui_aa_strip_step(int cur, int dir, int n, unsigned long disabled) {
+    int k;
+    for (k = 1; k <= n; k++) {
+        int j = ((cur + dir * k) % n + n) % n;
+        if (j >= 32 || !(disabled & (1UL << j))) {
+            return j;
+        }
+    }
+    return -1;
+}

@@ -60,6 +60,26 @@ int main(void) {
         CHECK(mui_aa_strip_track(&cur, -1, 1) == MUI_AA_STRIP_PICK && cur == -2);   /* release after a drag: pick or close */
         CHECK(mui_aa_strip_track(&cur, 0, 0) == MUI_AA_STRIP_NONE && cur == -2);
     }
+    /* item Family methods: Checked / Disabled bits follow the items */
+    CHECK(mui_aa_mask_insert(0x5, 0, 0) == 0xA);                 /* AddHead: all move up */
+    CHECK(mui_aa_mask_insert(0x5, 1, 1) == 0xB);                 /* Insert after item 0, new item checked */
+    CHECK(mui_aa_mask_insert(0x5, 3, 0) == 0x5);                 /* AddTail of 3 items */
+    CHECK(mui_aa_mask_insert(0x80000001UL, 1, 0) == 0x1);        /* bit 31 falls off */
+    CHECK(mui_aa_mask_insert(0x5, 32, 1) == 0x5);                /* outside the mask */
+    CHECK(mui_aa_mask_remove(0xB, 1) == 0x5);
+    CHECK(mui_aa_mask_remove(0xA, 0) == 0x5);
+    CHECK(mui_aa_mask_remove(0xFFFFFFFFUL, 31) == 0x7FFFFFFFUL);
+    CHECK(mui_aa_mask_remove(0x80000000UL, 0) == 0x40000000UL);
+    CHECK(mui_aa_mask_remove(0x5, -1) == 0x5);
+    /* keyboard: Right Amiga opens the first enabled menu, Left / Right wrap and skip disabled menus */
+    CHECK(mui_aa_strip_step(-1, 1, 4, 0) == 0);
+    CHECK(mui_aa_strip_step(-1, 1, 4, 0x1) == 1);
+    CHECK(mui_aa_strip_step(3, 1, 4, 0) == 0);
+    CHECK(mui_aa_strip_step(0, -1, 4, 0) == 3);
+    CHECK(mui_aa_strip_step(0, -1, 4, 0x8) == 2);
+    CHECK(mui_aa_strip_step(1, 1, 4, 0xD) == 1);                 /* only itself enabled: stays */
+    CHECK(mui_aa_strip_step(-1, 1, 3, 0x7) == -1);               /* all disabled */
+    CHECK(mui_aa_strip_step(-1, 1, 0, 0) == -1);
     if (fails == 0) {
         printf("mui_menu_check_test OK\n");
     }

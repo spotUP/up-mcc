@@ -359,6 +359,13 @@ int mui_aa_menu_shortcut(const UP_MenuItem* ent, int n, unsigned long disabled, 
 #define MUI_AA_STRIP_PICK 2
 #define MUI_AA_STRIP_KEEP 3
 int mui_aa_strip_track(int* cur, int title, int up);
+/* UP-Menu item Family methods (host test mui-menu-check): a 32-bit item mask after an item is inserted at p (bits from p move up one,
+ * bit p = on) or removed at p (bits above p move down one). p outside 0..31 leaves the mask as it is. */
+unsigned long mui_aa_mask_insert(unsigned long m, int p, int on);
+unsigned long mui_aa_mask_remove(unsigned long m, int p);
+/* UP-Menustrip keyboard (host test mui-menu-check): the menu dir (-1 / +1) steps from cur of n menus, wrapping, skipping menus with their
+ * bit in disabled (menus past bit 31 never are); cur -1 with dir +1 gives the first enabled menu. -1 when none can open. */
+int mui_aa_strip_step(int cur, int dir, int n, unsigned long disabled);
 
 /* UP-Knob / UP-Levelmeter dial maths (host test mui-dial). Angles are whole degrees, 0 = right, counter clockwise positive; a dial
  * starts at start_deg for lo and turns clockwise through sweep_deg to hi. Knob: 225 / 270 (lower left round to lower right);

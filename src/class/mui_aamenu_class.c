@@ -3,7 +3,10 @@
  * at the first open and reused, disposed only in cleanup. A pick sets UPA_Menu_Chosen (notifies) and closes the popup.
  * MUIC_Menuitem model (UPA_Menu_Entries): per item Checkit / Toggle / Exclude (mui_aa_menu_pick), Checked and Disabled bitmasks, and a
  * shortcut. The list then has three columns: "*" for a checked item, the title, the shortcut text. A one-character shortcut is
- * Amiga+key through an IDCMP_RAWKEY handler mapped with keymap.library (opened per use); it picks the item like a click. */
+ * Amiga+key through an IDCMP_RAWKEY handler mapped with keymap.library (opened per use); it picks the item like a click.
+ * The items are a copy of the Entries array, so MUIM_Family_AddHead / AddTail / Insert / Remove can change them (MUIC_Menuitem children);
+ * the popup is built again at the next open, since UP-List takes its row count limit at creation.
+ * Left and Right in the open popup set UPA_Menu_Step (a second RAWKEY handler, on the popup window); UP-Menustrip moves to the next menu. */
 #include "mui_aamenu_class.h"
 #include "mui_aa_class.h"
 
@@ -32,11 +35,13 @@ typedef struct aamenu_data {
     Object *btn, *popup, *root, *list;
     int n, chosen, deact;
     const char* const* items;
-    const UP_MenuItem* ent;           /* UPA_Menu_Entries, not owned; NULL = plain UPA_Menu_Items */
+    const UP_MenuItem* ent;           /* own (UPA_Menu_Entries given), NULL = plain UPA_Menu_Items */
+    UP_MenuItem own[UP_MENU_MAXITEMS]; /* the items; their strings are the application's */
     ULONG checked, disabled;          /* bit i = item i */
-    int keyed;                        /* an item has a one-character shortcut: the RAWKEY handler is installed */
+    int stale;                        /* the items changed since the popup was built */
+    LONG step;                        /* UPA_Menu_Step */
     char keys[UP_MENU_MAXITEMS][8];   /* the shown shortcut text */
-    struct MUI_EventHandlerNode ehn;
+    struct MUI_EventHandlerNode ehn, phn; /* RAWKEY: ehn Amiga+key in the menu's window, phn Left / Right in the popup */
     struct Hook row_hook; /* UPA_List_RowHook: the item text (h_Data is this data) */
     mui_aa_pop_t pop;
 } aamenu_data;
@@ -57,7 +62,7 @@ static int aamenu_is_sep(const aamenu_data* d, int i) {
     return i >= 0 && i < d->n && aamenu_title(d, i)[0] == '-' && aamenu_title(d, i)[1] == '\0';
 }
 
-/* Only from cleanup: never from the window's own notification. */
+/* Only from cleanup or a closed popup's next open: never from the window's own notification. */
 static void aamenu_drop(Object* obj, aamenu_data* d) {
     Object* app = NULL;
     if (d->popup == NULL) {
@@ -67,6 +72,7 @@ static void aamenu_drop(Object* obj, aamenu_data* d) {
         GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
     }
     set(d->popup, MUIA_Window_Open, FALSE);
+    DoMethod(d->popup, MUIM_Window_RemEventHandler, (ULONG)&d->phn);
     if (app != NULL) {
         DoMethod(app, OM_REMMEMBER, (ULONG)d->popup);
     }
@@ -124,17 +130,23 @@ static void aamenu_place(Object* obj, aamenu_data* d) {
     set(d->popup, MUIA_Window_TopEdge, (ULONG)(win->TopEdge + _bottom(obj) + 2));
 }
 
-static void aamenu_open(Object* obj, aamenu_data* d, int act) {
+/* keys: the cursor keys opened it (UPV_Menu_Open_Keys), the popup takes the activation. */
+static void aamenu_open(Object* obj, aamenu_data* d, int act, int keys) {
     Object* app = NULL;
     struct Window* win = _window(obj);
     ULONG dis = 0;
     GetAttr(MUIA_Disabled, obj, &dis);
-    if (win == NULL || dis || d->pop.open || !aa_live(obj)) {
+    if (win == NULL || dis || d->pop.open || d->n <= 0 || !aa_live(obj)) {
         return;
     }
+    if (d->stale && d->popup != NULL) { /* closed here (pop.open is 0): no notification of this popup runs */
+        aamenu_drop(obj, d);
+        act = MUI_AA_POP_OPEN_NEW;
+    }
+    d->stale = 0;
     if (act == MUI_AA_POP_OPEN_NEW) {
         GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
-        if (app == NULL || d->n <= 0 || !aamenu_build(d)) {
+        if (app == NULL || !aamenu_build(d)) {
             return;
         }
         d->popup = MUI_NewObject((char*)MUIC_Window, MUIA_Window_Screen, (ULONG)_screen(obj), MUIA_Window_Borderless, TRUE, MUIA_Window_DragBar, FALSE, MUIA_Window_CloseGadget, FALSE,
@@ -146,6 +158,9 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act) {
             return;
         }
         DoMethod(app, OM_ADDMEMBER, (ULONG)d->popup);
+        d->phn.ehn_Priority = 0, d->phn.ehn_Flags = 0, d->phn.ehn_Object = obj, d->phn.ehn_Class = g_menu_class->mcc_Class;
+        d->phn.ehn_Events = IDCMP_RAWKEY;
+        DoMethod(d->popup, MUIM_Window_AddEventHandler, (ULONG)&d->phn);
         DoMethod(d->list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, obj, 3, MUIM_Set, UPA_Menu_Chosen, MUIV_TriggerValue);
         DoMethod(d->list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
         DoMethod(d->list, MUIM_Notify, UPA_List_Cancelled, TRUE, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
@@ -157,7 +172,7 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act) {
     }
     set(d->list, UPA_List_Disabled, d->disabled); /* grey rows; the mask may have changed since the last open */
     /* only from an active window: during a UP-Menustrip drag the application window keeps the input (pointer and button release) */
-    set(d->popup, MUIA_Window_Activate, (win->Flags & WFLG_WINDOWACTIVE) != 0);
+    set(d->popup, MUIA_Window_Activate, keys || (win->Flags & WFLG_WINDOWACTIVE) != 0);
     d->deact = 0; /* the Activate FALSE notify above is no loss of activation */
     mui_aa_pop_opened(&d->pop);
     set(d->popup, MUIA_Window_Open, TRUE);
@@ -184,7 +199,7 @@ static ULONG aamenu_setup(struct IClass* cl, Object* obj, Msg msg) {
     if (!DoSuperMethodA(cl, obj, msg)) {
         return FALSE;
     }
-    if (d->keyed) {
+    if (d->ent != NULL) {
         d->ehn.ehn_Priority = 0, d->ehn.ehn_Flags = 0, d->ehn.ehn_Object = obj, d->ehn.ehn_Class = cl;
         d->ehn.ehn_Events = IDCMP_RAWKEY;
         DoMethod(_win(obj), MUIM_Window_AddEventHandler, (ULONG)&d->ehn);
@@ -192,12 +207,24 @@ static ULONG aamenu_setup(struct IClass* cl, Object* obj, Msg msg) {
     return TRUE;
 }
 
-/* Amiga+key of a one-character shortcut picks that item. Every other key goes on to MUI. */
+/* Amiga+key of a one-character shortcut picks that item; Left / Right in the open popup set UPA_Menu_Step. Every other key goes on to MUI
+ * (the popup's UP-List takes Up, Down, Return and Esc). */
 static ULONG aamenu_key(Object* obj, aamenu_data* d, struct IntuiMessage* im) {
     struct InputEvent ie;
     char c[4];
     int i;
     ULONG dis = 0;
+    struct Window* pw = NULL;
+    if (im != NULL && d->popup != NULL) {
+        GetAttr(MUIA_Window_Window, d->popup, (ULONG*)&pw);
+    }
+    if (pw != NULL && im->IDCMPWindow == pw) {
+        if (im->Class == IDCMP_RAWKEY && (im->Code == 0x4E || im->Code == 0x4F)) { /* cursor Right, Left */
+            set(obj, UPA_Menu_Step, im->Code == 0x4E ? 1UL : (ULONG)-1L);
+            return MUI_EventHandlerRC_Eat;
+        }
+        return 0;
+    }
     GetAttr(MUIA_Disabled, obj, &dis);
     if (im == NULL || im->Class != IDCMP_RAWKEY || (im->Code & IECODE_UP_PREFIX) || !(im->Qualifier & IEQUALIFIER_RCOMMAND) || dis) {
         return 0;
@@ -221,7 +248,7 @@ static ULONG aamenu_key(Object* obj, aamenu_data* d, struct IntuiMessage* im) {
 
 static ULONG aamenu_cleanup(struct IClass* cl, Object* obj, Msg msg) {
     aamenu_data* d = INST_DATA(cl, obj);
-    if (d->keyed) {
+    if (d->ent != NULL) {
         DoMethod(_win(obj), MUIM_Window_RemEventHandler, (ULONG)&d->ehn);
     }
     aamenu_drop(obj, d);
@@ -234,6 +261,68 @@ static ULONG aamenu_dispose(struct IClass* cl, Object* obj, Msg msg) {
         MUI_DisposeObject(d->root);
     }
     return DoSuperMethodA(cl, obj, msg);
+}
+
+/* The shown shortcut texts, from the items. */
+static void aamenu_keys(aamenu_data* d) {
+    memset(d->keys, 0, sizeof d->keys);
+    for (int i = 0; d->ent != NULL && i < d->n; i++) {
+        const char* k = d->ent[i].shortcut;
+        if (k != NULL && k[0] != '\0') {
+            int one = k[1] == '\0' && !(d->ent[i].flags & UPV_MenuItem_CommandString);
+            strncpy(d->keys[i], one ? "Amiga+" : "", sizeof d->keys[i] - 1);
+            strncat(d->keys[i], k, sizeof d->keys[i] - 1 - strlen(d->keys[i]));
+        }
+    }
+}
+
+/* MUIM_Family_AddHead / AddTail / Insert / Remove on the items of an Entries menu. m[1] the UP_MenuItem (copied), m[2] Insert's
+ * predecessor (NULL or not found = head); items are found by their title pointer. Checked / Disabled bits move with the items. */
+static ULONG aamenu_family(Object* obj, aamenu_data* d, ULONG* m) {
+    const UP_MenuItem* it = (const UP_MenuItem*)m[1];
+    int p = -1, k;
+    (void)obj;
+    if (it == NULL || it->title == NULL) {
+        return 0;
+    }
+    if (m[0] == MUIM_Family_Remove) {
+        for (k = 0; k < d->n && p < 0; k++) {
+            p = d->own[k].title == it->title ? k : -1;
+        }
+        if (p < 0) {
+            return 0;
+        }
+        memmove(&d->own[p], &d->own[p + 1], (size_t)(d->n - p - 1) * sizeof d->own[0]);
+        d->n--;
+        d->checked = mui_aa_mask_remove(d->checked, p);
+        d->disabled = mui_aa_mask_remove(d->disabled, p);
+    } else {
+        if (d->n >= UP_MENU_MAXITEMS) {
+            return 0;
+        }
+        p = m[0] == MUIM_Family_AddTail ? d->n : 0;
+        if (m[0] == MUIM_Family_Insert && m[2] != 0) {
+            for (k = 0; k < d->n; k++) {
+                if (d->own[k].title == ((const UP_MenuItem*)m[2])->title) {
+                    p = k + 1;
+                }
+            }
+        }
+        memmove(&d->own[p + 1], &d->own[p], (size_t)(d->n - p) * sizeof d->own[0]);
+        d->own[p] = *it;
+        d->n++;
+        d->checked = mui_aa_mask_insert(d->checked, p, (it->flags & UPV_MenuItem_Checked) != 0);
+        d->disabled = mui_aa_mask_insert(d->disabled, p, (it->flags & UPV_MenuItem_Disabled) != 0);
+    }
+    if (d->chosen >= d->n) {
+        d->chosen = -1;
+    }
+    aamenu_keys(d);
+    d->stale = 1;
+    if (d->list != NULL) { /* an open popup shows the change now, within its row count limit */
+        SetAttrs(d->list, UPA_List_Count, (ULONG)d->n, UPA_List_Disabled, d->disabled, TAG_DONE);
+    }
+    return 1;
 }
 
 static ULONG aamenu_new(struct IClass* cl, Object* obj, struct opSet* msg) {
@@ -270,18 +359,15 @@ static ULONG aamenu_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     d->items = items;
     d->n = n;
     d->chosen = -1;
-    d->ent = ent;
+    if (ent != NULL) {
+        memcpy(d->own, ent, (size_t)n * sizeof d->own[0]);
+        d->ent = d->own;
+    }
     for (int i = 0; ent != NULL && i < n; i++) {
-        const char* k = ent[i].shortcut;
         d->checked |= ent[i].flags & UPV_MenuItem_Checked ? 1UL << i : 0;
         d->disabled |= ent[i].flags & UPV_MenuItem_Disabled ? 1UL << i : 0;
-        if (k != NULL && k[0] != '\0') {
-            int one = k[1] == '\0' && !(ent[i].flags & UPV_MenuItem_CommandString);
-            strncpy(d->keys[i], one ? "Amiga+" : "", sizeof d->keys[i] - 1);
-            strncat(d->keys[i], k, sizeof d->keys[i] - 1 - strlen(d->keys[i]));
-            d->keyed |= one;
-        }
     }
+    aamenu_keys(d);
     d->checked = (ULONG)GetTagData(UPA_Menu_Checked, d->checked, tags);
     d->disabled = (ULONG)GetTagData(UPA_Menu_Disabled, d->disabled, tags);
     DoMethod(btn, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, UPM_Menu_Click);
@@ -317,10 +403,13 @@ static ULONG aamenu_set(struct IClass* cl, Object* obj, struct opSet* msg) {
     if ((ti = FindTagItem(UPA_Menu_Enabled, msg->ops_AttrList)) != NULL) {
         set(obj, MUIA_Disabled, !ti->ti_Data);
     }
+    if ((ti = FindTagItem(UPA_Menu_Step, msg->ops_AttrList)) != NULL) {
+        d->step = (LONG)ti->ti_Data; /* the super class notifies */
+    }
     if ((ti = FindTagItem(UPA_Menu_Open, msg->ops_AttrList)) != NULL) {
         /* the notify of our own set(UPA_Menu_Open) comes back here: act only when the wish differs from the state */
         if (ti->ti_Data && !d->pop.open) {
-            aamenu_open(obj, d, d->popup != NULL ? MUI_AA_POP_OPEN_REUSE : MUI_AA_POP_OPEN_NEW);
+            aamenu_open(obj, d, d->popup != NULL ? MUI_AA_POP_OPEN_REUSE : MUI_AA_POP_OPEN_NEW, ti->ti_Data == UPV_Menu_Open_Keys);
         } else if (!ti->ti_Data && d->pop.open) {
             aamenu_close(d);
         }
@@ -342,6 +431,10 @@ static ULONG aamenu_get(struct IClass* cl, Object* obj, struct opGet* msg) {
         ULONG dis = 0;
         GetAttr(MUIA_Disabled, obj, &dis);
         *msg->opg_Storage = !dis;
+        return TRUE;
+    }
+    if (msg->opg_AttrID == UPA_Menu_Step) {
+        *msg->opg_Storage = (ULONG)d->step;
         return TRUE;
     }
     if (msg->opg_AttrID == UPA_Menu_Open) {
@@ -376,6 +469,15 @@ static ULONG __attribute__((used)) aamenu_dispatch_c(struct IClass* cl, Object* 
         return aamenu_cleanup(cl, obj, msg);
     case MUIM_HandleEvent:
         return aamenu_key(obj, INST_DATA(cl, obj), ((struct MUIP_HandleEvent*)msg)->imsg);
+    case MUIM_Family_AddHead:
+    case MUIM_Family_AddTail:
+    case MUIM_Family_Insert:
+    case MUIM_Family_Remove:
+        d = INST_DATA(cl, obj);
+        if (d->ent != NULL) {
+            return aamenu_family(obj, d, (ULONG*)msg);
+        }
+        break;
     case UPM_Menu_Click:
         d = INST_DATA(cl, obj);
         {
@@ -383,7 +485,7 @@ static ULONG __attribute__((used)) aamenu_dispatch_c(struct IClass* cl, Object* 
             if (act == MUI_AA_POP_CLOSE) {
                 aamenu_close(d);
             } else if (act != MUI_AA_POP_NONE) {
-                aamenu_open(obj, d, act);
+                aamenu_open(obj, d, act, 0);
             }
         }
         return 0;
