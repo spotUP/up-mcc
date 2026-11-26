@@ -361,6 +361,10 @@ static int demo_body(int argc, char** argv) {
                     a = label("Right mouse button: menu bar", UPV_Text_Tone_Normal);
                     b = obj[40];
                 }
+                if (argc > 3 && atoi(argv[3]) > 0 && atoi(argv[3]) < CLASS_COUNT) { /* CASE <n> <index>: that one class alone (bisect) */
+                    a = obj[atoi(argv[3])];
+                    b = c = d = e = f = NULL;
+                }
                 root = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Panel, MUIA_Group_Child, (ULONG)label("UP-Demo case", UPV_Text_Tone_Heading),
                                      MUIA_Group_Child, (ULONG)box(TRUE, a, b, c, d, e, f), TAG_DONE);
             } else if (tier == 2) {

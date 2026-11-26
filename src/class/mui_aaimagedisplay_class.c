@@ -182,10 +182,12 @@ static ULONG sd_dispatch(struct IClass* cl, Object* obj, Msg msg, int frame) {
         aa_cleanup(&((aaspecdisp_data*)INST_DATA(cl, obj))->aa);
         break;
     case MUIM_AskMinMax: {
-        struct MUI_MinMax* mm = ((struct MUIP_AskMinMax*)msg)->MinMaxInfo;
+        struct MUI_MinMax* mm;
         int w, h;
         d = INST_DATA(cl, obj);
         DoSuperMethodA(cl, obj, msg);
+        /* The message arrives with MinMaxInfo NULL for an Area subclass; Area's AskMinMax fills the pointer in. Read it after super. */
+        mm = ((struct MUIP_AskMinMax*)msg)->MinMaxInfo;
         w = 3 * d->aa.font_px, h = up_rows(d->aa.font_px + d->aa.font_px / 2, d->aa.aspect_q8);
         mm->MinWidth += w, mm->DefWidth += 2 * w, mm->MaxWidth = MUI_MAXMAX;
         mm->MinHeight += h, mm->DefHeight += h, mm->MaxHeight = MUI_MAXMAX;
