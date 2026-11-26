@@ -12,6 +12,8 @@
  * The bar is never closed inside a notification of a menu or of a popup window: closing runs MUIM_Cleanup of the menus, which disposes
  * the popup whose notification is running. Every close goes through MUIM_Application_PushMethod, and so does the UPA_Menustrip_Trigger
  * set of a pick, since an application notify on it may close the windows (MUIA_Application_Iconified).
+ * MUIM_DisconnectParent drops the pushes still queued for the strip and the bar (MUIM_Application_UnpushMethod, MUI V20 and OpenMUI;
+ * MUI 3.8 has none and ignores the method), so a strip removed and disposed while the application runs leaves no dangling target.
  * Two styles: click (press and release the right button, then click a title and an item) and hold-drag-release (hold the right button,
  * move over the titles, release over an item). While the button is held the bar and the menu popups open inactive, so the application
  * window keeps getting the pointer moves and the release; the strip hit-tests the titles and hands moves and the release to the open menu
@@ -38,6 +40,16 @@
 #include <proto/utility.h>
 #include <devices/inputevent.h>
 
+#ifndef MUIM_Application_UnpushMethod
+#define MUIM_Application_UnpushMethod 0x804211dd /* V20; the MUI 3.8 SDK (V19) lacks it, 3.8 ignores it */
+#endif
+#ifndef MUIM_ConnectParent
+#define MUIM_ConnectParent 0x90421d00    /* Zune/OpenMUI Notify (MUIB_ZUNE|0x1d00); the MUI 3.8 SDK lacks it, 3.8 never sends it */
+#endif
+#ifndef MUIM_DisconnectParent
+#define MUIM_DisconnectParent 0x90421d01 /* Zune/OpenMUI Notify (MUIB_ZUNE|0x1d01) */
+#endif
+
 #include "map/mui_aa.h"
 #include "mui_aa_draw.h"
 
@@ -52,6 +64,7 @@ typedef struct aamenustrip_data {
     int tap;           /* Right Amiga is down with no other key or button since */
     int px, py;        /* screen point of the right press that opened the bar (cur -1) */
     struct MUI_EventHandlerNode ehn, bhn; /* bhn: the right button pressed in the active click-style bar */
+    Object* app;       /* the application seen at MUIM_ConnectParent, cleared at the unpush: a non-NULL _app(obj) is no proof of life */
 } aamenustrip_data;
 
 static struct MUI_CustomClass* g_menustrip_class;
@@ -399,6 +412,23 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
         d->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY | IDCMP_ACTIVEWINDOW; /* MOUSEMOVE: the drag; ACTIVEWINDOW: sets WFLG_RMBTRAP before the first click */
         DoMethod(_win(obj), MUIM_Window_AddEventHandler, (ULONG)&d->ehn);
         return TRUE;
+    case MUIM_ConnectParent:
+        DoSuperMethodA(cl, obj, msg); /* copies the parent's global info */
+        d = INST_DATA(cl, obj);
+        d->app = muiGlobalInfo(obj) != NULL ? _app(obj) : NULL;
+        return TRUE;
+    case MUIM_DisconnectParent:
+        /* The last point where the application is known live: removal from the window or the window from the application always passes
+         * here (Group/Window forward it), and a dispose by the application frees its own queue. A pick still queued for a strip being
+         * removed is dropped. The stored pointer, not _app(obj): after the window left the application and the application was
+         * disposed, removing the strip from its detached group sends DisconnectParent again with a stale _app (OpenMUI group.c:1774). */
+        d = INST_DATA(cl, obj);
+        if (d->app != NULL) {
+            DoMethod(d->app, MUIM_Application_UnpushMethod, (ULONG)obj, 0, 0);
+            DoMethod(d->app, MUIM_Application_UnpushMethod, (ULONG)d->bar, 0, 0);
+            d->app = NULL;
+        }
+        break;
     case MUIM_Cleanup:
         d = INST_DATA(cl, obj);
         DoMethod(_win(obj), MUIM_Window_RemEventHandler, (ULONG)&d->ehn);
