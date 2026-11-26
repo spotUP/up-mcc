@@ -242,6 +242,7 @@ typedef struct UP_MenuItem {
 #define UPM_Menu_Click UP_TAG(UP_CLS_MENU, 0x10)  /* method: the title button was pressed. Internal */
 #define UPM_Menu_Closed UP_TAG(UP_CLS_MENU, 0x11) /* method: the popup window closed. Internal */
 #define UPM_Menu_Deactivated UP_TAG(UP_CLS_MENU, 0x12) /* method: the popup window lost activation. Internal */
+#define UPM_Menu_Track UP_TAG(UP_CLS_MENU, 0x13) /* method (struct IntuiMessage* of another window): a mouse move hovers the item under the pointer, a button event picks it. Internal (UP-Menustrip drag) */
 
 /* UP-TextArea: a minimal multi-line text editor (word wrap, caret, vertical scroll, Shift and mouse-drag selection, clipboard text via Ctrl or Amiga + C, X, V), with its own UP-Scroller bar on the right (always shown, a thumb while the text is taller than the view; click pages, drag scrolls). Click or the cycle chain focuses it. */
 #define UPA_TextArea_Text UP_TAG(UP_CLS_TEXTAREA, 0x01)        /* ISG STRPTR: the text, copied in on set; get returns the object's own NUL terminated buffer (valid until the next edit). Notifies on every change: notify with MUIV_EveryTime, the pointer stays the same */

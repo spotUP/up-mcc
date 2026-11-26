@@ -7,7 +7,10 @@
  * when it is not the active window and no menu popup is open.
  * The bar is never closed inside a notification of a menu or of a popup window: closing runs MUIM_Cleanup of the menus, which disposes
  * the popup whose notification is running. Every close goes through MUIM_Application_PushMethod.
- * shortcut: click style only (press the right button, then click a title and an item), no hold-drag-release; upgrade when a user asks.
+ * Two styles: click (press and release the right button, then click a title and an item) and hold-drag-release (hold the right button,
+ * move over the titles, release over an item). While the button is held the bar and the menu popups open inactive, so the application
+ * window keeps getting the pointer moves and the release; the strip hit-tests the titles and hands moves and the release to the open menu
+ * (UPM_Menu_Track). The decision is mui_aa_strip_track (host test mui-menu-check).
  * shortcut: no key opens the bar, only Amiga+key shortcuts work without a mouse; upgrade with an Open attribute when needed. */
 #include "mui_aamenustrip_class.h"
 #include "mui_aa_class.h"
@@ -25,6 +28,7 @@
 #include <proto/utility.h>
 #include <devices/inputevent.h>
 
+#include "map/mui_aa.h"
 #include "mui_aa_draw.h"
 
 extern struct Library* MUIMasterBase;
@@ -34,6 +38,7 @@ typedef struct aamenustrip_data {
     int enabled;
     int added;         /* the bar window is a member of the application (first open until cleanup) */
     ULONG trigger;
+    int cur;           /* mui_aa_strip_track: -2 no hold, -1 held, else the menu the drag opened */
     struct MUI_EventHandlerNode ehn;
 } aamenustrip_data;
 
@@ -63,13 +68,75 @@ static void aamenustrip_toggle(Object* obj, aamenustrip_data* d) {
         aamenustrip_close(obj, d);
         return;
     }
+    d->cur = -1;
     if (!d->added) {
         DoMethod(_app(obj), OM_ADDMEMBER, (ULONG)d->bar);
         d->added = 1;
     }
     SetAttrs(d->bar, MUIA_Window_Screen, (ULONG)w->WScreen, MUIA_Window_LeftEdge, (ULONG)(w->LeftEdge + w->BorderLeft), MUIA_Window_TopEdge,
              (ULONG)(w->TopEdge + w->BorderTop), TAG_DONE);
+    set(d->bar, MUIA_Window_Activate, FALSE); /* the held button stays with this window; a click-style release activates the bar */
     set(d->bar, MUIA_Window_Open, TRUE);
+}
+
+static Object* aamenustrip_nth(const aamenustrip_data* d, int n) {
+    Object *st = aamenustrip_head(d), *o;
+    while (st != NULL && (o = NextObject((APTR)&st)) != NULL) {
+        if (n-- == 0) {
+            return o;
+        }
+    }
+    return NULL;
+}
+
+/* The number of the title under screen point x,y in the bar window bw, -1 none. */
+static int aamenustrip_hit(const aamenustrip_data* d, const struct Window* bw, int x, int y) {
+    Object *st = aamenustrip_head(d), *o;
+    int i = 0;
+    x -= bw->LeftEdge, y -= bw->TopEdge;
+    while (st != NULL && (o = NextObject((APTR)&st)) != NULL) {
+        if (x >= _left(o) && x <= _right(o) && y >= _top(o) && y <= _bottom(o)) {
+            return i;
+        }
+        i++;
+    }
+    return -1;
+}
+
+/* A pointer move or the right button release while the button is held since it opened the bar. */
+static ULONG aamenustrip_drag(Object* obj, aamenustrip_data* d, struct IntuiMessage* im) {
+    struct Window *w = _window(obj), *bw = NULL;
+    int old = d->cur, up = im->Class == IDCMP_MOUSEBUTTONS;
+    Object* o;
+    GetAttr(MUIA_Window_Window, d->bar, (ULONG*)&bw);
+    if (bw == NULL) { /* the bar closed under the hold (Amiga+key, another window) */
+        d->cur = -2;
+        return 0;
+    }
+    switch (mui_aa_strip_track(&d->cur, aamenustrip_hit(d, bw, w->LeftEdge + im->MouseX, w->TopEdge + im->MouseY), up)) {
+    case MUI_AA_STRIP_OPEN: /* open the new menu first: the old one's Open FALSE notify then sees an open menu and keeps the bar */
+        if ((o = aamenustrip_nth(d, d->cur)) != NULL) {
+            set(o, UPA_Menu_Open, TRUE);
+        }
+        if ((o = aamenustrip_nth(d, old)) != NULL) {
+            set(o, UPA_Menu_Open, FALSE);
+        }
+        break;
+    case MUI_AA_STRIP_PICK: /* over an item it picks (Picked closes the bar), anywhere else nothing; the bar closes either way */
+        if ((o = aamenustrip_nth(d, old)) != NULL) {
+            DoMethod(o, UPM_Menu_Track, (ULONG)im);
+        }
+        aamenustrip_close(obj, d);
+        break;
+    case MUI_AA_STRIP_KEEP:
+        set(d->bar, MUIA_Window_Activate, TRUE);
+        break;
+    default:
+        if ((o = aamenustrip_nth(d, old)) != NULL) {
+            DoMethod(o, UPM_Menu_Track, (ULONG)im); /* hover the item under the pointer */
+        }
+    }
+    return up ? MUI_EventHandlerRC_Eat : 0;
 }
 
 /* The bar lost activation or a menu popup closed: an inactive bar with no open menu goes away. */
@@ -153,6 +220,9 @@ static ULONG aamenustrip_event(Object* obj, aamenustrip_data* d, struct IntuiMes
         aamenustrip_toggle(obj, d);
         return MUI_EventHandlerRC_Eat;
     }
+    if (d->cur > -2 && (im->Class == IDCMP_MOUSEMOVE || (im->Class == IDCMP_MOUSEBUTTONS && im->Code == MENUUP))) {
+        return aamenustrip_drag(obj, d, im);
+    }
     if (im->Class == IDCMP_RAWKEY && (im->Qualifier & IEQUALIFIER_RCOMMAND)) {
         st = aamenustrip_head(d);
         while (st != NULL && (o = NextObject((APTR)&st)) != NULL) {
@@ -196,6 +266,7 @@ static ULONG aamenustrip_new(struct IClass* cl, Object* obj, struct opSet* msg) 
     memset(d, 0, sizeof *d);
     d->bar = bar;
     d->row = row;
+    d->cur = -2;
     d->enabled = GetTagData(UPA_Menustrip_Enabled, TRUE, msg->ops_AttrList) != 0;
     while ((ti = NextTagItem(&st)) != NULL) {
         if (ti->ti_Tag == MUIA_Family_Child && ti->ti_Data != 0) {
@@ -247,7 +318,7 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
         }
         d = INST_DATA(cl, obj);
         d->ehn.ehn_Priority = 0, d->ehn.ehn_Flags = 0, d->ehn.ehn_Object = obj, d->ehn.ehn_Class = cl;
-        d->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_ACTIVEWINDOW; /* ACTIVEWINDOW: sets WFLG_RMBTRAP before the first click */
+        d->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY | IDCMP_ACTIVEWINDOW; /* MOUSEMOVE: the drag; ACTIVEWINDOW: sets WFLG_RMBTRAP before the first click */
         DoMethod(_win(obj), MUIM_Window_AddEventHandler, (ULONG)&d->ehn);
         return TRUE;
     case MUIM_Cleanup:

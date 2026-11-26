@@ -1,4 +1,4 @@
-/* Host test of the UP-Menu check state (map/mui_aa.c): Checkit, Toggle, Exclude; the UP-List row tone of a disabled item; and the Amiga+key shortcut lookup. */
+/* Host test of the UP-Menu check state (map/mui_aa.c): Checkit, Toggle, Exclude; the UP-List row tone of a disabled item; the Amiga+key shortcut lookup; the UP-Menustrip hold-drag-release state. */
 #include <stdint.h>
 #include <stdio.h>
 #include "map/mui_aa.h"
@@ -44,6 +44,21 @@ int main(void) {
         CHECK(mui_aa_menu_shortcut(ent, 7, 0, 0xC4) == 6);       /* Latin-1 upper case */
         CHECK(mui_aa_menu_shortcut(ent, 4, 0, 'w') == -1);       /* beyond the count */
         CHECK(mui_aa_menu_shortcut(NULL, 7, 0, 'o') == -1);      /* a menu without Entries (UP-Menustrip asks every menu) */
+    }
+    {
+        int cur = -2;
+        CHECK(mui_aa_strip_track(&cur, 0, 0) == MUI_AA_STRIP_NONE && cur == -2); /* not held: moves and releases do nothing */
+        CHECK(mui_aa_strip_track(&cur, -1, 1) == MUI_AA_STRIP_NONE);
+        cur = -1;                                                                   /* the right button opened the bar */
+        CHECK(mui_aa_strip_track(&cur, -1, 0) == MUI_AA_STRIP_NONE && cur == -1);
+        CHECK(mui_aa_strip_track(&cur, -1, 1) == MUI_AA_STRIP_KEEP && cur == -2);   /* press and release in place: click style */
+        cur = -1;
+        CHECK(mui_aa_strip_track(&cur, 1, 0) == MUI_AA_STRIP_OPEN && cur == 1);     /* onto a title opens it */
+        CHECK(mui_aa_strip_track(&cur, 1, 0) == MUI_AA_STRIP_NONE && cur == 1);
+        CHECK(mui_aa_strip_track(&cur, -1, 0) == MUI_AA_STRIP_NONE && cur == 1);    /* off the titles (into the items) keeps it */
+        CHECK(mui_aa_strip_track(&cur, 2, 0) == MUI_AA_STRIP_OPEN && cur == 2);     /* across titles switches */
+        CHECK(mui_aa_strip_track(&cur, -1, 1) == MUI_AA_STRIP_PICK && cur == -2);   /* release after a drag: pick or close */
+        CHECK(mui_aa_strip_track(&cur, 0, 0) == MUI_AA_STRIP_NONE && cur == -2);
     }
     if (fails == 0) {
         printf("mui_menu_check_test OK\n");

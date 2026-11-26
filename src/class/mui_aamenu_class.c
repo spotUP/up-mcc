@@ -156,6 +156,9 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act) {
         set(d->list, UPA_List_Active, (ULONG)-1);
     }
     set(d->list, UPA_List_Disabled, d->disabled); /* grey rows; the mask may have changed since the last open */
+    /* only from an active window: during a UP-Menustrip drag the application window keeps the input (pointer and button release) */
+    set(d->popup, MUIA_Window_Activate, (win->Flags & WFLG_WINDOWACTIVE) != 0);
+    d->deact = 0; /* the Activate FALSE notify above is no loss of activation */
     mui_aa_pop_opened(&d->pop);
     set(d->popup, MUIA_Window_Open, TRUE);
     set(obj, UPA_Menu_Open, TRUE);
@@ -392,6 +395,25 @@ static ULONG __attribute__((used)) aamenu_dispatch_c(struct IClass* cl, Object* 
     case UPM_Menu_Closed:
         aamenu_closed(obj, INST_DATA(cl, obj));
         return 0;
+    case UPM_Menu_Track: /* the IntuiMessage of the strip's window, moved into the popup's coordinates; a button event is a click */
+        d = INST_DATA(cl, obj);
+        {
+            struct IntuiMessage im = *(struct IntuiMessage*)((ULONG*)msg)[1];
+            struct Window* pw = NULL;
+            if (d->pop.open && d->list != NULL && im.IDCMPWindow != NULL) {
+                GetAttr(MUIA_Window_Window, d->popup, (ULONG*)&pw);
+            }
+            if (pw == NULL) {
+                return 0;
+            }
+            im.MouseX += im.IDCMPWindow->LeftEdge - pw->LeftEdge;
+            im.MouseY += im.IDCMPWindow->TopEdge - pw->TopEdge;
+            im.IDCMPWindow = pw;
+            if (im.Class == IDCMP_MOUSEBUTTONS) {
+                im.Code = SELECTDOWN;
+            }
+            return DoMethod(d->list, MUIM_HandleEvent, (ULONG)&im, 0UL); /* UP-List hovers or picks; a pick notifies UPA_Menu_Chosen */
+        }
     }
     return DoSuperMethodA(cl, obj, msg);
 }

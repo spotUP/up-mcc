@@ -350,6 +350,15 @@ unsigned long mui_aa_menu_pick(unsigned long checked, int i, int checkit, int to
 /* UP-Menu shortcut lookup (host test mui-menu-check): the item whose one-character shortcut is c (Latin-1, case-blind), -1 when none.
  * Skipped: disabled items (bit i of disabled), CommandString items, longer shortcut texts. ent NULL (a UPA_Menu_Items menu) finds none. */
 int mui_aa_menu_shortcut(const UP_MenuItem* ent, int n, unsigned long disabled, int c);
+/* UP-Menustrip hold-drag-release (host test mui-menu-check). *cur: -2 the right button is not held since it opened the bar, -1 held with no
+ * menu opened yet, else the menu the drag opened. title: the menu under the pointer, -1 none; up: the button went up. OPEN: open menu *cur
+ * (then close the one before); PICK: a drag release, send it to the open menu and close the bar; KEEP: a release that opened no menu, the
+ * bar stays for click style. *cur is -2 after every release. */
+#define MUI_AA_STRIP_NONE 0
+#define MUI_AA_STRIP_OPEN 1
+#define MUI_AA_STRIP_PICK 2
+#define MUI_AA_STRIP_KEEP 3
+int mui_aa_strip_track(int* cur, int title, int up);
 
 /* UP-Knob / UP-Levelmeter dial maths (host test mui-dial). Angles are whole degrees, 0 = right, counter clockwise positive; a dial
  * starts at start_deg for lo and turns clockwise through sweep_deg to hi. Knob: 225 / 270 (lower left round to lower right);

@@ -3369,6 +3369,28 @@
 *
 ******/
 
+/****** UP-Menu.mcc/UPM_Menu_Track ******
+*
+*   NAME
+*       UPM_Menu_Track -- method of UP-Menu.mcc
+*
+*   SYNOPSIS
+*       DoMethod(menu, UPM_Menu_Track, struct IntuiMessage* im)
+*
+*   FUNCTION
+*       Hands a pointer event of another window to the open item list: a mouse move hovers the item under the pointer, a button event picks it (UPA_Menu_Chosen notifies). Does nothing while the popup is closed. Internal, sent by UP-Menustrip during a hold-drag-release.
+*
+*   INPUTS
+*       im - the IntuiMessage, coordinates relative to its IDCMPWindow.
+*
+*   RESULT
+*       MUI_EventHandlerRC_Eat when the event fell on an item, else 0.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc, UP-Menustrip.mcc
+*
+******/
+
 /****** UP-TextArea.mcc/UPA_TextArea_Text ******
 *
 *   NAME
@@ -3932,7 +3954,7 @@
 *       UP-Menustrip -- class of UP-Menustrip.mcc
 *
 *   FUNCTION
-*       UP-Menustrip replaces MUIC_Menustrip and MUIA_Window_Menustrip: a window menu bar drawn in the UP-MCC theme. The object is invisible; put it anywhere in the window that gets the menus (MUI's Window class takes only its own Menustrip class as MUIA_Window_Menustrip). Its children are UP-Menu objects, one per menu title: pass each as MUIA_Family_Child in the creation tag list, or use MUIM_Family_AddHead, MUIM_Family_AddTail, MUIM_Family_Insert and MUIM_Family_Remove later (ids of <libraries/mui.h>; a removed menu belongs to the caller again). The strip disposes its menus. The items of a menu are its UPA_Menu_Entries array (struct UP_MenuItem: title, shortcut, Checkit, Toggle, Exclude, Disabled); to change the items of a menu, replace the menu. The right mouse button over the window opens the bar at the window's top-left inner corner; a click on a title opens that menu, a click on an item picks it. The bar closes after a pick, on a second right button press, or when another window gets active. A one-character shortcut is Amiga+key while the window is active. Every pick sets UPA_Menustrip_Trigger and UPA_Menu_Chosen of the menu, both notify. Checkmarks follow UPA_Menu_Checked of each menu. Limits: the menus are click style (no hold, drag and release); a disabled item cannot be picked and its shortcut is off, but it is not drawn grey; the bar opens with the mouse only; AddHead and Insert keep their position for up to UP_MENUSTRIP_MAXMENUS (16) menus; do not send a Family method from inside a pick notification. The strip sets WFLG_RMBTRAP on the window, so the window cannot have Intuition menus as well.
+*       UP-Menustrip replaces MUIC_Menustrip and MUIA_Window_Menustrip: a window menu bar drawn in the UP-MCC theme. The object is invisible; put it anywhere in the window that gets the menus (MUI's Window class takes only its own Menustrip class as MUIA_Window_Menustrip). Its children are UP-Menu objects, one per menu title: pass each as MUIA_Family_Child in the creation tag list, or use MUIM_Family_AddHead, MUIM_Family_AddTail, MUIM_Family_Insert and MUIM_Family_Remove later (ids of <libraries/mui.h>; a removed menu belongs to the caller again). The strip disposes its menus. The items of a menu are its UPA_Menu_Entries array (struct UP_MenuItem: title, shortcut, Checkit, Toggle, Exclude, Disabled); to change the items of a menu, replace the menu. The right mouse button over the window opens the bar at the window's top-left inner corner. Click style: release the button, then a click on a title opens that menu and a click on an item picks it. Hold style: keep the button down, move over the titles (each opens its menu), release over an item to pick it or anywhere else to close the bar without a pick. The bar closes after a pick, on a second right button press, or when another window gets active. A one-character shortcut is Amiga+key while the window is active. Every pick sets UPA_Menustrip_Trigger and UPA_Menu_Chosen of the menu, both notify. Checkmarks follow UPA_Menu_Checked of each menu. Limits: a disabled item cannot be picked and its shortcut is off; the bar opens with the mouse only; AddHead and Insert keep their position for up to UP_MENUSTRIP_MAXMENUS (16) menus; do not send a Family method from inside a pick notification. The strip sets WFLG_RMBTRAP on the window, so the window cannot have Intuition menus as well.
 *
 *   INPUTS
 *       Create with MUI_NewObject("UP-Menustrip.mcc", MUIA_Family_Child, menu, ..., TAG_DONE) or UP_NewMenustrip() from <mcc/up.h>.
