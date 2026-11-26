@@ -74,6 +74,26 @@ static const UP_MenuItem g_strip_items[] = {{"Open", "O", 0, 0}, {"Save", "S", 0
                                             {"Print", "P", UPV_MenuItem_Disabled, 0}, {NULL, NULL, 0, 0}};
 /* The second title: with two, a hold-drag over the bar switches between them */
 static const UP_MenuItem g_strip_edit[] = {{"Cut", "X", 0, 0}, {"Copy", "C", 0, 0}, {"Paste", "V", 0, 0}, {NULL, NULL, 0, 0}};
+/* CASE 11 (row 557): a 16x8 two-plane ByteRun1 body (rows: colour 1, 2, 3 as replicate runs, then colour 0 as a literal run), colour 0 transparent */
+static const UBYTE g_probe_body[] = {0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF,
+                                     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x03, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00};
+static const ULONG g_probe_colors[] = {0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0x20202020, 0x20202020, 0x20202020, 0xFFFFFFFF,
+                                       0x20202020, 0x20202020, 0xFFFFFFFF, 0xFFFFFFFF};
+static const UP_MenuItem g_probe_items[] = {{"Probe", "K", 0, 0}, {NULL, NULL, 0, 0}}; /* Amiga+K */
+/* CASE 13 (row 516): the ObjStrHook copies the picked row of the popup list into the string */
+static ULONG probe_row(struct Hook* hook, Object* obj, UP_ListCell* cell) {
+    (void)hook;
+    (void)obj;
+    return (ULONG)(uintptr_t)g_cycle_entries[cell->row % 3];
+}
+static ULONG probe_objstr(struct Hook* hook, Object* list, Object* str) {
+    ULONG row = 0;
+    (void)hook;
+    GetAttr(UPA_List_Picked, list, &row);
+    set(str, MUIA_String_Contents, (ULONG)g_cycle_entries[row % 3]);
+    return 0;
+}
+static struct Hook g_probe_row_hook, g_probe_objstr_hook;
 static ULONG g_palette[] = {0xE5484D, 0xF5A524, 0x46A758, 0x3E63DD, 0x8E4EC6, 0x889096};
 static const char* const g_artists[] = {"Virgill", "Jogeir Liljedahl", "Purple Motion", "Zabutom", "Dubmood", "Chipzel"};
 static const char* const g_times[] = {"3:42", "4:05", "2:58", "5:21", "3:09", "4:47"};
@@ -273,7 +293,7 @@ static int demo_body(int argc, char** argv) {
     int auto_close = argc > 1 && argv[1] != NULL && strcmp(argv[1], "AUTO") == 0;
     int i, ok = 0, ticks = 0;
     int tier = demo_tier();
-    int mode = argc > 2 && argv[1] != NULL && strcmp(argv[1], "CASE") == 0 ? atoi(argv[2]) : 0; /* RIGCHECK: 1 menustrip, 2 imagedisplay, 3 textarea, 4 Popasl/Popscreen/Popobject, 5 Framedisplay/Popimage/Popframe/Imageadjust/Frameadjust, 6 Pendisplay/Poppen/Penadjust, 7 Dirlist, 8 Volumelist, 9 Scrmodelist, 10 Floattext */
+    int mode = argc > 2 && argv[1] != NULL && strcmp(argv[1], "CASE") == 0 ? atoi(argv[2]) : 0; /* RIGCHECK: 1 menustrip, 2 imagedisplay, 3 textarea, 4 Popasl/Popscreen/Popobject, 5 Framedisplay/Popimage/Popframe/Imageadjust/Frameadjust, 6 Pendisplay/Poppen/Penadjust, 7 Dirlist, 8 Volumelist, 9 Scrmodelist, 10 Floattext, 11 Image ByteRun1 body + Amiga+K menu (557), 12 bare Cycle (716), 13 Popobject ObjStrHook (516) */
 
     memset(obj, 0, sizeof obj);
     MUIMasterBase = OpenLibrary((CONST_STRPTR) "muimaster.library", 19);
@@ -362,6 +382,25 @@ static int demo_body(int argc, char** argv) {
                     a = obj[39];
                 } else if (mode == 10) {
                     a = obj[43];
+                } else if (mode == 11) {
+                    a = MUI_NewObject((char*)"UP-Image.mcc", UPA_Image_Body, (ULONG)g_probe_body, UPA_Image_Compression, 1UL, UPA_Image_Depth, 2UL, UPA_Image_Width, 16UL,
+                                      UPA_Image_Height, 8UL, UPA_Image_SourceColors, (ULONG)g_probe_colors, UPA_Image_Transparent, 0UL, UPA_Image_Masking, 2UL, TAG_DONE);
+                    b = label("Amiga+K: Probe (right mouse button opens the bar)", UPV_Text_Tone_Normal);
+                    c = MUI_NewObject((char*)"UP-Menustrip.mcc", MUIA_Family_Child,
+                                      (ULONG)MUI_NewObject((char*)"UP-Menu.mcc", UPA_Menu_Title, (ULONG) "Probe", UPA_Menu_Entries, (ULONG)g_probe_items, TAG_DONE), TAG_DONE);
+                } else if (mode == 12) {
+                    a = MUI_NewObject((char*)"UP-Cycle.mcc", TAG_DONE); /* no entries */
+                } else if (mode == 13) {
+                    Object* pl;
+                    g_probe_row_hook.h_Entry = (__typeof__(g_probe_row_hook.h_Entry))(void (*)(void))HookEntry;
+                    g_probe_row_hook.h_SubEntry = (__typeof__(g_probe_row_hook.h_SubEntry))(void (*)(void))probe_row;
+                    g_probe_objstr_hook.h_Entry = (__typeof__(g_probe_objstr_hook.h_Entry))(void (*)(void))HookEntry;
+                    g_probe_objstr_hook.h_SubEntry = (__typeof__(g_probe_objstr_hook.h_SubEntry))(void (*)(void))probe_objstr;
+                    pl = MUI_NewObject((char*)"UP-List.mcc", UPA_List_Count, 3UL, UPA_List_MaxRows, 3UL, UPA_List_RowHook, (ULONG)&g_probe_row_hook, TAG_DONE);
+                    a = MUI_NewObject((char*)"UP-Popobject.mcc", MUIA_Popobject_Object, (ULONG)pl, MUIA_Popobject_ObjStrHook, (ULONG)&g_probe_objstr_hook, TAG_DONE);
+                    if (a != NULL && pl != NULL) {
+                        DoMethod(pl, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, (ULONG)a, 2UL, MUIM_Popstring_Close, (ULONG)TRUE);
+                    }
                 } else {
                     a = label("Right mouse button: menu bar", UPV_Text_Tone_Normal);
                     b = obj[40];
