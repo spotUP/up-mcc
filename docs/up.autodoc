@@ -180,6 +180,25 @@
 *
 ******/
 
+/****** UP-Progress.mcc/UPA_Progress_FillHeight ******
+*
+*   NAME
+*       UPA_Progress_FillHeight -- attribute of UP-Progress.mcc
+*
+*   FUNCTION
+*       BOOL grow to the height of the row, track centred, the erase covers the whole box
+*
+*   INPUTS
+*       UPA_Progress_FillHeight - access I. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Progress.mcc
+*
+******/
+
 /****** UP-Cycle.mcc/UPA_Cycle_Active ******
 *
 *   NAME

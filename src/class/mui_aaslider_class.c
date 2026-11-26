@@ -37,6 +37,7 @@ typedef struct aaprogress_data {
     up_slider_t m;
     aa_ctx aa;
     int shown; /* MUIM_Show seen, MUIM_Hide not yet (AA_SHOWN_CASES); outside aa_ctx, whose ABI 2 layout is frozen */
+    int tall;  /* UPA_Progress_FillHeight */
 } aaprogress_data;
 
 static struct MUI_CustomClass *g_slider_class, *g_progress_class;
@@ -294,23 +295,28 @@ static ULONG aaprogress_askminmax(struct IClass* cl, Object* obj, struct MUIP_As
     msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
     msg->MinMaxInfo->MinHeight += d->m.track_h;
     msg->MinMaxInfo->DefHeight += d->m.track_h;
-    msg->MinMaxInfo->MaxHeight += d->m.track_h;
+    msg->MinMaxInfo->MaxHeight = d->tall ? MUI_MAXMAX : msg->MinMaxInfo->MaxHeight + d->m.track_h;
     return 0;
 }
 
 static ULONG aaprogress_draw(struct IClass* cl, Object* obj, struct MUIP_Draw* msg) {
     aaprogress_data* d = INST_DATA(cl, obj);
     uint32_t track, fill;
-    int fw;
+    int fw, th = d->m.track_h, t = _mtop(obj), pad = (_mheight(obj) - th) / 2;
     DoSuperMethodA(cl, obj, (Msg)msg);
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) {
         return 0;
     }
+    if (pad > 0) { /* FillHeight: the bands above and below the track are this object's, a row relayout leaves no stale pixels there */
+        aa_erase(&d->aa, obj, _mleft(obj), t, _mwidth(obj), pad);
+        aa_erase(&d->aa, obj, _mleft(obj), t + pad + th, _mwidth(obj), _mheight(obj) - pad - th);
+        t += pad;
+    }
     mui_aa_slider_rgb(d->aa.tok, MUI_AA_NORMAL, &track, &fill);
-    aa_round_fill(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), d->m.track_h, d->m.radius, track);
+    aa_round_fill(&d->aa, _rp(obj), _mleft(obj), t, _mwidth(obj), th, d->m.radius, track);
     fw = mui_aa_progress_fill_w(_mwidth(obj), d->value, d->max);
     if (fw > 0) {
-        aa_round_fill(&d->aa, _rp(obj), _mleft(obj), _mtop(obj), fw, d->m.track_h, d->m.radius, fill);
+        aa_round_fill(&d->aa, _rp(obj), _mleft(obj), t, fw, th, d->m.radius, fill);
     }
     return 0;
 }
@@ -359,6 +365,7 @@ static ULONG aaprogress_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     d = INST_DATA(cl, obj);
     d->value = (long)GetTagData(UPA_Progress_Value, 0, msg->ops_AttrList);
     d->max = (long)GetTagData(UPA_Progress_Max, 100, msg->ops_AttrList);
+    d->tall = (int)GetTagData(UPA_Progress_FillHeight, FALSE, msg->ops_AttrList);
     return (ULONG)obj;
 }
 

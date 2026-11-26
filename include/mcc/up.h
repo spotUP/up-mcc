@@ -113,6 +113,7 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 /* UP-Progress and the slider value */
 #define UPA_Progress_Value UP_TAG(UP_CLS_PROGRESS, 0x01) /* ISG LONG: filled part */
 #define UPA_Progress_Max UP_TAG(UP_CLS_PROGRESS, 0x02)   /* ISG LONG: value that fills the bar */
+#define UPA_Progress_FillHeight UP_TAG(UP_CLS_PROGRESS, 0x03) /* I BOOL grow to the height of the row, track centred, the erase covers the whole box */
 
 /* UP-Checkmark: MUIA_Selected (ISG BOOL, notifies) is the checked value, as for MUIC_Checkmark */
 #define UPA_Checkmark_Label UP_TAG(UP_CLS_CHECKMARK, 0x01) /* I STRPTR text right of the box; must outlive the object; absent = box only */
