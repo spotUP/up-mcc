@@ -12,6 +12,8 @@
  * The bar is never closed inside a notification of a menu or of a popup window: closing runs MUIM_Cleanup of the menus, which disposes
  * the popup whose notification is running. Every close goes through MUIM_Application_PushMethod, and so does the UPA_Menustrip_Trigger
  * set of a pick, since an application notify on it may close the windows (MUIA_Application_Iconified).
+ * MUIM_DisconnectParent drops the pushes still queued for the strip and the bar (MUIM_Application_UnpushMethod, MUI V20 and OpenMUI;
+ * MUI 3.8 has none and ignores the method), so a strip removed and disposed while the application runs leaves no dangling target.
  * Two styles: click (press and release the right button, then click a title and an item) and hold-drag-release (hold the right button,
  * move over the titles, release over an item). While the button is held the bar and the menu popups open inactive, so the application
  * window keeps getting the pointer moves and the release; the strip hit-tests the titles and hands moves and the release to the open menu
@@ -37,6 +39,10 @@
 #include <proto/muimaster.h>
 #include <proto/utility.h>
 #include <devices/inputevent.h>
+
+#ifndef MUIM_Application_UnpushMethod
+#define MUIM_Application_UnpushMethod 0x804211dd /* V20; the MUI 3.8 SDK (V19) lacks it, 3.8 ignores it */
+#endif
 
 #include "map/mui_aa.h"
 #include "mui_aa_draw.h"
@@ -399,6 +405,16 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
         d->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY | IDCMP_ACTIVEWINDOW; /* MOUSEMOVE: the drag; ACTIVEWINDOW: sets WFLG_RMBTRAP before the first click */
         DoMethod(_win(obj), MUIM_Window_AddEventHandler, (ULONG)&d->ehn);
         return TRUE;
+    case MUIM_DisconnectParent:
+        /* The last point where _app(obj) is known live: removal from the window or the window from the application always passes here
+         * (Group/Window forward it), and a dispose by the application frees its own queue. A pick still queued for a strip being
+         * removed is dropped. */
+        if (muiGlobalInfo(obj) != NULL && _app(obj) != NULL) {
+            d = INST_DATA(cl, obj);
+            DoMethod(_app(obj), MUIM_Application_UnpushMethod, (ULONG)obj, 0, 0);
+            DoMethod(_app(obj), MUIM_Application_UnpushMethod, (ULONG)d->bar, 0, 0);
+        }
+        break;
     case MUIM_Cleanup:
         d = INST_DATA(cl, obj);
         DoMethod(_win(obj), MUIM_Window_RemEventHandler, (ULONG)&d->ehn);
