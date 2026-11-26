@@ -268,6 +268,7 @@ static int demo_body(int argc, char** argv) {
     int auto_close = argc > 1 && argv[1] != NULL && strcmp(argv[1], "AUTO") == 0;
     int i, ok = 0, ticks = 0;
     int tier = demo_tier();
+    int mode = argc > 2 && argv[1] != NULL && strcmp(argv[1], "CASE") == 0 ? atoi(argv[2]) : 0; /* RIGCHECK: 1 menustrip, 2 imagedisplay, 3 textarea */
 
     memset(obj, 0, sizeof obj);
     MUIMasterBase = OpenLibrary((CONST_STRPTR) "muimaster.library", 19);
@@ -317,7 +318,30 @@ static int demo_body(int argc, char** argv) {
                        box(FALSE, tier == 0 ? NULL : label("Search", UPV_Text_Tone_Muted), obj[8], obj[7], NULL, NULL, NULL), NULL, NULL);
             pbk = card("Playback", tier == 0 ? NULL : label("Volume 40", UPV_Text_Tone_Muted), obj[5], tier == 0 ? NULL : label("Elapsed 2:05 of 3:22", UPV_Text_Tone_Muted),
                        box(FALSE, obj[6], tier == 0 ? NULL : label("Scroll position", UPV_Text_Tone_Muted), obj[9], NULL, NULL, NULL));
-            if (tier == 2) {
+            if (mode != 0) {
+                Object* a = NULL;
+                Object* b = NULL;
+                Object* c = NULL;
+                Object* d = NULL;
+                Object* e = NULL;
+                Object* f = NULL;
+                if (mode == 2) {
+                    a = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "6:3", TAG_DONE);
+                    b = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "0:128", TAG_DONE);
+                    c = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "1:4", TAG_DONE);
+                    d = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "5:RAM:pic.iff", TAG_DONE);
+                    e = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "2:r3E3E3E3E,63636363,DDDDDDDD", TAG_DONE);
+                    f = obj[33];
+                } else if (mode == 3) {
+                    a = MUI_NewObject((char*)"UP-Textarea.mcc", UPA_TextArea_Text, (ULONG) "alpha beta gamma\nsecond line of words\nthird line here", TAG_DONE);
+                    if (a == NULL) a = obj[41];
+                } else {
+                    a = label("Right mouse button: menu bar", UPV_Text_Tone_Normal);
+                    b = obj[40];
+                }
+                root = MUI_NewObject((char*)"UP-Panel.mcc", UPA_Panel_Role, (ULONG)UPV_Panel_Role_Panel, MUIA_Group_Child, (ULONG)label("UP-Demo case", UPV_Text_Tone_Heading),
+                                     MUIA_Group_Child, (ULONG)box(TRUE, a, b, c, d, e, f), TAG_DONE);
+            } else if (tier == 2) {
                 Object* more = card("More controls", box(TRUE, obj[11], obj[12], NULL, NULL, NULL, NULL), box(TRUE, obj[13], obj[14], obj[20], NULL, NULL, NULL),
                                     box(TRUE, obj[15], obj[16], obj[17], obj[18], obj[19], NULL), box(FALSE, box(TRUE, obj[21], obj[22], obj[23], obj[24], NULL, NULL), box(TRUE, obj[25], obj[26], obj[27], NULL, NULL, NULL), NULL, NULL, NULL, NULL));
                 Object* left = card("Library", box(FALSE, obj[3], tab_pages(obj[3]), NULL, NULL, NULL, NULL), label("128 songs in your library", UPV_Text_Tone_Muted), obj[2], obj[10]);
