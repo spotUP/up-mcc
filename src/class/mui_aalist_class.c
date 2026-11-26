@@ -173,9 +173,24 @@ static ULONG aalist_askminmax(struct IClass* cl, Object* obj, struct MUIP_AskMin
     aalist_data* d = INST_DATA(cl, obj);
     long rows = d->count < d->max_rows ? d->count : d->max_rows;
     int h = 2 * d->m.pad_y + aalist_title_h(d) + (int)(rows < 1 ? 1 : rows) * d->m.row_h;
+    int def = 2 * d->m.pad_x + 120;
     DoSuperMethodA(cl, obj, (Msg)msg);
+    if (d->raised) { /* a popup body (menu, cycle, popstring) opens as wide as its widest cell per column, so no item text is cut */
+        int c, n = d->cols.n < 1 ? 1 : d->cols.n, w[UP_LIST_COLS], cw;
+        long r;
+        for (c = 0; c < n; c++) {
+            w[c] = d->cols.n >= 1 && d->cols.sample[c] != NULL ? aa_text_width(&d->aa, obj, d->cols.sample[c]) : 0;
+            /* shortcut: rows past 256 are not measured, a longer popup list may cut a later wider row; measure all if one appears */
+            for (r = 0; (d->cols.n < 1 || d->cols.weight[c] > 0) && r < d->count && r < 256; r++) {
+                cw = aa_text_width(&d->aa, obj, aalist_text(d, r, c));
+                w[c] = cw > w[c] ? cw : w[c];
+            }
+        }
+        cw = mui_aa_list_content_w(&d->m, n, w);
+        def = cw > def ? cw : def;
+    }
     msg->MinMaxInfo->MinWidth += 2 * d->m.pad_x + 40;
-    msg->MinMaxInfo->DefWidth += 2 * d->m.pad_x + 120;
+    msg->MinMaxInfo->DefWidth += def;
     msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
     msg->MinMaxInfo->MinHeight += 2 * d->m.pad_y + aalist_title_h(d) + d->m.row_h;
     msg->MinMaxInfo->DefHeight += h;

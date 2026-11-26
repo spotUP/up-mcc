@@ -1,4 +1,5 @@
 /* Host test of the UP-List multi-selection bitset and column hit (src/map/mui_aalistsel.c). */
+#include "map/mui_aa.h"
 #include "map/mui_aalistsel.h"
 
 #include <stdio.h>
@@ -32,5 +33,12 @@ int main(void) {
     CHECK(mui_aa_list_col_at(&m, 0, 3, cw) == 0 && mui_aa_list_col_at(&m, 57, 3, cw) == 0);
     CHECK(mui_aa_list_col_at(&m, 58, 3, cw) == 2 && mui_aa_list_col_at(&m, 500, 3, cw) == 2);
     CHECK(mui_aa_list_col_at(&m, 500, 1, cw) == 0);
+    /* content width: pads 2 * 4, 50 + 30, one divider 7 (col 1 absent takes none); widths of that face give the columns back uncut */
+    CHECK(mui_aa_list_content_w(&m, 3, cw) == 95);
+    {
+        int wt[3] = {0, 1, 0}, fx[3] = {12, 0, 40}, need[3] = {12, 90, 40}, out[3];
+        mui_aa_list_col_widths(&m, mui_aa_list_content_w(&m, 3, need), 3, wt, fx, out);
+        CHECK(out[0] == 12 && out[1] >= 90 && out[2] == 40);
+    }
     return 0;
 }

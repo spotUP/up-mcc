@@ -235,6 +235,9 @@ uint32_t mui_aa_list_calls(void);
  * width, the gap on both sides of the divider and the 1 px divider. w may be NULL for column 0. Johan 2026-10-29: text sat 5 px from the frame
  * and from the dividers; the target is pad_x at the edge and gap (8) on each side of a divider, header row included. */
 int mui_aa_list_col_x(const up_list_t* m, int col, const int* w);
+/* Face width that shows n columns of ink widths w uncut: both pads, the widths, one divider (2 * gap + 1) between present columns. Inverse
+ * of mui_aa_list_col_widths: a face this wide gives every fixed column its width and every weighted one at least w[k]. */
+int mui_aa_list_content_w(const up_list_t* m, int n, const int* w);
 /* MUIA_List_Format DELTA of a column followed by a divider (BAR): MUI centres the BAR in the delta, so gap on each side needs 2 * gap. */
 /* I667i2: column widths of a multi-column list face of width total. Column k with weight[k] > 0 shares what is left after the fixed columns
  * (fixed[k] px each, weight 0) and the dividers (2 * gap + 1 each) and both pads, by weight; out[k] is its ink width (never negative). */

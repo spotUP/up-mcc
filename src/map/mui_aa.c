@@ -639,6 +639,18 @@ int mui_aa_list_col_x(const up_list_t* m, int col, const int* w) {
     return x;
 }
 
+int mui_aa_list_content_w(const up_list_t* m, int n, const int* w) {
+    int x = 2 * m->pad_x, k, any = 0;
+    g_list_calls++;
+    for (k = 0; k < n; k++) {
+        if (w[k] > 0) { /* absent columns take no divider, as in mui_aa_list_col_x */
+            x += w[k] + (any ? 2 * m->gap + 1 : 0);
+            any = 1;
+        }
+    }
+    return x;
+}
+
 
 int mui_aa_list_visible(const up_list_t* m, int h) {
     g_list_calls++;
