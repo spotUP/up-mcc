@@ -49,6 +49,7 @@ typedef struct aamenustrip_data {
     ULONG trigger;
     int cur;           /* mui_aa_strip_track: -2 no hold, -1 held, else the menu the drag opened */
     int tap;           /* Right Amiga is down with no other key or button since */
+    int px, py;        /* screen point of the right press that opened the bar (cur -1) */
     struct MUI_EventHandlerNode ehn, bhn; /* bhn: the right button pressed in the active click-style bar */
 } aamenustrip_data;
 
@@ -118,15 +119,16 @@ static int aamenustrip_hit(const aamenustrip_data* d, const struct Window* bw, i
 
 /* A pointer move or the right button release while the button is held since it opened the bar. */
 static ULONG aamenustrip_drag(Object* obj, aamenustrip_data* d, struct IntuiMessage* im) {
-    struct Window *w = _window(obj), *bw = NULL;
-    int old = d->cur, up = im->Class == IDCMP_MOUSEBUTTONS;
+    struct Window *w = im->IDCMPWindow != NULL ? im->IDCMPWindow : _window(obj), *bw = NULL; /* the strip's window or the bar (bhn) */
+    int old = d->cur, up = im->Class == IDCMP_MOUSEBUTTONS, x = w->LeftEdge + im->MouseX, y = w->TopEdge + im->MouseY;
+    int dx = x > d->px ? x - d->px : d->px - x, dy = y > d->py ? y - d->py : d->py - y;
     Object* o;
     GetAttr(MUIA_Window_Window, d->bar, (ULONG*)&bw);
     if (bw == NULL) { /* the bar closed under the hold (Amiga+key, another window) */
         d->cur = -2;
         return 0;
     }
-    switch (mui_aa_strip_track(&d->cur, aamenustrip_hit(d, bw, w->LeftEdge + im->MouseX, w->TopEdge + im->MouseY), up)) {
+    switch (mui_aa_strip_track(&d->cur, aamenustrip_hit(d, bw, x, y), up, dx > dy ? dx : dy)) {
     case MUI_AA_STRIP_OPEN: /* open the new menu first: the old one's Open FALSE notify then sees an open menu and keeps the bar */
         if ((o = aamenustrip_nth(d, d->cur)) != NULL) {
             set(o, UPA_Menu_Open, TRUE);
@@ -139,6 +141,9 @@ static ULONG aamenustrip_drag(Object* obj, aamenustrip_data* d, struct IntuiMess
         if ((o = aamenustrip_nth(d, old)) != NULL) {
             DoMethod(o, UPM_Menu_Track, (ULONG)im);
         }
+        aamenustrip_close(obj, d);
+        break;
+    case MUI_AA_STRIP_CANCEL: /* held and moved but never reached a title (or the moves were not seen): release elsewhere cancels */
         aamenustrip_close(obj, d);
         break;
     case MUI_AA_STRIP_KEEP:
@@ -286,6 +291,9 @@ static ULONG aamenustrip_event(Object* obj, aamenustrip_data* d, struct IntuiMes
         d->tap = 0; /* Amiga+key or Amiga+click: no tap */
     }
     if (im->Class == IDCMP_MOUSEBUTTONS && im->Code == MENUDOWN) {
+        if (im->IDCMPWindow != NULL) {
+            d->px = im->IDCMPWindow->LeftEdge + im->MouseX, d->py = im->IDCMPWindow->TopEdge + im->MouseY;
+        }
         aamenustrip_toggle(obj, d);
         return MUI_EventHandlerRC_Eat;
     }

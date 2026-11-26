@@ -1264,13 +1264,13 @@ int mui_aa_menu_shortcut(const UP_MenuItem* ent, int n, unsigned long disabled, 
     return -1;
 }
 
-int mui_aa_strip_track(int* cur, int title, int up) {
+int mui_aa_strip_track(int* cur, int title, int up, int dist) {
     int r = MUI_AA_STRIP_NONE;
     if (*cur < -1) {
         return r;
     }
-    if (up) {
-        r = *cur >= 0 ? MUI_AA_STRIP_PICK : MUI_AA_STRIP_KEEP;
+    if (up) { /* a release away from the press with no menu open was a drag that missed the titles: Intuition closes, it does not keep */
+        r = *cur >= 0 ? MUI_AA_STRIP_PICK : dist > MUI_AA_STRIP_SLOP ? MUI_AA_STRIP_CANCEL : MUI_AA_STRIP_KEEP;
         *cur = -2;
     } else if (title >= 0 && title != *cur) {
         *cur = title;
