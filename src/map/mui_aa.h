@@ -353,6 +353,9 @@ int mui_aa_body_unpack(const unsigned char* body, int compression, int w, int h,
 /* UP-Menu check state (host test mui-menu-check). Mask of checked items after item i (0..31) is picked: no checkit = unchanged; unchecked
  * = checked and the exclude items cleared; checked = unchecked with toggle, else unchanged. */
 unsigned long mui_aa_menu_pick(unsigned long checked, int i, int checkit, int toggle, unsigned long exclude);
+/* UP-Menu shortcut lookup (host test mui-menu-check): the item whose one-character shortcut is c (Latin-1, case-blind), -1 when none.
+ * Skipped: disabled items (bit i of disabled), CommandString items, longer shortcut texts. ent NULL (a UPA_Menu_Items menu) finds none. */
+int mui_aa_menu_shortcut(const UP_MenuItem* ent, int n, unsigned long disabled, int c);
 
 /* UP-Knob / UP-Levelmeter dial maths (host test mui-dial). Angles are whole degrees, 0 = right, counter clockwise positive; a dial
  * starts at start_deg for lo and turns clockwise through sweep_deg to hi. Knob: 225 / 270 (lower left round to lower right);

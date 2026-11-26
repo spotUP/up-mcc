@@ -79,6 +79,9 @@ list(APPEND MCC_CLASS_LIBS "Imagedisplay|src/class/mui_aaimagedisplay_class.c|aa
   "Dirlist|src/class/mui_aadirlist_class.c|aadirlist_class_desc"
   "Volumelist|src/class/mui_aadirlist_class.c|aavolumelist_class_desc"
   "Scrmodelist|src/class/mui_aadirlist_class.c|aascrmodelist_class_desc")
+# UP-Menustrip: the window menu bar
+list(APPEND MCC_AMIGA_SOURCES src/class/mui_aamenustrip_class.c)
+list(APPEND MCC_CLASS_LIBS "Menustrip|src/class/mui_aamenustrip_class.c|aamenustrip_class_desc")
 set(_mcc_lib_sources "")
 foreach(row ${MCC_CLASS_LIBS})
   string(REPLACE "|" ";" cols "${row}")
@@ -273,6 +276,7 @@ add_custom_target(up_mcc_classes DEPENDS up_mcc_Button up_mcc_Text up_mcc_Panel 
 
 add_dependencies(up_mcc_classes up_mcc_Pendisplay up_mcc_Poppen up_mcc_Penadjust) # MUI gap D
 add_dependencies(up_mcc_classes up_mcc_Imagedisplay up_mcc_Framedisplay up_mcc_Popimage up_mcc_Popframe up_mcc_Imageadjust up_mcc_Frameadjust) # MUI gap E
+add_dependencies(up_mcc_classes up_mcc_Menustrip)
 
 # I685k: UP-Demo (demo/updemo.c). Headers: the release set staged here (include/mcc/*.h plus the one header up.h needs,
 # selecta/uimodel/tokens.h, which the release archive carries as Developer/include/selecta/uimodel/tokens.h) and the sfdc headers. No Selecta

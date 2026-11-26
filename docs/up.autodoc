@@ -3887,3 +3887,98 @@
 *       <mcc/up.h>, UP-Frameadjust.mcc
 *
 ******/
+
+/****** UP-Menustrip.mcc/UP-Menustrip ******
+*
+*   NAME
+*       UP-Menustrip -- class of UP-Menustrip.mcc
+*
+*   FUNCTION
+*       UP-Menustrip replaces MUIC_Menustrip and MUIA_Window_Menustrip: a window menu bar drawn in the UP-MCC theme. The object is invisible; put it anywhere in the window that gets the menus (MUI's Window class takes only its own Menustrip class as MUIA_Window_Menustrip). Its children are UP-Menu objects, one per menu title: pass each as MUIA_Family_Child in the creation tag list, or use MUIM_Family_AddHead, MUIM_Family_AddTail, MUIM_Family_Insert and MUIM_Family_Remove later (ids of <libraries/mui.h>; a removed menu belongs to the caller again). The strip disposes its menus. The items of a menu are its UPA_Menu_Entries array (struct UP_MenuItem: title, shortcut, Checkit, Toggle, Exclude, Disabled); to change the items of a menu, replace the menu. The right mouse button over the window opens the bar at the window's top-left inner corner; a click on a title opens that menu, a click on an item picks it. The bar closes after a pick, on a second right button press, or when another window gets active. A one-character shortcut is Amiga+key while the window is active. Every pick sets UPA_Menustrip_Trigger and UPA_Menu_Chosen of the menu, both notify. Checkmarks follow UPA_Menu_Checked of each menu. Limits: the menus are click style (no hold, drag and release); a disabled item cannot be picked and its shortcut is off, but it is not drawn grey; the bar opens with the mouse only; AddHead and Insert keep their position for up to UP_MENUSTRIP_MAXMENUS (16) menus; do not send a Family method from inside a pick notification. The strip sets WFLG_RMBTRAP on the window, so the window cannot have Intuition menus as well.
+*
+*   INPUTS
+*       Create with MUI_NewObject("UP-Menustrip.mcc", MUIA_Family_Child, menu, ..., TAG_DONE) or UP_NewMenustrip() from <mcc/up.h>.
+*
+*   RESULT
+*       An object of the class, or NULL.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menustrip.mcc, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menustrip.mcc/UPA_Menustrip_Enabled ******
+*
+*   NAME
+*       UPA_Menustrip_Enabled -- attribute of UP-Menustrip.mcc
+*
+*   FUNCTION
+*       BOOL: the bar opens on the right mouse button and the Amiga+key shortcuts work (MUIA_Menustrip_Enabled); default TRUE. One menu is switched with UPA_Menu_Enabled, one item with UPA_Menu_Disabled.
+*
+*   INPUTS
+*       UPA_Menustrip_Enabled - access ISG. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menustrip.mcc, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menustrip.mcc/UPA_Menustrip_Trigger ******
+*
+*   NAME
+*       UPA_Menustrip_Trigger -- attribute of UP-Menustrip.mcc
+*
+*   FUNCTION
+*       ULONG: the last pick as (menu index << 8) | item index, both counted from 0; the menu index is the position in the bar. Notifies on every pick, from the bar or from a shortcut (MUIA_Menuitem_Trigger): use MUIM_Notify with MUIV_EveryTime, or with one value for one item.
+*
+*   INPUTS
+*       UPA_Menustrip_Trigger - access ..G. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menustrip.mcc, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menustrip.mcc/UPM_Menustrip_Picked ******
+*
+*   NAME
+*       UPM_Menustrip_Picked -- method of UP-Menustrip.mcc
+*
+*   FUNCTION
+*       a menu chose an item (menu object, item index); internal
+*
+*   INPUTS
+*       UPM_Menustrip_Picked - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menustrip.mcc, UP-Menu.mcc
+*
+******/
+
+/****** UP-Menustrip.mcc/UPM_Menustrip_Check ******
+*
+*   NAME
+*       UPM_Menustrip_Check -- method of UP-Menustrip.mcc
+*
+*   FUNCTION
+*       the bar lost activation or a menu popup closed; internal
+*
+*   INPUTS
+*       UPM_Menustrip_Check - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menustrip.mcc, UP-Menu.mcc
+*
+******/

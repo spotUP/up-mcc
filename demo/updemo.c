@@ -52,7 +52,7 @@ static void demo_requester(const char* text) {
     EasyRequest(NULL, &es, NULL, (APTR)text);
 }
 
-#define CLASS_COUNT 40 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
+#define CLASS_COUNT 41 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
 
 static const struct MUI_PenSpec g_pen_spec = {"r3e3e3e3e,63636363,dddddddd"};
 static const char* const g_names[CLASS_COUNT] = {"Button", "Text", "Panel", "Tabs", "Balance", "Slider",
@@ -62,11 +62,14 @@ static const char* const g_names[CLASS_COUNT] = {"Button", "Text", "Panel", "Tab
                                                  "Popobject", "Popasl", "Popscreen",
                                                  "Pendisplay", "Poppen", "Penadjust",
                                                  "Imagedisplay", "Framedisplay", "Popimage", "Popframe", "Imageadjust", "Frameadjust",
-                                                 "Dirlist", "Volumelist", "Scrmodelist"};
+                                                 "Dirlist", "Volumelist", "Scrmodelist", "Menustrip"};
 static const char* const g_cycle_entries[] = {"First", "Second", "Third", NULL};
 static const char* const g_tab_captions[] = {"Songs", "Albums", "Artists", "Playlists", NULL};
 static const char* const g_radio_entries[] = {"Low", "Medium", "High", NULL};
 static const char* const g_menu_items[] = {"Open", "Save", "-", "Quit", NULL};
+/* Menustrip sample: right mouse button over the window opens the bar; Amiga+O, Amiga+S and Amiga+W work without it */
+static const UP_MenuItem g_strip_items[] = {{"Open", "O", 0, 0}, {"Save", "S", 0, 0}, {"-", NULL, 0, 0}, {"Word Wrap", "W", UPV_MenuItem_Checkit | UPV_MenuItem_Toggle, 0},
+                                            {"Print", "P", UPV_MenuItem_Disabled, 0}, {NULL, NULL, 0, 0}};
 static ULONG g_palette[] = {0xE5484D, 0xF5A524, 0x46A758, 0x3E63DD, 0x8E4EC6, 0x889096};
 static const char* const g_artists[] = {"Virgill", "Jogeir Liljedahl", "Purple Motion", "Zabutom", "Dubmood", "Chipzel"};
 static const char* const g_times[] = {"3:42", "4:05", "2:58", "5:21", "3:09", "4:47"};
@@ -219,6 +222,9 @@ static Object* make(int index) {
     case 38:
     case 39:
         return MUI_NewObject(path, TAG_DONE);
+    case 40: /* Menustrip: invisible; one UP-Menu child with the Menuitem model. A NULL child fails the strip (MUI convention) */
+        return MUI_NewObject(path, MUIA_Family_Child,
+                             (ULONG)MUI_NewObject((char*)"UP-Menu.mcc", UPA_Menu_Title, (ULONG) "Project", UPA_Menu_Entries, (ULONG)g_strip_items, TAG_DONE), TAG_DONE);
     default:
         g_row_hook.h_Entry = (__typeof__(g_row_hook.h_Entry))(void (*)(void))HookEntry;
         g_row_hook.h_SubEntry = (__typeof__(g_row_hook.h_SubEntry))(void (*)(void))demo_cell;

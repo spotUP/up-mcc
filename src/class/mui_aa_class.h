@@ -40,5 +40,6 @@ extern const struct aa_class_desc aapendisplay_class_desc, aapoppen_class_desc, 
 extern const struct aa_class_desc aaimagedisplay_class_desc, aaframedisplay_class_desc, aapopimage_class_desc, aapopframe_class_desc,
     aaimageadjust_class_desc, aaframeadjust_class_desc,
     aadirlist_class_desc, aavolumelist_class_desc, aascrmodelist_class_desc;
+extern const struct aa_class_desc aamenustrip_class_desc; /* UP-Menustrip */
 
 #endif
