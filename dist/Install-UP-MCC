@@ -1,5 +1,6 @@
 ; Install-UP-MCC: Installer script of the UP-MCC package 1.0 (MIT licence, see Docs/LICENSE).
-; Run it from the Installer program (novice, intermediate or expert mode). It copies files only; it never writes to MUI preferences.
+; Run it from the Installer program (novice, intermediate or expert mode). It copies files; of the MUI preferences it writes only OpenMUI global.prefs
+; (backed up once as global.prefs.before-up). Workbench colours (palette.prefs, PublicScreens.iff, screen pens) are never touched.
 
 (set @default-dest "MUI:")
 (set #version "1.0")
@@ -91,7 +92,7 @@
   )
 )
 
-; OpenMUI default look: the theme's global.prefs (colours only) to ENVARC: and ENV:OpenMUI. A user's own prefs are saved once as global.prefs.bak.
+; OpenMUI default look: the theme's global.prefs (colours only) to ENVARC: and ENV:OpenMUI. A user's own prefs are saved once as global.prefs.before-up.
 (if (= 1 (exists (tackon #src "Themes/OpenMUI/Dark.prefs") (noreq)))
   (
     (makedir "ENVARC:OpenMUI")
@@ -100,8 +101,8 @@
     (makedir "ENVARC:UP-MCC/OpenMUI")
     (copyfiles (source (tackon #src "Themes/OpenMUI")) (dest "ENVARC:UP-MCC/OpenMUI") (pattern "#?.prefs"))
     (if (= 1 (exists "ENVARC:OpenMUI/global.prefs" (noreq)))
-      (if (= 0 (exists "ENVARC:OpenMUI/global.prefs.bak" (noreq)))
-        (copyfiles (source "ENVARC:OpenMUI/global.prefs") (dest "ENVARC:OpenMUI") (newname "global.prefs.bak"))
+      (if (= 0 (exists "ENVARC:OpenMUI/global.prefs.before-up" (noreq)))
+        (copyfiles (source "ENVARC:OpenMUI/global.prefs") (dest "ENVARC:OpenMUI") (newname "global.prefs.before-up"))
       )
     )
     (copyfiles (source (tackon #src "Themes/OpenMUI/Dark.prefs")) (dest "ENVARC:OpenMUI") (newname "global.prefs"))

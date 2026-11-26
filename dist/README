@@ -48,7 +48,8 @@ Preferences
   UP-MCC.mcp is a MUI preferences class. Its edits recolour every running program that uses the classes, at once, through
   up-mcc.library. When the theme saved is Dark or Light unchanged, its OpenMUI twin (ENVARC:UP-MCC/OpenMUI/<name>.prefs)
   also replaces ENV: and ENVARC:OpenMUI/global.prefs, so other OpenMUI programs follow; a global.prefs of your own is kept
-  once as global.prefs.bak. A custom theme leaves OpenMUI alone. Workbench colours (palette.prefs) are never changed.
+  once as global.prefs.before-up (copy it back over ENV: and ENVARC:OpenMUI/global.prefs to restore your own look). A custom
+  theme leaves OpenMUI alone. Workbench colours (palette.prefs, PublicScreens.iff, screen pens) are never changed.
 
 Using the classes from C
   Include <mcc/up.h> (it pulls in <mcc/up_lib.h>). Create an object by class name, no UP_New* function is needed:

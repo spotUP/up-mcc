@@ -49,7 +49,7 @@ extern struct Library* UPMCCBase;
 #define OPENMUI_ENV_FILE "ENV:OpenMUI/global.prefs"
 #define OPENMUI_ENVARC_DIR "ENVARC:OpenMUI"
 #define OPENMUI_ENVARC_FILE "ENVARC:OpenMUI/global.prefs"
-#define OPENMUI_ENVARC_BAK "ENVARC:OpenMUI/global.prefs.bak"
+#define OPENMUI_ENVARC_BAK "ENVARC:OpenMUI/global.prefs.before-up"
 
 typedef struct prefs_data {
     Object *file, *accent, *surface, *text, *background, *radius;
@@ -233,7 +233,7 @@ static int theme_is(const char* name, const uint32_t* tok) {
 /* OpenMUI follows the theme just written (tokens tok). The theme is named by the file the page loaded (the Theme file gadget) when its
  * tokens are unchanged, else by the shipped theme whose tokens it equals; a custom theme names none and OpenMUI is left alone. The
  * named theme's OpenMUI twin replaces ENV: and ENVARC:OpenMUI/global.prefs (both, as for the theme: MUI sends Use and Save through
- * GadgetsToConfig alike); a user's own ENVARC global.prefs is first kept once as global.prefs.bak, as Install-UP-MCC does. Only
+ * GadgetsToConfig alike); a user's own ENVARC global.prefs is first kept once as global.prefs.before-up, as Install-UP-MCC does. Only
  * global.prefs is written: palette.prefs and the Workbench colours are never touched. buf is scratch of cap bytes. */
 static void openmui_follow(prefs_data* d, const uint32_t* tok, char* buf, LONG cap) {
     static const char* const shipped[] = {"Dark", "Light"};
