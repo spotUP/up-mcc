@@ -52,7 +52,7 @@ static void demo_requester(const char* text) {
     EasyRequest(NULL, &es, NULL, (APTR)text);
 }
 
-#define CLASS_COUNT 41 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
+#define CLASS_COUNT 44 /* the rows of MCC_CLASS_LIBS in CMakeLists.txt */
 
 static const struct MUI_PenSpec g_pen_spec = {"r3e3e3e3e,63636363,dddddddd"};
 static const char* const g_names[CLASS_COUNT] = {"Button", "Text", "Panel", "Tabs", "Balance", "Slider",
@@ -62,7 +62,8 @@ static const char* const g_names[CLASS_COUNT] = {"Button", "Text", "Panel", "Tab
                                                  "Popobject", "Popasl", "Popscreen",
                                                  "Pendisplay", "Poppen", "Penadjust",
                                                  "Imagedisplay", "Framedisplay", "Popimage", "Popframe", "Imageadjust", "Frameadjust",
-                                                 "Dirlist", "Volumelist", "Scrmodelist", "Menustrip"};
+                                                 "Dirlist", "Volumelist", "Scrmodelist", "Menustrip",
+                                                 "Textarea", "Rectangle", "Floattext"};
 static const char* const g_cycle_entries[] = {"First", "Second", "Third", NULL};
 static const char* const g_tab_captions[] = {"Songs", "Albums", "Artists", "Playlists", NULL};
 static const char* const g_radio_entries[] = {"Low", "Medium", "High", NULL};
@@ -225,6 +226,12 @@ static Object* make(int index) {
     case 40: /* Menustrip: invisible; one UP-Menu child with the Menuitem model. A NULL child fails the strip (MUI convention) */
         return MUI_NewObject(path, MUIA_Family_Child,
                              (ULONG)MUI_NewObject((char*)"UP-Menu.mcc", UPA_Menu_Title, (ULONG) "Project", UPA_Menu_Entries, (ULONG)g_strip_items, TAG_DONE), TAG_DONE);
+    case 41: /* Textarea: plain, no own tags needed */
+        return MUI_NewObject(path, TAG_DONE);
+    case 42:
+        return MUI_NewObject(path, MUIA_Rectangle_HBar, (ULONG)TRUE, TAG_DONE);
+    case 43:
+        return MUI_NewObject(path, MUIA_Floattext_Text, (ULONG) "Floattext: read-only text that wraps at the word.", TAG_DONE);
     default:
         g_row_hook.h_Entry = (__typeof__(g_row_hook.h_Entry))(void (*)(void))HookEntry;
         g_row_hook.h_SubEntry = (__typeof__(g_row_hook.h_SubEntry))(void (*)(void))demo_cell;
