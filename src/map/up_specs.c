@@ -13,6 +13,10 @@ static int up_gun(const char* s) {
     return lo < 0 ? -1 : hi * 16 + lo;
 }
 
+int up_imspec_by_mui(int kind) {
+    return kind == 0 || kind == 1 || (kind >= 3 && kind <= 6);
+}
+
 int up_imspec_parse(const char* spec, const char** tail, uint32_t* rgb, int* has_rgb) {
     const char* g;
     int r, gr, b;

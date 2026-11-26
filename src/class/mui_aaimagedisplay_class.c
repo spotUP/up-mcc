@@ -1,8 +1,8 @@
 /* MUI gap E: UP-Imagedisplay and UP-Framedisplay (MUIC_Imagedisplay, MUIC_Framedisplay), and UP-Popimage and UP-Popframe (MUIC_Popimage,
  * MUIC_Popframe). One .mcc holds one class; the linker drops the other three.
- * The displays are Area classes that draw a preview of an image spec (map/up_specs.h) or a frame spec in the theme.
- * shortcut: the image preview shows the kind (colour fill, raised pattern/preset fill, or the file/class name), not the real image;
- * upgrade when a caller needs the real brush or picture drawn.
+ * UP-Framedisplay is an Area that draws a frame spec in the theme. UP-Imagedisplay is a Group: a spec muimaster can draw (pattern, vector,
+ * image class, brush, picture, MUII_ preset; up_imspec_by_mui) becomes its one MUIC_Image child, the spec engine MUI's own Imagedisplay
+ * uses, rebuilt on every spec change; a pen spec, a gradient (not in MUI 3.8) or a bad spec has no child and is filled in the theme.
  * The pops are Groups around a UP-Popstring: its string is a display, its popup a UP-Imageadjust / UP-Frameadjust. The adjust's spec
  * notify runs UPM_Pop*_Changed, which shows the spec in the display and sets it on the pop, so it notifies. The popstring disposes the
  * popup root with the window cleanup; MUIM_Setup makes a new one. */
@@ -29,6 +29,7 @@ extern struct Library* MUIMasterBase;
 typedef struct aaspecdisp_data {
     char spec[UP_IMSPEC_LEN]; /* image spec, or frame spec in the first UP_FRSPEC_LEN bytes */
     int frame, shown;
+    Object* img; /* UP-Imagedisplay's MUIC_Image child, or NULL; owned by the group */
     aa_ctx aa;
 } aaspecdisp_data;
 
@@ -61,6 +62,29 @@ static void sd_store_tag(aaspecdisp_data* d, ULONG v) {
     }
 }
 
+static void sd_image(Object* obj, aaspecdisp_data* d) {
+    const char* tail;
+    uint32_t rgb;
+    int has, live = aa_live(obj);
+    if (live) {
+        DoMethod(obj, MUIM_Group_InitChange);
+    }
+    if (d->img != NULL) {
+        DoMethod(obj, OM_REMMEMBER, (ULONG)d->img);
+        MUI_DisposeObject(d->img);
+        d->img = NULL;
+    }
+    if (up_imspec_by_mui(up_imspec_parse(d->spec, &tail, &rgb, &has))) {
+        d->img = MUI_NewObject((char*)MUIC_Image, MUIA_Image_Spec, (ULONG)d->spec, MUIA_Image_FreeHoriz, TRUE, MUIA_Image_FreeVert, TRUE, TAG_DONE);
+        if (d->img != NULL) {
+            DoMethod(obj, OM_ADDMEMBER, (ULONG)d->img);
+        }
+    }
+    if (live) {
+        DoMethod(obj, MUIM_Group_ExitChange);
+    }
+}
+
 static void sd_draw(Object* obj, aaspecdisp_data* d) {
     struct RastPort* rp = _rp(obj);
     const uint32_t* tok = d->aa.tok;
@@ -80,14 +104,9 @@ static void sd_draw(Object* obj, aaspecdisp_data* d) {
         const char* tail;
         uint32_t rgb = tok[SEL_GUI_TOKEN_ACCENT];
         int has, k = up_imspec_parse(d->spec, &tail, &rgb, &has);
-        uint32_t bg = k == 2 ? rgb : k == 0 || k == 6 ? tok[SEL_GUI_TOKEN_SURFACE_RAISED] : tok[SEL_GUI_TOKEN_SURFACE];
+        uint32_t bg = k == 2 ? rgb : tok[SEL_GUI_TOKEN_SURFACE];
         aa_round_fill(&d->aa, rp, l, t, w, h, r, bg);
         aa_round_frame(&d->aa, rp, l, t, w, h, r, tok[SEL_GUI_TOKEN_DIVIDER]);
-        if (k == 1 || k == 3 || k == 4 || k == 5) {
-            const char* f = strrchr(tail, '/');
-            f = f != NULL ? f + 1 : strrchr(tail, ':') != NULL ? strrchr(tail, ':') + 1 : tail;
-            aa_text(&d->aa, obj, rp, l + 2, t + (h - aa_text_height(&d->aa, obj)) / 2, f, tok[SEL_GUI_TOKEN_TEXT_MUTED], bg);
-        }
     }
 }
 
@@ -110,13 +129,19 @@ static ULONG sd_dispatch(struct IClass* cl, Object* obj, Msg msg, int frame) {
         d->frame = frame;
         ti = FindTagItem(sd_tag(frame), ((struct opSet*)msg)->ops_AttrList);
         sd_store_tag(d, ti != NULL ? ti->ti_Data : (ULONG)(uintptr_t)(frame ? "000000" : "0:128"));
+        if (!frame) {
+            sd_image(obj, d);
+        }
         return (ULONG)obj;
     }
     case OM_SET:
         d = INST_DATA(cl, obj);
         if ((ti = FindTagItem(sd_tag(frame), ((struct opSet*)msg)->ops_AttrList)) != NULL && ti->ti_Data != (ULONG)d->spec) {
             sd_store_tag(d, ti->ti_Data);
-            if (aa_live(obj)) {
+            if (!frame) {
+                sd_image(obj, d);
+            }
+            if (aa_live(obj) && d->img == NULL) {
                 const char* tail;
                 uint32_t rgb = 0;
                 int has;
@@ -139,7 +164,7 @@ static ULONG sd_dispatch(struct IClass* cl, Object* obj, Msg msg, int frame) {
         uint32_t rgb = 0;
         int has, i;
         static const int held[] = {SEL_GUI_TOKEN_SURFACE, SEL_GUI_TOKEN_SURFACE_RAISED, SEL_GUI_TOKEN_SURFACE_PRESSED, SEL_GUI_TOKEN_DIVIDER,
-                                   SEL_GUI_TOKEN_ACCENT, SEL_GUI_TOKEN_TEXT_MUTED};
+                                   SEL_GUI_TOKEN_ACCENT};
         d = INST_DATA(cl, obj);
         if (!DoSuperMethodA(cl, obj, msg)) {
             return FALSE;
@@ -169,7 +194,7 @@ static ULONG sd_dispatch(struct IClass* cl, Object* obj, Msg msg, int frame) {
     case MUIM_Draw:
         d = INST_DATA(cl, obj);
         DoSuperMethodA(cl, obj, msg);
-        if (d->shown && (((struct MUIP_Draw*)msg)->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) {
+        if (d->shown && d->img == NULL && (((struct MUIP_Draw*)msg)->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) {
             sd_draw(obj, d);
         }
         return 0;
@@ -302,7 +327,7 @@ static ULONG __attribute__((used)) aapopframe_dispatch_c(struct IClass* cl, Obje
         return gcls != NULL ? NewObjectA(gcls->mcc_Class, NULL, (struct TagItem*)tags) : NULL; \
     }
 
-SPEC_CLASS(aaimagedisplay, MUIC_Area, aaspecdisp_data, g_imagedisplay_class, UP_NewImagedisplay)
+SPEC_CLASS(aaimagedisplay, MUIC_Group, aaspecdisp_data, g_imagedisplay_class, UP_NewImagedisplay)
 SPEC_CLASS(aaframedisplay, MUIC_Area, aaspecdisp_data, g_framedisplay_class, UP_NewFramedisplay)
 SPEC_CLASS(aapopimage, MUIC_Group, aaspecpop_data, g_popimage_class, UP_NewPopimage)
 SPEC_CLASS(aapopframe, MUIC_Group, aaspecpop_data, g_popframe_class, UP_NewPopframe)
