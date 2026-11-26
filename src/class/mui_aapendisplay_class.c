@@ -243,12 +243,12 @@ extern ULONG aapendisplay_dispatch(void);
 extern ULONG aapoppen_dispatch(void);
 const struct aa_class_desc aapendisplay_class_desc = {MUIC_Area, sizeof(aapendisplay_data), aapendisplay_dispatch, &g_pendisplay_class};
 const struct aa_class_desc aapoppen_class_desc = {MUIC_Area, sizeof(aapendisplay_data), aapoppen_dispatch, &g_poppen_class};
-__asm__(".pushsection .text._aapendisplay_dispatch,\"ax\"\n.even\n.globl _aapendisplay_dispatch\n_aapendisplay_dispatch:\n"
+__asm__(".section .text._aapendisplay_dispatch,\"ax\"\n.even\n.globl _aapendisplay_dispatch\n_aapendisplay_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aapendisplay_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n");
-__asm__(".pushsection .text._aapoppen_dispatch,\"ax\"\n.even\n.globl _aapoppen_dispatch\n_aapoppen_dispatch:\n"
+        "\tjbsr _aapendisplay_dispatch_c\n\tlea 12(sp),sp\n\trts\n.text\n");
+__asm__(".section .text._aapoppen_dispatch,\"ax\"\n.even\n.globl _aapoppen_dispatch\n_aapoppen_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aapoppen_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n");
+        "\tjbsr _aapoppen_dispatch_c\n\tlea 12(sp),sp\n\trts\n.text\n");
 
 /* Everything but OM_NEW, shared by both classes (UP-Poppen is a UP-Pendisplay with a popup). */
 static ULONG pd_common(struct IClass* cl, Object* obj, Msg msg) {

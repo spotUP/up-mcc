@@ -317,9 +317,9 @@ static ULONG __attribute__((used)) aapopframe_dispatch_c(struct IClass* cl, Obje
 #define SPEC_CLASS(name, super, data, gcls, Ctor) \
     extern ULONG name##_dispatch(void); \
     const struct aa_class_desc name##_class_desc = {super, sizeof(data), name##_dispatch, &gcls}; \
-    __asm__(".pushsection .text._" #name "_dispatch,\"ax\"\n.even\n.globl _" #name "_dispatch\n_" #name "_dispatch:\n" \
+    __asm__(".section .text._" #name "_dispatch,\"ax\"\n.even\n.globl _" #name "_dispatch\n_" #name "_dispatch:\n" \
             "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n" \
-            "\tjbsr _" #name "_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n"); \
+            "\tjbsr _" #name "_dispatch_c\n\tlea 12(sp),sp\n\trts\n.text\n"); \
     Object* Ctor(const struct TagItem* tags) { \
         if (gcls == NULL) { \
             gcls = AA_CLASS_CREATE(&name##_class_desc); \

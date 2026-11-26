@@ -244,9 +244,9 @@ static ULONG __attribute__((used)) aaknob_dispatch_c(struct IClass* cl, Object* 
 
 extern ULONG aaknob_dispatch(void);
 const struct aa_class_desc aaknob_class_desc = {MUIC_Numeric, sizeof(aaknob_data), aaknob_dispatch, &g_knob_class};
-__asm__(".pushsection .text._aaknob_dispatch,\"ax\"\n.even\n.globl _aaknob_dispatch\n_aaknob_dispatch:\n"
+__asm__(".section .text._aaknob_dispatch,\"ax\"\n.even\n.globl _aaknob_dispatch\n_aaknob_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aaknob_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n");
+        "\tjbsr _aaknob_dispatch_c\n\tlea 12(sp),sp\n\trts\n.text\n");
 
 static ULONG __attribute__((used)) aaknob_dispatch_c(struct IClass* cl, Object* obj, Msg msg) {
     switch (msg->MethodID) {
@@ -378,9 +378,9 @@ static ULONG __attribute__((used)) aalevelmeter_dispatch_c(struct IClass* cl, Ob
 
 extern ULONG aalevelmeter_dispatch(void);
 const struct aa_class_desc aalevelmeter_class_desc = {MUIC_Numeric, sizeof(aalevel_data), aalevelmeter_dispatch, &g_level_class};
-__asm__(".pushsection .text._aalevelmeter_dispatch,\"ax\"\n.even\n.globl _aalevelmeter_dispatch\n_aalevelmeter_dispatch:\n"
+__asm__(".section .text._aalevelmeter_dispatch,\"ax\"\n.even\n.globl _aalevelmeter_dispatch\n_aalevelmeter_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aalevelmeter_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n");
+        "\tjbsr _aalevelmeter_dispatch_c\n\tlea 12(sp),sp\n\trts\n.text\n");
 
 static ULONG __attribute__((used)) aalevelmeter_dispatch_c(struct IClass* cl, Object* obj, Msg msg) {
     switch (msg->MethodID) {

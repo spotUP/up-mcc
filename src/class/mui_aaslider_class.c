@@ -206,9 +206,9 @@ static ULONG __attribute__((used)) aaslider_dispatch_c(struct IClass* cl, Object
 
 extern ULONG aaslider_dispatch(void);
 const struct aa_class_desc aaslider_class_desc = {MUIC_Numeric, sizeof(aaslider_data), aaslider_dispatch, &g_slider_class};
-__asm__(".pushsection .text._aaslider_dispatch,\"ax\"\n.even\n.globl _aaslider_dispatch\n_aaslider_dispatch:\n"
+__asm__(".section .text._aaslider_dispatch,\"ax\"\n.even\n.globl _aaslider_dispatch\n_aaslider_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aaslider_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n");
+        "\tjbsr _aaslider_dispatch_c\n\tlea 12(sp),sp\n\trts\n.text\n");
 
 static ULONG __attribute__((used)) aaslider_dispatch_c(struct IClass* cl, Object* obj, Msg msg) {
     switch (msg->MethodID) {
@@ -364,9 +364,9 @@ static ULONG aaprogress_new(struct IClass* cl, Object* obj, struct opSet* msg) {
 
 extern ULONG aaprogress_dispatch(void);
 const struct aa_class_desc aaprogress_class_desc = {MUIC_Area, sizeof(aaprogress_data), aaprogress_dispatch, &g_progress_class};
-__asm__(".pushsection .text._aaprogress_dispatch,\"ax\"\n.even\n.globl _aaprogress_dispatch\n_aaprogress_dispatch:\n"
+__asm__(".section .text._aaprogress_dispatch,\"ax\"\n.even\n.globl _aaprogress_dispatch\n_aaprogress_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aaprogress_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n");
+        "\tjbsr _aaprogress_dispatch_c\n\tlea 12(sp),sp\n\trts\n.text\n");
 
 static ULONG __attribute__((used)) aaprogress_dispatch_c(struct IClass* cl, Object* obj, Msg msg) {
     switch (msg->MethodID) {

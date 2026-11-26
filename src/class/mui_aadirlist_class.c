@@ -414,15 +414,15 @@ extern ULONG aascrmodelist_dispatch(void);
 const struct aa_class_desc aadirlist_class_desc = {MUIC_Group, sizeof(aadl_data), aadirlist_dispatch, &g_dirlist_class};
 const struct aa_class_desc aavolumelist_class_desc = {MUIC_Group, sizeof(aadl_data), aavolumelist_dispatch, &g_volumelist_class};
 const struct aa_class_desc aascrmodelist_class_desc = {MUIC_Group, sizeof(aadl_data), aascrmodelist_dispatch, &g_scrmodelist_class};
-__asm__(".pushsection .text._aadirlist_dispatch,\"ax\"\n.even\n.globl _aadirlist_dispatch\n_aadirlist_dispatch:\n"
+__asm__(".section .text._aadirlist_dispatch,\"ax\"\n.even\n.globl _aadirlist_dispatch\n_aadirlist_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aadirlist_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n"
-        ".pushsection .text._aavolumelist_dispatch,\"ax\"\n.even\n.globl _aavolumelist_dispatch\n_aavolumelist_dispatch:\n"
+        "\tjbsr _aadirlist_dispatch_c\n\tlea 12(sp),sp\n\trts\n.text\n"
+        ".section .text._aavolumelist_dispatch,\"ax\"\n.even\n.globl _aavolumelist_dispatch\n_aavolumelist_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aavolumelist_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n"
-        ".pushsection .text._aascrmodelist_dispatch,\"ax\"\n.even\n.globl _aascrmodelist_dispatch\n_aascrmodelist_dispatch:\n"
+        "\tjbsr _aavolumelist_dispatch_c\n\tlea 12(sp),sp\n\trts\n.text\n"
+        ".section .text._aascrmodelist_dispatch,\"ax\"\n.even\n.globl _aascrmodelist_dispatch\n_aascrmodelist_dispatch:\n"
         "\tmove.l a1,-(sp)\n\tmove.l a2,-(sp)\n\tmove.l a0,-(sp)\n"
-        "\tjbsr _aascrmodelist_dispatch_c\n\tlea 12(sp),sp\n\trts\n.popsection\n");
+        "\tjbsr _aascrmodelist_dispatch_c\n\tlea 12(sp),sp\n\trts\n.text\n");
 
 static Object* aadl_make(struct MUI_CustomClass** slot, const struct aa_class_desc* desc, const struct TagItem* tags) {
     if (*slot == NULL) {
