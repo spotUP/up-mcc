@@ -80,6 +80,17 @@ int main(void) {
         CHECK(lo == 0 && hi == 0);
         mtl_word_range("2026-11-25", 10, 6, &lo, &hi); /* release date: one part */
         CHECK(lo == 5 && hi == 7);
+        /* UP-Textarea: a LF ends every run and is never selected */
+        mtl_word_range("ab.\n\ncd", 7, 3, &lo, &hi); /* on the LF ending "ab.": the run before it */
+        CHECK(lo == 2 && hi == 3);
+        mtl_word_range("ab.\n\ncd", 7, 4, &lo, &hi); /* the empty line */
+        CHECK(lo == 4 && hi == 4);
+        mtl_word_range("ab.\n\ncd", 7, 5, &lo, &hi);
+        CHECK(lo == 5 && hi == 7);
+        mtl_word_range("ab\n", 3, 3, &lo, &hi); /* the empty last line, not the word above it */
+        CHECK(lo == 3 && hi == 3);
+        mtl_word_range("\nab", 3, 0, &lo, &hi);
+        CHECK(lo == 0 && hi == 0);
         /* selection: ordered, clamped to the text, empty when anchor == caret */
         CHECK(mtl_sel_range(7, 2, 9, &lo, &hi) && lo == 2 && hi == 7);
         CHECK(mtl_sel_range(-4, 30, 9, &lo, &hi) && lo == 0 && hi == 9);

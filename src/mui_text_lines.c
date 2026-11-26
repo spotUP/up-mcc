@@ -30,6 +30,9 @@ int mtl_wrap(const char *text, int n, int width, MtlMeasure measure, void *ctx, 
     return count;
 }
 
+#ifdef __GNUC__
+__attribute__((noinline)) /* -O2 would copy the loop into every caller; the class libraries have a text size limit */
+#endif
 int mtl_line_of(const MtlLine *lines, int nlines, int off) {
     int i = 0;
     while (i + 1 < nlines && lines[i + 1].start <= off) i++;
@@ -140,17 +143,19 @@ int mtl_clip_key(int code, int cmd) {
 
 static int word_class(unsigned char c) {
     if (c == '_' || c >= 0x80 || (c >= '0' && c <= '9') || ((c | 0x20) >= 'a' && (c | 0x20) <= 'z')) return 1;
-    return c == ' ' || c == '\t' ? 2 : 3;
+    return c == ' ' || c == '\t' ? 2 : c == '\n' ? 0 : 3;
 }
 
 void mtl_word_range(const char *text, int n, int off, int *lo, int *hi) {
     int k, a, b;
-    off = off < 0 ? 0 : off > n ? n : off;
-    if (n <= 0) {
-        *lo = *hi = 0;
+    off = off > n ? n : off;
+    off = off < 0 ? 0 : off;
+    a = off;
+    if (a >= n || text[a] == '\n') a--; /* at a line end: the run before it */
+    if (a < 0 || text[a] == '\n') { /* an empty line: nothing, a LF is never part of a run */
+        *lo = *hi = off;
         return;
     }
-    a = off == n ? n - 1 : off;
     k = word_class((unsigned char)text[a]);
     b = a + 1;
     while (a > 0 && word_class((unsigned char)text[a - 1]) == k) a--;
