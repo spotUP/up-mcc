@@ -268,7 +268,7 @@ static int demo_body(int argc, char** argv) {
     int auto_close = argc > 1 && argv[1] != NULL && strcmp(argv[1], "AUTO") == 0;
     int i, ok = 0, ticks = 0;
     int tier = demo_tier();
-    int mode = argc > 2 && argv[1] != NULL && strcmp(argv[1], "CASE") == 0 ? atoi(argv[2]) : 0; /* RIGCHECK: 1 menustrip, 2 imagedisplay, 3 textarea */
+    int mode = argc > 2 && argv[1] != NULL && strcmp(argv[1], "CASE") == 0 ? atoi(argv[2]) : 0; /* RIGCHECK: 1 menustrip, 2 imagedisplay, 3 textarea, 4 Popasl/Popscreen/Popobject, 5 Framedisplay/Popimage/Popframe/Imageadjust/Frameadjust, 6 Pendisplay/Poppen/Penadjust, 7 Dirlist, 8 Volumelist, 9 Scrmodelist, 10 Floattext */
 
     memset(obj, 0, sizeof obj);
     MUIMasterBase = OpenLibrary((CONST_STRPTR) "muimaster.library", 19);
@@ -335,6 +335,28 @@ static int demo_body(int argc, char** argv) {
                 } else if (mode == 3) {
                     a = MUI_NewObject((char*)"UP-Textarea.mcc", UPA_TextArea_Text, (ULONG) "alpha beta gamma\nsecond line of words\nthird line here", TAG_DONE);
                     if (a == NULL) a = obj[41];
+                } else if (mode == 4) {
+                    a = obj[26];
+                    b = obj[27];
+                    c = obj[25];
+                } else if (mode == 5) {
+                    a = obj[32];
+                    b = obj[33];
+                    c = obj[34];
+                    d = obj[35];
+                    e = obj[36];
+                } else if (mode == 6) {
+                    a = obj[28];
+                    b = obj[29];
+                    c = obj[30];
+                } else if (mode == 7) {
+                    a = obj[37];
+                } else if (mode == 8) {
+                    a = obj[38];
+                } else if (mode == 9) {
+                    a = obj[39];
+                } else if (mode == 10) {
+                    a = obj[43];
                 } else {
                     a = label("Right mouse button: menu bar", UPV_Text_Tone_Normal);
                     b = obj[40];
