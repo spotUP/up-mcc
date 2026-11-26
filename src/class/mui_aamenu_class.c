@@ -208,12 +208,10 @@ static ULONG aamenu_key(Object* obj, aamenu_data* d, struct IntuiMessage* im) {
     i = (int)MapRawKey(&ie, (STRPTR)c, sizeof c, NULL);
     CloseLibrary(KeymapBase);
     KeymapBase = NULL;
-    for (int k = 0; i == 1 && k < d->n; k++) {
-        const char* s = d->ent[k].shortcut;
-        if (s != NULL && s[0] != '\0' && s[1] == '\0' && !(d->ent[k].flags & UPV_MenuItem_CommandString) && ToUpper((ULONG)(UBYTE)s[0]) == ToUpper((ULONG)(UBYTE)c[0])) {
-            set(obj, UPA_Menu_Chosen, (ULONG)k);
-            return MUI_EventHandlerRC_Eat;
-        }
+    /* d->ent may be NULL here: UP-Menustrip sends MUIM_HandleEvent to every menu, also to one without Entries */
+    if (i == 1 && (i = mui_aa_menu_shortcut(d->ent, d->n, d->disabled, (UBYTE)c[0])) >= 0) {
+        set(obj, UPA_Menu_Chosen, (ULONG)i);
+        return MUI_EventHandlerRC_Eat;
     }
     return 0;
 }

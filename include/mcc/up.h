@@ -525,6 +525,23 @@ Object* UP_NewPoppen(const struct TagItem* tags);
 Object* UP_NewPenadjust(const struct TagItem* tags);
 #endif
 
+/* ---- UP-Menustrip (MUIC_Menustrip and MUIA_Window_Menustrip): a themed window menu bar. ----
+ * An invisible object the application puts anywhere in the window that gets the menus (MUI's Window class takes only its own Menustrip
+ * class as MUIA_Window_Menustrip). Children are UP-Menu objects: MUIA_Family_Child in the creation tag list, MUIM_Family_AddHead /
+ * AddTail / Insert / Remove later (ids of <libraries/mui.h>). The items stay the UP_MenuItem arrays of the menus (UPA_Menu_Entries).
+ * The right mouse button over the window opens the bar; Amiga+key shortcuts work while the window is active.
+ * Class indices are one byte of the tag (UP_TAG): 0x00..0x27 are taken, 0x28..0xFF are free. */
+#define UP_CLS_MENUSTRIP 0x27 /* UP-Menustrip */
+#define UPA_Menustrip_Enabled UP_TAG(UP_CLS_MENUSTRIP, 0x01) /* ISG BOOL: the bar opens and the shortcuts work (MUIA_Menustrip_Enabled), default TRUE */
+#define UPA_Menustrip_Trigger UP_TAG(UP_CLS_MENUSTRIP, 0x02) /* ..G ULONG: the last pick, (menu index << 8) | item index; notifies on every pick (MUIA_Menuitem_Trigger) */
+#define UP_MENUSTRIP_MAXMENUS 16 /* AddHead and Insert keep their position up to this many menus */
+#define UPM_Menustrip_Picked UP_TAG(UP_CLS_MENUSTRIP, 0x10) /* method: a menu chose an item (menu object, item index). Internal */
+#define UPM_Menustrip_Check UP_TAG(UP_CLS_MENUSTRIP, 0x11)  /* method: the bar lost activation or a menu popup closed. Internal */
+#define MUIC_UP_Menustrip "UP-Menustrip.mcc"
+#if (defined(__amigaos__) || defined(AMIGA)) && (defined(UP_MCC_LIBRARY) || defined(UP_MCC_STATIC_CTORS))
+Object* UP_NewMenustrip(const struct TagItem* tags);
+#endif
+
 /* MUI gap E: UP-Imagedisplay, UP-Popimage, UP-Imageadjust (0x22) and UP-Framedisplay, UP-Popframe, UP-Frameadjust (0x23), the MUI 3.8
  * classes of those names. The spec is a string: image "<d>:<value>", frame "TSLRTB" (src/map/up_specs.h). The MUI 3.8 mui.h keeps these
  * classes private and names no attribute; the ids below are the ones Zune publishes, byte-matched (big-endian) in the MUI 3.8

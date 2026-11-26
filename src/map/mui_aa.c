@@ -1246,3 +1246,20 @@ unsigned long mui_aa_menu_pick(unsigned long checked, int i, int checkit, int to
     }
     return (checked | bit) & ~(exclude & ~bit);
 }
+
+static int menu_upper(int c) {
+    c &= 0xFF;
+    return (c >= 'a' && c <= 'z') || (c >= 0xE0 && c != 0xF7 && c != 0xFF) ? c - 32 : c;
+}
+
+int mui_aa_menu_shortcut(const UP_MenuItem* ent, int n, unsigned long disabled, int c) {
+    int k;
+    for (k = 0; ent != NULL && k < n && k < 32; k++) {
+        const char* s = ent[k].shortcut;
+        if (s != NULL && s[0] != '\0' && s[1] == '\0' && !(ent[k].flags & UPV_MenuItem_CommandString) && !(disabled & (1UL << k)) &&
+            menu_upper((unsigned char)s[0]) == menu_upper(c)) {
+            return k;
+        }
+    }
+    return -1;
+}

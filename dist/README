@@ -2,7 +2,7 @@ UP-MCC 1.0
 ==========
 
 What it is
-  UP-MCC is a package of forty-three MUI 3.8 custom classes with a modern, flat look (rounded frames, theme colours, baked
+  UP-MCC is a package of forty-four MUI 3.8 custom classes with a modern, flat look (rounded frames, theme colours, baked
   Lucide icons, optional anti-aliased text), a preferences class, a shared support library and a demonstration program.
   The classes are ordinary MUI external classes: any program creates them by name with MUI_NewObject.
 
