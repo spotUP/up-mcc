@@ -47,18 +47,27 @@ int main(void) {
     }
     {
         int cur = -2;
-        CHECK(mui_aa_strip_track(&cur, 0, 0) == MUI_AA_STRIP_NONE && cur == -2); /* not held: moves and releases do nothing */
-        CHECK(mui_aa_strip_track(&cur, -1, 1) == MUI_AA_STRIP_NONE);
+        CHECK(mui_aa_strip_track(&cur, 0, 0, 0) == MUI_AA_STRIP_NONE && cur == -2); /* not held: moves and releases do nothing */
+        CHECK(mui_aa_strip_track(&cur, -1, 1, 0) == MUI_AA_STRIP_NONE);
         cur = -1;                                                                   /* the right button opened the bar */
-        CHECK(mui_aa_strip_track(&cur, -1, 0) == MUI_AA_STRIP_NONE && cur == -1);
-        CHECK(mui_aa_strip_track(&cur, -1, 1) == MUI_AA_STRIP_KEEP && cur == -2);   /* press and release in place: click style */
+        CHECK(mui_aa_strip_track(&cur, -1, 0, 0) == MUI_AA_STRIP_NONE && cur == -1);
+        CHECK(mui_aa_strip_track(&cur, -1, 1, 0) == MUI_AA_STRIP_KEEP && cur == -2);   /* press and release in place: click style */
         cur = -1;
-        CHECK(mui_aa_strip_track(&cur, 1, 0) == MUI_AA_STRIP_OPEN && cur == 1);     /* onto a title opens it */
-        CHECK(mui_aa_strip_track(&cur, 1, 0) == MUI_AA_STRIP_NONE && cur == 1);
-        CHECK(mui_aa_strip_track(&cur, -1, 0) == MUI_AA_STRIP_NONE && cur == 1);    /* off the titles (into the items) keeps it */
-        CHECK(mui_aa_strip_track(&cur, 2, 0) == MUI_AA_STRIP_OPEN && cur == 2);     /* across titles switches */
-        CHECK(mui_aa_strip_track(&cur, -1, 1) == MUI_AA_STRIP_PICK && cur == -2);   /* release after a drag: pick or close */
-        CHECK(mui_aa_strip_track(&cur, 0, 0) == MUI_AA_STRIP_NONE && cur == -2);
+        CHECK(mui_aa_strip_track(&cur, 1, 0, 0) == MUI_AA_STRIP_OPEN && cur == 1);     /* onto a title opens it */
+        CHECK(mui_aa_strip_track(&cur, 1, 0, 0) == MUI_AA_STRIP_NONE && cur == 1);
+        CHECK(mui_aa_strip_track(&cur, -1, 0, 0) == MUI_AA_STRIP_NONE && cur == 1);    /* off the titles (into the items) keeps it */
+        CHECK(mui_aa_strip_track(&cur, 2, 0, 0) == MUI_AA_STRIP_OPEN && cur == 2);     /* across titles switches */
+        CHECK(mui_aa_strip_track(&cur, -1, 1, 0) == MUI_AA_STRIP_PICK && cur == -2);   /* release after a drag: pick or close */
+        CHECK(mui_aa_strip_track(&cur, 0, 0, 0) == MUI_AA_STRIP_NONE && cur == -2);
+        cur = -1;                                                                   /* release within the slop: still click style */
+        CHECK(mui_aa_strip_track(&cur, -1, 1, MUI_AA_STRIP_SLOP) == MUI_AA_STRIP_KEEP && cur == -2);
+        cur = -1;                                                                   /* held, dragged off the titles, released: cancels */
+        CHECK(mui_aa_strip_track(&cur, -1, 0, 0) == MUI_AA_STRIP_NONE && cur == -1);
+        CHECK(mui_aa_strip_track(&cur, -1, 1, 40) == MUI_AA_STRIP_CANCEL && cur == -2);
+        cur = -1;                                                                   /* moves not seen, release on a title: cancels */
+        CHECK(mui_aa_strip_track(&cur, 0, 1, 20) == MUI_AA_STRIP_CANCEL && cur == -2);
+        cur = 0;                                                                    /* a menu is open: the release picks wherever */
+        CHECK(mui_aa_strip_track(&cur, -1, 1, 40) == MUI_AA_STRIP_PICK && cur == -2);
     }
     /* item Family methods: Checked / Disabled bits follow the items */
     CHECK(mui_aa_mask_insert(0x5, 0, 0) == 0xA);                 /* AddHead: all move up */

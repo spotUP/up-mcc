@@ -358,7 +358,10 @@ int mui_aa_menu_shortcut(const UP_MenuItem* ent, int n, unsigned long disabled, 
 #define MUI_AA_STRIP_OPEN 1
 #define MUI_AA_STRIP_PICK 2
 #define MUI_AA_STRIP_KEEP 3
-int mui_aa_strip_track(int* cur, int title, int up);
+#define MUI_AA_STRIP_CANCEL 4 /* released away from the press without a menu open: close the bar */
+#define MUI_AA_STRIP_SLOP 2   /* pixels a click-style press and release may drift */
+/* dist: on a release, the larger of |dx| |dy| in pixels from the press that opened the bar */
+int mui_aa_strip_track(int* cur, int title, int up, int dist);
 /* UP-Menu item Family methods (host test mui-menu-check): a 32-bit item mask after an item is inserted at p (bits from p move up one,
  * bit p = on) or removed at p (bits above p move down one). p outside 0..31 leaves the mask as it is. */
 unsigned long mui_aa_mask_insert(unsigned long m, int p, int on);
