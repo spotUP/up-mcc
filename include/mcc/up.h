@@ -306,6 +306,7 @@ typedef struct UP_Scrmode {
 #define UPA_List_Input UP_TAG(UP_CLS_LIST, 0x16)        /* ISG BOOL: rows can be hovered and selected (default TRUE); FALSE = UPA_List_NoSelect */
 #define UPM_List_Select UP_TAG(UP_CLS_LIST, 0x17)       /* method UP_ListSelect (MUIM_List_Select): pos row or UPV_List_Select_Active/All; seltype Off/On/Toggle/Ask; *state (may be NULL) = the row's state, for All the selected count. Multi-select lists only (else state 0) */
 #define UPM_List_NextSelected UP_TAG(UP_CLS_LIST, 0x18) /* method UP_ListNextSelected (MUIM_List_NextSelected): *pos from UPV_List_NextSelected_Start to the next selected row, -1 at the end; with none selected the active row once */
+#define UPA_List_Disabled UP_TAG(UP_CLS_LIST, 0x19)     /* ISG ULONG: bit i = row i (0..31) drawn in TEXT_DISABLED, no hover, a click or Return picks nothing (UP-Menu passes UPA_Menu_Disabled) */
 #define UPV_List_MultiSelect_None 0
 #define UPV_List_MultiSelect_Default 1
 #define UPV_List_MultiSelect_Shifted 2 /* Shift+click toggles a row, a plain click selects that row alone */

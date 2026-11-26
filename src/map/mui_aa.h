@@ -225,7 +225,10 @@ long mui_aa_list_move(long active, long count, long visible, int key);
 long mui_aa_list_scroll_to(long first, long visible, long count, long active);
 /* Row under a pointer at list-relative y (-1 on the pads or past the last row). */
 long mui_aa_list_row_at(const up_list_t* m, int y, long first, long count);
-/* Row face (MUI_AA_NORMAL, _HOVER, _SELECTED) and text colour (ACCENT when playing). Any out pointer may be NULL. */
+/* State of a list row: MUI_AA_DISABLED when bit row (0..31) of dis is set, else _SELECTED when sel, _HOVER when row == hover, else _NORMAL. */
+int mui_aa_list_row_state(unsigned long dis, long row, int sel, long hover);
+/* Row face (MUI_AA_NORMAL, _HOVER, _SELECTED, _DISABLED = the resting face) and text colour (TEXT_DISABLED when disabled, else ACCENT when
+ * playing). Any out pointer may be NULL. */
 void mui_aa_list_row_rgb(const uint32_t* token, int row_state, int playing, uint32_t* face, uint32_t* text);
 uint32_t mui_aa_list_calls(void);
 /* Left edge (list-relative x) of the text of column col (0-based) when column k is w[k] wide: pad_x for column 0, then each column adds its
