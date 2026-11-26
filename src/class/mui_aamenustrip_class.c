@@ -4,8 +4,11 @@
  * The items stay the UP_MenuItem arrays of the UP-Menu objects; there is no second item model.
  * An event handler on the application window opens the bar at the window's inner top-left corner on the right mouse button and gives
  * Amiga+key to each menu (UP-Menu's own MUIM_HandleEvent). A pick sets UPA_Menustrip_Trigger and closes the bar. The bar also closes
- * when it is not the active window and no menu popup is open. After a pick the application window is activated again (click style moved
- * the activation into the bar); a bar that lost the activation to another window leaves it there.
+ * when it is not the active window and no menu popup is open. The right button closes an open bar from any of its windows: the bar
+ * (a second event handler) and a menu popup (UP-List cancels on it) have no Intuition menus, so the press reaches MUI. Closing the bar
+ * never leaves no window active: click style moves the activation into the bar or a popup, and on OS 3.x closing the active window
+ * activates none, so the right button would never reach the application window again. A bar that lost the activation to another
+ * window leaves it there.
  * The bar is never closed inside a notification of a menu or of a popup window: closing runs MUIM_Cleanup of the menus, which disposes
  * the popup whose notification is running. Every close goes through MUIM_Application_PushMethod.
  * Two styles: click (press and release the right button, then click a title and an item) and hold-drag-release (hold the right button,
@@ -22,6 +25,7 @@
 #include <clib/alib_protos.h>
 #include <clib/muimaster_protos.h>
 #include <intuition/intuition.h>
+#include <intuition/intuitionbase.h>
 #include <proto/exec.h>
 #include "mui_gfxbase.h"
 #include <proto/intuition.h>
@@ -40,7 +44,7 @@ typedef struct aamenustrip_data {
     int added;         /* the bar window is a member of the application (first open until cleanup) */
     ULONG trigger;
     int cur;           /* mui_aa_strip_track: -2 no hold, -1 held, else the menu the drag opened */
-    struct MUI_EventHandlerNode ehn;
+    struct MUI_EventHandlerNode ehn, bhn; /* bhn: the right button pressed in the active click-style bar */
 } aamenustrip_data;
 
 static struct MUI_CustomClass* g_menustrip_class;
@@ -73,6 +77,9 @@ static void aamenustrip_toggle(Object* obj, aamenustrip_data* d) {
     if (!d->added) {
         DoMethod(_app(obj), OM_ADDMEMBER, (ULONG)d->bar);
         d->added = 1;
+        d->bhn.ehn_Object = obj, d->bhn.ehn_Class = d->ehn.ehn_Class, d->bhn.ehn_Events = IDCMP_MOUSEBUTTONS;
+        DoMethod(d->bar, MUIM_Window_AddEventHandler, (ULONG)&d->bhn);
+        DoMethod(d->bar, MUIM_Notify, MUIA_Window_Open, FALSE, (ULONG)obj, 1, UPM_Menustrip_Check);
     }
     SetAttrs(d->bar, MUIA_Window_Screen, (ULONG)w->WScreen, MUIA_Window_LeftEdge, (ULONG)(w->LeftEdge + w->BorderLeft), MUIA_Window_TopEdge,
              (ULONG)(w->TopEdge + w->BorderTop), TAG_DONE);
@@ -140,11 +147,21 @@ static ULONG aamenustrip_drag(Object* obj, aamenustrip_data* d, struct IntuiMess
     return up ? MUI_EventHandlerRC_Eat : 0;
 }
 
-/* The bar lost activation or a menu popup closed: an inactive bar with no open menu goes away. */
+/* The bar lost activation or a menu popup closed: an inactive bar with no open menu goes away.
+ * The bar closed: if the activation was in the bar or in a closed popup, it goes back to the strip's window. */
 static void aamenustrip_check(Object* obj, aamenustrip_data* d) {
-    struct Window* bw = NULL;
+    struct Window *bw = NULL, *aw;
     Object *st = aamenustrip_head(d), *o;
+    ULONG open = 0;
     GetAttr(MUIA_Window_Window, d->bar, (ULONG*)&bw);
+    GetAttr(MUIA_Window_Open, d->bar, &open);
+    if (!open) {
+        aw = ((struct IntuitionBase*)(void*)IntuitionBase)->ActiveWindow; /* a pointer compare only: no LockIBase */
+        if ((aw == NULL || aw == bw) && aa_live(obj)) { /* bw: the notify may run before the Intuition window closed */
+            DoMethod(_app(obj), MUIM_Application_PushMethod, (ULONG)_win(obj), 3, MUIM_Set, MUIA_Window_Activate, TRUE);
+        }
+        return;
+    }
     if (bw == NULL || (bw->Flags & WFLG_WINDOWACTIVE)) { /* the Intuition flag: MUIA_Window_Activate lags behind inside a notification */
         return;
     }
@@ -249,7 +266,7 @@ static ULONG aamenustrip_new(struct IClass* cl, Object* obj, struct opSet* msg) 
         card = row;
     }
     bar = MUI_NewObject((char*)MUIC_Window, MUIA_Window_Borderless, TRUE, MUIA_Window_DragBar, FALSE, MUIA_Window_CloseGadget, FALSE, MUIA_Window_SizeGadget, FALSE,
-                        MUIA_Window_DepthGadget, FALSE, MUIA_Window_RootObject, (ULONG)card, TAG_DONE);
+                        MUIA_Window_DepthGadget, FALSE, MUIA_Window_NoMenus, TRUE, MUIA_Window_RootObject, (ULONG)card, TAG_DONE);
     if (bar == NULL) {
         MUI_DisposeObject(card); /* the window never took it */
         return 0;
@@ -325,6 +342,10 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
     case MUIM_Cleanup:
         d = INST_DATA(cl, obj);
         DoMethod(_win(obj), MUIM_Window_RemEventHandler, (ULONG)&d->ehn);
+        if (d->added) { /* no reactivation of a window that is going away */
+            DoMethod(d->bar, MUIM_KillNotifyObj, MUIA_Window_Open, (ULONG)obj);
+            DoMethod(d->bar, MUIM_Window_RemEventHandler, (ULONG)&d->bhn);
+        }
         set(d->bar, MUIA_Window_Open, FALSE);
         if (d->added) {
             DoMethod(_app(obj), OM_REMMEMBER, (ULONG)d->bar);
@@ -347,12 +368,7 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
                 i++;
             }
             SetAttrs(obj, UPA_Menustrip_Trigger, (i << 8) | m[2], TAG_DONE); /* notifies */
-            aamenustrip_close(obj, d);
-            /* A click-style pick ran in the activated bar or popup; closing them leaves no window active (OS 3.x), so the right button
-             * never reached this window again. Give the activation back after the close, as an Intuition menu never takes it. */
-            if (aa_live(obj) && _window(obj) != NULL && !(_window(obj)->Flags & WFLG_WINDOWACTIVE)) {
-                DoMethod(_app(obj), MUIM_Application_PushMethod, (ULONG)_win(obj), 3, MUIM_Set, MUIA_Window_Activate, TRUE);
-            }
+            aamenustrip_close(obj, d); /* the bar's Open FALSE notify gives the activation back */
         }
         return 0;
     case UPM_Menustrip_Check:

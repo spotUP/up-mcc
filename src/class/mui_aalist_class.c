@@ -314,6 +314,10 @@ static ULONG aalist_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEve
         return 0;
     }
     if (im->Class == IDCMP_MOUSEBUTTONS) {
+        if (im->Code == MENUDOWN && d->keys_unfocused) { /* the right button cancels a popup list like Esc (a menu popup closes its bar) */
+            set(obj, UPA_List_Cancelled, (ULONG)TRUE);
+            return MUI_EventHandlerRC_Eat;
+        }
         if (im->Code == SELECTDOWN && in && !d->no_select) {
             long r = mui_aa_list_row_at(&d->m, im->MouseY - _mtop(obj) - aalist_title_h(d), d->first, d->count);
             if (aalist_dis(d, r)) {

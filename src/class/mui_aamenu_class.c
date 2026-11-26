@@ -138,7 +138,7 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act) {
             return;
         }
         d->popup = MUI_NewObject((char*)MUIC_Window, MUIA_Window_Screen, (ULONG)_screen(obj), MUIA_Window_Borderless, TRUE, MUIA_Window_DragBar, FALSE, MUIA_Window_CloseGadget, FALSE,
-                                 MUIA_Window_SizeGadget, FALSE, MUIA_Window_DepthGadget, FALSE, MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)),
+                                 MUIA_Window_SizeGadget, FALSE, MUIA_Window_DepthGadget, FALSE, MUIA_Window_NoMenus, TRUE, MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)),
                                  MUIA_Window_TopEdge, (ULONG)(win->TopEdge + _bottom(obj) + 2), MUIA_Window_RootObject, (ULONG)d->root, TAG_DONE);
         if (d->popup == NULL) {
             MUI_DisposeObject(d->root); /* the window never took it */
