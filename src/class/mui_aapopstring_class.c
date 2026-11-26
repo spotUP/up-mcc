@@ -205,6 +205,7 @@ static void aapop_open(Object* obj, aapop_data* d, int act) {
     aapop_hook(d->win_hook, d->root, d->popup);
     mui_aa_pop_opened(&d->pop);
     set(d->popup, MUIA_Window_Open, TRUE);
+    aa_pop_fit(obj, d->popup);
     set(obj, UPA_Popstring_Open, TRUE);
 }
 

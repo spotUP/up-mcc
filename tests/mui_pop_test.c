@@ -47,6 +47,14 @@ int main(void) {
             mui_aa_pop_closed(&t, 0, (uint32_t)i * 1000u + 11u);
         }
     }
+    /* popup placement (row 853: the Poppen Penadjust popup ran off the screen bottom) */
+    CHECK(mui_aa_pop_fit(100, 80, 150, 600) == 100); /* fits below: unchanged */
+    CHECK(mui_aa_pop_fit(450, 420, 300, 600) == 120); /* runs off the bottom: flipped to end above the object */
+    CHECK(mui_aa_pop_fit(200, 180, 300, 400) == 100); /* fits neither below nor above: clamped to the bottom edge */
+    CHECK(mui_aa_pop_fit(10, 8, 700, 600) == 0);      /* taller than the screen: top edge 0 */
+    CHECK(mui_aa_pop_fit(700, 800, 200, 800) == 600); /* x off the right edge with flip_end = screen: plain clamp */
+    CHECK(mui_aa_pop_fit(-5, 800, 200, 800) == 0);    /* x left of the screen: clamped to 0 */
+    CHECK(mui_aa_pop_fit(400, 380, 200, 600) == 400); /* ends exactly on the last line: still fits */
     printf(fails ? "mui-pop-state FAILED\n" : "mui-pop-state ok\n");
     return fails != 0;
 }

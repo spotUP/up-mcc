@@ -236,6 +236,7 @@ static void aanum_open(Object* obj, aanumeric_data* d, int act) {
     set(d->slider, MUIA_Numeric_Value, (ULONG)d->val);
     mui_aa_pop_opened(&d->pop);
     set(d->popup, MUIA_Window_Open, TRUE);
+    aa_pop_fit(obj, d->popup);
 }
 
 static void aanum_close(aanumeric_data* d) {

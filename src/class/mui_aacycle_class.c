@@ -257,6 +257,7 @@ static void aacycle_open_popup(Object* obj, aacycle_data* d) {
     DoMethod(list, MUIM_Notify, UPA_List_Cancelled, TRUE, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
     DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
     set(d->popup, MUIA_Window_Open, TRUE);
+    aa_pop_fit(obj, d->popup);
 }
 
 static ULONG aacycle_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* msg) {

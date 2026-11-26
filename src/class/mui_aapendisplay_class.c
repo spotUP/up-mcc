@@ -339,6 +339,7 @@ static void pp_open(Object* obj, aapendisplay_data* d, int act) {
     nnset(d->adjust, MUIA_Pendisplay_Spec, (ULONG)&d->spec);
     mui_aa_pop_opened(&d->pop);
     set(d->popup, MUIA_Window_Open, TRUE);
+    aa_pop_fit(obj, d->popup);
 }
 
 static void pp_close(aapendisplay_data* d) {

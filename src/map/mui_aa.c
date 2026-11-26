@@ -910,6 +910,16 @@ void mui_aa_pop_closed(mui_aa_pop_t* s, int by_deactivate, uint32_t now_ms) {
     s->closed_ms = now_ms;
 }
 
+long mui_aa_pop_fit(long want, long flip_end, long size, long screen) {
+    if (want + size <= screen) {
+        return want < 0 ? 0 : want;
+    }
+    if (flip_end - size >= 0) {
+        return flip_end - size;
+    }
+    return screen - size > 0 ? screen - size : 0;
+}
+
 long mui_aa_numeric_clamp(long v, long lo, long hi) {
     return v < lo ? lo : v > hi ? hi : v;
 }

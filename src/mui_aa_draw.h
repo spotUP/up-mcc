@@ -63,6 +63,8 @@ void aa_cleanup(aa_ctx* c);
  * garbage window crashed the Amiga (I684a, AACycle set before the window opened). Use this before every redraw from
  * OM_SET or an outside call. */
 int aa_live(Object* obj);
+/* Move the open dropdown popup of obj onto the screen: flipped above obj when it does not fit below, clamped otherwise. */
+void aa_pop_fit(Object* obj, Object* popup);
 /* True when the mouse of im lies in obj AND obj is on screen. A Setup object on a hidden PageMode page keeps its event handler and its
  * old box, so a bare box test lets a click on the visible page open the hidden page's popups. Every HandleEvent hit test goes here. */
 struct IntuiMessage;

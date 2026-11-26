@@ -312,6 +312,10 @@ typedef struct mui_aa_pop_t {
 int mui_aa_pop_click(mui_aa_pop_t* s, uint32_t now_ms);           /* the action the caller must take; updates nothing but the guard */
 void mui_aa_pop_opened(mui_aa_pop_t* s);                         /* the window is now open (also the first time) */
 void mui_aa_pop_closed(mui_aa_pop_t* s, int by_deactivate, uint32_t now_ms); /* the window closed, for any reason; idempotent */
+/* One edge of a popup window of size px on a screen of screen px (host test mui-pop-state): want when it fits, else flip_end - size
+ * (the popup ends at flip_end, e.g. above its object) when that starts on screen, else clamped to the far edge (at least 0).
+ * Pass flip_end = screen for a plain clamp. */
+long mui_aa_pop_fit(long want, long flip_end, long size, long screen);
 
 /* UP-Numericbutton / UP-Scale pure maths (host test mui-numeric-scale). The button shows value as text; a drag of dx pixels from the
  * value at the press moves it by dx * (hi - lo) / (2 * w) (a travel of two button widths sweeps the range), clamped; fewer than

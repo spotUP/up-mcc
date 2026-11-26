@@ -1,4 +1,4 @@
-/* aa_visible, aa_redraw, aa_inside: clipping and hit tests in MUI geometry only, no draw code. Own file so a class library compiles it
+/* aa_visible, aa_redraw, aa_inside, aa_pop_fit: clipping and hit tests in MUI geometry only, no draw code. Own file so a class library compiles it
  * itself (MCC_CLIENT_SOURCES) next to lib/classlib_draw_shims.c instead of pulling mui_aa_draw.o, and with it the whole draw layer, from
  * the archive. */
 #include "mui_aa_draw.h"
@@ -40,4 +40,20 @@ int aa_inside(int shown, Object* obj, const struct IntuiMessage* im) {
     int x0, y0, x1, y1;
     return shown && im->MouseX >= _left(obj) && im->MouseX <= _right(obj) && im->MouseY >= _top(obj) && im->MouseY <= _bottom(obj) &&
            aa_visible(obj, &x0, &y0, &x1, &y1) && im->MouseX >= x0 && im->MouseX <= x1 && im->MouseY >= y0 && im->MouseY <= y1;
+}
+
+void aa_pop_fit(Object* obj, Object* popup) {
+    struct Window *win = _window(obj), *pw = NULL;
+    struct Screen* scr = _screen(obj);
+    long x, y;
+    GetAttr(MUIA_Window_Window, popup, (ULONG*)&pw);
+    if (pw == NULL || win == NULL || scr == NULL) {
+        return;
+    }
+    /* the size is only known once the window is open, so it opens below obj and moves here */
+    x = mui_aa_pop_fit(pw->LeftEdge, scr->Width, pw->Width, scr->Width);
+    y = mui_aa_pop_fit(pw->TopEdge, win->TopEdge + _top(obj) - 2, pw->Height, scr->Height);
+    if (x != pw->LeftEdge || y != pw->TopEdge) {
+        MoveWindow(pw, x - pw->LeftEdge, y - pw->TopEdge);
+    }
 }

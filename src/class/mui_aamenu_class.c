@@ -176,6 +176,7 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act, int keys) {
     d->deact = 0; /* the Activate FALSE notify above is no loss of activation */
     mui_aa_pop_opened(&d->pop);
     set(d->popup, MUIA_Window_Open, TRUE);
+    aa_pop_fit(obj, d->popup);
     set(obj, UPA_Menu_Open, TRUE);
 }
 
