@@ -28,7 +28,12 @@
  * Cancel is menu state (UPA_Menu_Cancelled, cleared by UPM_Menu_Bar and at each menu open): the menu's Open FALSE check closes the bar
  * when a menu was cancelled, even while the bar is the active window. No notify chain carries it.
  * A close is queued; d->closing marks it, so a right click before it ran reopens (drops the queued close) in place of queueing a second.
- * shortcut: Right Amiga again while a popup is active does not close the bar (the key goes to the popup); Esc does. */
+ * shortcut: Right Amiga again while a popup is active does not close the bar (the key goes to the popup); Esc does.
+ * WFLG_RMBTRAP: Intuition (input.device task) decides at press time whether a right press becomes MENUDOWN or its own menu mode.
+ * MUI 3.8's Window class clears the flag behind the strip, and a repair in an event handler runs too late for a press that arrives
+ * before the application handled the event before it. So between MUIM_Setup and MUIM_Cleanup an input.device handler at priority 51
+ * (Intuition: 50) sets the flag on the application window or the bar when that window is the active one and the event is the right
+ * press. The handler touches only the trap struct in the instance data; the window pointers are cleared before the windows close. */
 #include "mui_aamenustrip_class.h"
 #include "mui_aa_class.h"
 
@@ -44,7 +49,10 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
+#include <devices/input.h>
 #include <devices/inputevent.h>
+#include <exec/interrupts.h>
+#include <exec/io.h>
 
 #include "map/mui_aa.h"
 #include "mui_aa_draw.h"
@@ -52,7 +60,17 @@
 
 extern struct Library* MUIMasterBase;
 
+/* All the input handler may read. win[0] the application window (set at its first event), win[1] the open bar. */
+typedef struct aamenustrip_trap {
+    struct IntuitionBase* ib;
+    struct Window* volatile win[2];
+} aamenustrip_trap;
+
 typedef struct aamenustrip_data {
+    aamenustrip_trap trap;
+    struct Interrupt trap_is;
+    struct MsgPort* trap_port;
+    struct IOStdReq* trap_io; /* non-NULL: the handler is installed */
     Object *bar, *row; /* the bar window (owned) and its group of UP-Menu objects */
     int enabled;
     int added;         /* the bar window is a member of the application (first open until cleanup) */
@@ -68,6 +86,54 @@ typedef struct aamenustrip_data {
 } aamenustrip_data;
 
 static struct MUI_CustomClass* g_menustrip_class;
+
+/* input.device task context: no library calls, no allocation. Only compares the pointers unless one is the active window. */
+static struct InputEvent* __attribute__((used)) aamenustrip_input_c(struct InputEvent* ev, aamenustrip_trap* t) {
+    struct InputEvent* e;
+    for (e = ev; e != NULL; e = e->ie_NextEvent) {
+        if (e->ie_Class == IECLASS_RAWMOUSE && e->ie_Code == IECODE_RBUTTON) {
+            struct Window* aw = t->ib->ActiveWindow;
+            if (aw != NULL && (aw == t->win[0] || aw == t->win[1])) {
+                aw->Flags |= WFLG_RMBTRAP;
+            }
+        }
+    }
+    return ev;
+}
+extern void aamenustrip_input(void); /* a0 the event chain, a1 is_Data; d0 the chain */
+__asm__(".text\n.even\n_aamenustrip_input:\n"
+        "\tmove.l a1,-(sp)\n\tmove.l a0,-(sp)\n\tjbsr _aamenustrip_input_c\n\taddq.l #8,sp\n\trts\n");
+
+static void aamenustrip_trap_add(aamenustrip_data* d) {
+    d->trap.ib = (struct IntuitionBase*)(void*)IntuitionBase;
+    d->trap.win[0] = d->trap.win[1] = NULL;
+    d->trap_is.is_Node.ln_Type = NT_INTERRUPT, d->trap_is.is_Node.ln_Pri = 51, d->trap_is.is_Node.ln_Name = (char*)"UP-Menustrip";
+    d->trap_is.is_Data = &d->trap, d->trap_is.is_Code = aamenustrip_input;
+    if ((d->trap_port = CreateMsgPort()) != NULL &&
+        (d->trap_io = (struct IOStdReq*)CreateIORequest(d->trap_port, sizeof(struct IOStdReq))) != NULL) {
+        if (OpenDevice((STRPTR) "input.device", 0, (struct IORequest*)d->trap_io, 0) == 0) {
+            d->trap_io->io_Command = IND_ADDHANDLER, d->trap_io->io_Data = &d->trap_is;
+            DoIO((struct IORequest*)d->trap_io);
+            return;
+        }
+        DeleteIORequest((struct IORequest*)d->trap_io);
+        d->trap_io = NULL;
+    }
+    DeleteMsgPort(d->trap_port); /* NULL is fine; without the handler the repair in aamenustrip_event is all there is */
+    d->trap_port = NULL;
+}
+
+static void aamenustrip_trap_rem(aamenustrip_data* d) {
+    d->trap.win[0] = d->trap.win[1] = NULL;
+    if (d->trap_io != NULL) {
+        d->trap_io->io_Command = IND_REMHANDLER, d->trap_io->io_Data = &d->trap_is;
+        DoIO((struct IORequest*)d->trap_io); /* synchronous: the handler does not run after this */
+        CloseDevice((struct IORequest*)d->trap_io);
+        DeleteIORequest((struct IORequest*)d->trap_io);
+        DeleteMsgPort(d->trap_port);
+        d->trap_io = NULL, d->trap_port = NULL;
+    }
+}
 
 /* Cursor for NextObject() over the menus. */
 static Object* aamenustrip_head(const aamenustrip_data* d) {
@@ -130,6 +196,7 @@ static void aamenustrip_toggle(Object* obj, aamenustrip_data* d) {
     open = 0, bw = NULL;
     GetAttr(MUIA_Window_Open, d->bar, &open);
     GetAttr(MUIA_Window_Window, d->bar, (ULONG*)&bw);
+    d->trap.win[1] = bw;
     UPMS("toggle branch=open result open=%ld bw=%lx cur=%ld", open, (ULONG)bw, (ULONG)d->cur);
 }
 
@@ -229,6 +296,9 @@ static void aamenustrip_check(Object* obj, aamenustrip_data* d) {
     GetAttr(MUIA_Window_Window, d->bar, (ULONG*)&bw);
     GetAttr(MUIA_Window_Open, d->bar, &open);
     UPMS("check open=%ld bw=%lx closing=%ld cur=%ld", open, (ULONG)bw, (ULONG)d->closing, (ULONG)d->cur);
+    /* shortcut: stale from CloseWindow until this notify (same set call); the handler only compares it with the active window.
+     * Upgrade: clear it before the close if a wrong window ever shows up trapped. */
+    d->trap.win[1] = open ? bw : NULL;
     if (!open) {
         d->closing = 0;
         aw = ((struct IntuitionBase*)(void*)IntuitionBase)->ActiveWindow; /* a pointer compare only: no LockIBase */
@@ -318,6 +388,7 @@ static ULONG aamenustrip_event(Object* obj, aamenustrip_data* d, struct IntuiMes
     if (im == NULL || w == NULL) {
         return 0;
     }
+    d->trap.win[0] = w;
     if (im->Class != IDCMP_MOUSEMOVE || !(w->Flags & WFLG_RMBTRAP)) {
         UPMS("ev class=%lx code=%lx win=%lx trap=%ld", (ULONG)im->Class, (ULONG)im->Code, (ULONG)im->IDCMPWindow, (ULONG)((w->Flags & WFLG_RMBTRAP) != 0));
     }
@@ -485,6 +556,7 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
         d->ehn.ehn_Priority = 0, d->ehn.ehn_Flags = 0, d->ehn.ehn_Object = obj, d->ehn.ehn_Class = cl;
         d->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY | IDCMP_ACTIVEWINDOW; /* MOUSEMOVE: the drag; ACTIVEWINDOW: sets WFLG_RMBTRAP before the first click */
         DoMethod(_win(obj), MUIM_Window_AddEventHandler, (ULONG)&d->ehn);
+        aamenustrip_trap_add(d);
         return TRUE;
     case MUIM_ConnectParent:
         DoSuperMethodA(cl, obj, msg); /* copies the parent's global info */
@@ -512,6 +584,7 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
         break;
     case MUIM_Cleanup:
         d = INST_DATA(cl, obj);
+        aamenustrip_trap_rem(d); /* before the windows close */
         DoMethod(_win(obj), MUIM_Window_RemEventHandler, (ULONG)&d->ehn);
         if (d->added) { /* no reactivation of a window that is going away */
             DoMethod(d->bar, MUIM_KillNotifyObj, MUIA_Window_Open, (ULONG)obj);
