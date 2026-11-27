@@ -37,6 +37,14 @@ int main(void) {
     CHECK(!strcmp(f, "9112f0"));
     CHECK(up_imspec_by_mui(0) && up_imspec_by_mui(1) && up_imspec_by_mui(4) && up_imspec_by_mui(5) && up_imspec_by_mui(6));
     CHECK(!up_imspec_by_mui(2) && !up_imspec_by_mui(7) && !up_imspec_by_mui(-1));
+    { /* the demo CASE 2 specs reach muimaster's Image, not the themed fill */
+        const char* t;
+        uint32_t c = 0;
+        int h;
+        CHECK(up_imspec_by_mui(up_imspec_parse("6:23", &t, &c, &h)) && h == 0 && strcmp(t, "23") == 0);
+        CHECK(up_imspec_by_mui(up_imspec_parse("0:132", &t, &c, &h)) && h == 0 && strcmp(t, "132") == 0);
+        CHECK(up_imspec_by_mui(up_imspec_parse("1:0", &t, &c, &h)) && h == 0 && strcmp(t, "0") == 0);
+    }
     if (fails == 0) {
         printf("[OK] up-specs\n");
     }
