@@ -136,6 +136,8 @@ enum { UPV_Text_Align_Left, UPV_Text_Align_Centre, UPV_Text_Align_Right };
 #define UPA_Cycle_Entries UP_TAG(UP_CLS_CYCLE, 0x02) /* I char**: NULL terminated, must outlive the object */
 #define UPM_Cycle_Closed UP_TAG(UP_CLS_CYCLE, 0x11)      /* method: the popup window closed. Internal */
 #define UPM_Cycle_Deactivated UP_TAG(UP_CLS_CYCLE, 0x12) /* method: the popup window lost activation. Internal */
+#define UPM_Cycle_PushClose UP_TAG(UP_CLS_CYCLE, 0x13)   /* method: queue the close of the popup window (a pick or Esc in it). Internal */
+#define UPM_Cycle_Open UP_TAG(UP_CLS_CYCLE, 0x14)        /* method: open the popup, pushed out of the button release. Internal */
 
 /* UP-Popstring: a UP-Field plus a button that opens a popup window under the object (MUIC_Popstring, simplified). One popup window per
  * object, created at the first open and reused; it closes on a pick, Esc, a click outside or another click on the button. */
