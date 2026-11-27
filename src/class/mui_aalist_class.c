@@ -18,6 +18,7 @@
 #include <proto/utility.h>
 
 #include "mui_aa_draw.h"
+#include "mui_aa_trace.h"
 #include "mui_aascroller_class.h"
 #include "map/mui_aalistsel.h"
 
@@ -329,6 +330,9 @@ static ULONG aalist_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEve
         return 0;
     }
     if (im->Class == IDCMP_MOUSEBUTTONS) {
+        if (im->Code == MENUDOWN || im->Code == MENUUP) {
+            UPMS("list %s win=%lx popup-list=%ld", (ULONG)(im->Code == MENUDOWN ? "MENUDOWN" : "MENUUP"), (ULONG)im->IDCMPWindow, (ULONG)d->keys_unfocused);
+        }
         if (im->Code == MENUDOWN && d->keys_unfocused) { /* the right button cancels a popup list like Esc (a menu popup closes its bar) */
             set(obj, UPA_List_Cancelled, (ULONG)TRUE);
             return MUI_EventHandlerRC_Eat;

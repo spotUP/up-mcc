@@ -48,6 +48,7 @@
 
 #include "map/mui_aa.h"
 #include "mui_aa_draw.h"
+#include "mui_aa_trace.h"
 
 extern struct Library* MUIMasterBase;
 
@@ -78,6 +79,7 @@ static Object* aamenustrip_head(const aamenustrip_data* d) {
 static void aamenustrip_close(Object* obj, aamenustrip_data* d) {
     ULONG open = 0;
     GetAttr(MUIA_Window_Open, d->bar, &open);
+    UPMS("close open=%ld live=%ld closing=%ld cur=%ld", open, (ULONG)aa_live(obj), (ULONG)d->closing, (ULONG)d->cur);
     if (open && aa_live(obj)) {
         DoMethod(_app(obj), MUIM_Application_PushMethod, (ULONG)d->bar, 3, MUIM_Set, MUIA_Window_Open, FALSE);
         d->closing = 1;
@@ -86,11 +88,18 @@ static void aamenustrip_close(Object* obj, aamenustrip_data* d) {
 
 /* The right mouse button: open the bar over the screen's title bar, or close an open bar. */
 static void aamenustrip_toggle(Object* obj, aamenustrip_data* d) {
-    struct Window* w = _window(obj);
+    struct Window *w = _window(obj), *bw = NULL;
     Object *st, *o;
     ULONG open = 0;
     GetAttr(MUIA_Window_Open, d->bar, &open);
+    GetAttr(MUIA_Window_Window, d->bar, (ULONG*)&bw);
+    UPMS("toggle open=%ld bw=%lx closing=%ld cur=%ld", open, (ULONG)bw, (ULONG)d->closing, (ULONG)d->cur);
+    if (bw == NULL) { /* no Intuition window: the bar is closed, whatever the attribute or a stale closing flag says */
+        open = 0;
+        d->closing = 0;
+    }
     if (open && d->closing) {
+        UPMS("toggle branch=unpush %ld", 0UL);
         /* the close is still queued: drop it and keep the bar.
          * shortcut: MUI 3.8 has no UnpushMethod, there the queued close still runs; upgrade if MUI 3.8 becomes a target again */
         DoMethod(_app(obj), MUIM_Application_UnpushMethod, (ULONG)d->bar, 0, MUIM_Set);
@@ -99,6 +108,7 @@ static void aamenustrip_toggle(Object* obj, aamenustrip_data* d) {
         return;
     }
     if (open) {
+        UPMS("toggle branch=close %ld", 0UL);
         aamenustrip_close(obj, d);
         return;
     }
@@ -117,6 +127,10 @@ static void aamenustrip_toggle(Object* obj, aamenustrip_data* d) {
     SetAttrs(d->bar, MUIA_Window_Screen, (ULONG)w->WScreen, MUIA_Window_LeftEdge, 0UL, MUIA_Window_TopEdge, 0UL, TAG_DONE);
     set(d->bar, MUIA_Window_Activate, FALSE); /* the held button stays with this window; a click-style release activates the bar */
     set(d->bar, MUIA_Window_Open, TRUE);
+    open = 0, bw = NULL;
+    GetAttr(MUIA_Window_Open, d->bar, &open);
+    GetAttr(MUIA_Window_Window, d->bar, (ULONG*)&bw);
+    UPMS("toggle branch=open result open=%ld bw=%lx cur=%ld", open, (ULONG)bw, (ULONG)d->cur);
 }
 
 static Object* aamenustrip_nth(const aamenustrip_data* d, int n) {
@@ -214,6 +228,7 @@ static void aamenustrip_check(Object* obj, aamenustrip_data* d) {
     ULONG open = 0, cancel = 0;
     GetAttr(MUIA_Window_Window, d->bar, (ULONG*)&bw);
     GetAttr(MUIA_Window_Open, d->bar, &open);
+    UPMS("check open=%ld bw=%lx closing=%ld cur=%ld", open, (ULONG)bw, (ULONG)d->closing, (ULONG)d->cur);
     if (!open) {
         d->closing = 0;
         aw = ((struct IntuitionBase*)(void*)IntuitionBase)->ActiveWindow; /* a pointer compare only: no LockIBase */
@@ -223,6 +238,7 @@ static void aamenustrip_check(Object* obj, aamenustrip_data* d) {
         if (w != NULL && aw != w && (aw == NULL || aw == bw || ((aw->Flags & WFLG_BORDERLESS) && aw->UserPort == w->UserPort))) {
             d->act_win = _win(obj);
             d->act_tok = DoMethod(_app(obj), MUIM_Application_PushMethod, (ULONG)d->act_win, 3, MUIM_Set, MUIA_Window_Activate, TRUE);
+            UPMS("check closed: reactivate app window, active was %lx", (ULONG)aw);
         }
         return;
     }
@@ -233,14 +249,19 @@ static void aamenustrip_check(Object* obj, aamenustrip_data* d) {
         ULONG v = 0, c = 0;
         GetAttr(UPA_Menu_Open, o, &v);
         if (v) {
+            UPMS("check keep: menu open %ld", 0UL);
             return;
         }
         GetAttr(UPA_Menu_Cancelled, o, &c);
         cancel |= c;
     }
-    if (!cancel && (bw->Flags & WFLG_WINDOWACTIVE)) { /* the Intuition flag: MUIA_Window_Activate lags behind inside a notification */
+    /* the Intuition flag: MUIA_Window_Activate lags behind inside a notification. cur > -2: the right button is held, the bar is
+     * inactive on purpose and the release (aamenustrip_drag) decides; a check in between must not close the bar just opened */
+    if (!cancel && ((bw->Flags & WFLG_WINDOWACTIVE) || d->cur > -2)) {
+        UPMS("check keep: active=%ld cur=%ld", (ULONG)(bw->Flags & WFLG_WINDOWACTIVE), (ULONG)d->cur);
         return;
     }
+    UPMS("check branch=close cancel=%ld", cancel);
     aamenustrip_close(obj, d);
 }
 
@@ -301,6 +322,11 @@ static ULONG aamenustrip_event(Object* obj, aamenustrip_data* d, struct IntuiMes
         Forbid();
         w->Flags |= WFLG_RMBTRAP;
         Permit();
+        UPMS("event: RMBTRAP was off on %lx", (ULONG)w);
+    }
+    if (im->Class == IDCMP_MOUSEBUTTONS && (im->Code == MENUDOWN || im->Code == MENUUP)) {
+        UPMS("event %s win=%lx strip-win=%lx enabled=%ld cur=%ld closing=%ld", (ULONG)(im->Code == MENUDOWN ? "MENUDOWN" : "MENUUP"),
+             (ULONG)im->IDCMPWindow, (ULONG)w, (ULONG)d->enabled, (ULONG)d->cur, (ULONG)d->closing);
     }
     if (!d->enabled) {
         return 0;

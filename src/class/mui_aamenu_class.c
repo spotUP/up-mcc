@@ -40,6 +40,7 @@
 
 #include "map/mui_aa.h"
 #include "mui_aa_draw.h"
+#include "mui_aa_trace.h"
 
 extern struct Library* MUIMasterBase;
 struct Library* KeymapBase;
@@ -552,6 +553,7 @@ static ULONG __attribute__((used)) aamenu_dispatch_c(struct IClass* cl, Object* 
         return 0;
     case UPM_Menu_Cancel: /* from the list's notify or the popup's key handler: queued close, never a close here */
         d = INST_DATA(cl, obj);
+        UPMS("menu cancel pop.open=%ld cancelled=%ld", (ULONG)d->pop.open, (ULONG)d->cancelled);
         if (d->pop.open) {
             d->cancelled = 1;
             aamenu_push_close(obj, d);
