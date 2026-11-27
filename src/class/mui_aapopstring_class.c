@@ -1,9 +1,10 @@
 /* UP-Popstring, UP-Poplist, UP-Popobject, UP-Popasl and UP-Popscreen. One Group subclass, five dispatchers (Poplist = the same data with
  * a UP-List popup built by the class; Popobject = Popstring under the MUI 3.8 Popobject names; Popasl = no popup window, the button runs
  * an ASL requester; Popscreen = Poplist whose entries are the public screens, read again before each open).
- * The popup is a borderless window opened under the object, copied from UP-Cycle (mui_aacycle_class.c). Unlike the cycle, the window is
- * created once and REUSED for every later open (its position is set again), and it is only disposed in cleanup: the cycle kept a closed
- * popup half alive and ignored or crashed on the second click. Open / close decisions are the pure mui_aa_pop_* state machine. */
+ * The popup is a borderless window opened under the object, copied from UP-Cycle (mui_aacycle_class.c). A caller's popup (Popstring,
+ * Popobject) is created once and REUSED for every later open (its position is set again) and only disposed in cleanup. A class-built
+ * list popup (Poplist, Popscreen) is dropped and rebuilt at each open, as the cycle does (see aapop_open). Open / close decisions are
+ * the pure mui_aa_pop_* state machine. */
 #include "mui_aapopstring_class.h"
 #include "mui_aa_class.h"
 
@@ -158,7 +159,7 @@ static void aapop_place(Object* obj, aapop_data* d) {
     set(d->popup, MUIA_Window_TopEdge, (ULONG)(win->TopEdge + _bottom(obj) + 2));
 }
 
-/* act: MUI_AA_POP_OPEN_NEW or _REUSE. The popup window is created here (first open) and kept. */
+/* act: MUI_AA_POP_OPEN_NEW or _REUSE. The popup window is created here (first open) and kept, except a list popup (below). */
 static void aapop_open(Object* obj, aapop_data* d, int act) {
     Object* app = NULL;
     struct Window* win = _window(obj);
@@ -166,6 +167,13 @@ static void aapop_open(Object* obj, aapop_data* d, int act) {
     GetAttr(MUIA_Disabled, obj, &dis);
     if (win == NULL || dis || d->pop.open || !aa_live(obj)) {
         return;
+    }
+    if (act == MUI_AA_POP_OPEN_REUSE && d->list != NULL) {
+        /* A list popup is rebuilt at every open, as UP-Cycle does. A kept one came back with the picked list as the window's
+         * remembered active object (the list's click sets MUIA_Window_ActiveObject, OpenMUI restores it at the reopen), and the
+         * outside click on that reopened, active popup hung UP-Demo (rig 5, 871acb6). A first open closes cleanly. */
+        aapop_drop(obj, d);
+        act = MUI_AA_POP_OPEN_NEW;
     }
     if (act == MUI_AA_POP_OPEN_NEW) {
         GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
@@ -197,9 +205,6 @@ static void aapop_open(Object* obj, aapop_data* d, int act) {
     } else {
         aa_pop_reopen(obj, d->popup, !d->no_activate); /* drop a queued close; active again like the first open */
         aapop_place(obj, d);
-        if (d->list != NULL) {
-            set(d->list, UPA_List_Active, (ULONG)d->active);
-        }
     }
     aapop_hook(d->win_hook, d->root, d->popup);
     mui_aa_pop_opened(&d->pop);
