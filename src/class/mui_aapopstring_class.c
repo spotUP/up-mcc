@@ -108,6 +108,7 @@ static void aapop_drop(Object* obj, aapop_data* d) {
         GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
     }
     set(d->popup, MUIA_Window_Open, FALSE);
+    aa_pop_unpush(obj, d->popup); /* a queued close must not reach the disposed popup */
     if (app != NULL) {
         DoMethod(app, OM_REMMEMBER, (ULONG)d->popup);
     }
@@ -194,6 +195,7 @@ static void aapop_open(Object* obj, aapop_data* d, int act) {
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, obj, 1, UPM_Popstring_Deactivated);
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Open, FALSE, obj, 1, UPM_Popstring_Closed);
     } else {
+        aa_pop_unpush(obj, d->popup); /* a close queued for the last open must not shut this one */
         aapop_place(obj, d);
         if (d->no_activate) {
             SetAttrs(d->popup, MUIA_NoNotify, TRUE, MUIA_Window_Activate, FALSE, TAG_DONE); /* no Deactivated notify: the window is not open yet */
@@ -471,7 +473,9 @@ static ULONG aapop_dispatch_c(struct IClass* cl, Object* obj, Msg msg, int kind)
     case UPM_Popstring_Deactivated:
         d = INST_DATA(cl, obj);
         d->deact = 1;
-        aapop_close(d);
+        if (d->pop.open) { /* queued: never closed inside the popup's own Activate notify (aa_pop_push_close) */
+            aa_pop_push_close(obj, d->popup);
+        }
         return 0;
     case UPM_Popstring_Closed:
         aapop_closed(obj, INST_DATA(cl, obj));

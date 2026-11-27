@@ -90,6 +90,7 @@ static void aanum_drop(Object* obj, aanumeric_data* d) {
         GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
     }
     set(d->popup, MUIA_Window_Open, FALSE);
+    aa_pop_unpush(obj, d->popup); /* a queued close must not reach the disposed popup */
     if (app != NULL) {
         DoMethod(app, OM_REMMEMBER, (ULONG)d->popup);
     }
@@ -231,6 +232,7 @@ static void aanum_open(Object* obj, aanumeric_data* d, int act) {
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, obj, 1, UPM_Numeric_Deactivated);
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Open, FALSE, obj, 1, UPM_Numeric_Closed);
     } else {
+        aa_pop_unpush(obj, d->popup); /* a close queued for the last open must not shut this one */
         aanum_place(obj, d);
     }
     set(d->slider, MUIA_Numeric_Value, (ULONG)d->val);
@@ -416,7 +418,9 @@ static ULONG __attribute__((used)) aanumeric_dispatch_c(struct IClass* cl, Objec
     case UPM_Numeric_Deactivated:
         d = INST_DATA(cl, obj);
         d->deact = 1;
-        aanum_close(d);
+        if (d->pop.open) { /* queued: never closed inside the popup's own Activate notify (aa_pop_push_close) */
+            aa_pop_push_close(obj, d->popup);
+        }
         return 0;
     case UPM_Numeric_Closed:
         d = INST_DATA(cl, obj);
