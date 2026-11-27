@@ -30,6 +30,8 @@ typedef struct aacycle_data {
     Object *popup, *list;
     struct Hook row_hook; /* UPA_List_RowHook of the popup list: the entry text (h_Data is this data) */
     struct MUI_EventHandlerNode ehn;
+    mui_aa_pop_t pop; /* the shared popup toggle, as UP-Popstring: a click on the cycle while its popup is open closes it */
+    int deact, act;   /* deact: the close came from lost activation; act: mui_aa_pop_click at SELECTDOWN, run at SELECTUP */
 } aacycle_data;
 
 static struct MUI_CustomClass* g_cycle_class;
@@ -56,6 +58,8 @@ static void aacycle_drop_popup(Object* obj, aacycle_data* d) {
     }
     MUI_DisposeObject(d->popup);
     d->popup = d->list = NULL;
+    memset(&d->pop, 0, sizeof d->pop);
+    d->deact = 0;
 }
 
 static ULONG aacycle_setup(struct IClass* cl, Object* obj, Msg msg) {
@@ -258,8 +262,9 @@ static void aacycle_open_popup(Object* obj, aacycle_data* d) {
     DoMethod(list, MUIM_Notify, UPA_List_Cancelled, TRUE, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
     /* lost activation: queued, never closed inside the popup's own Activate notify (aa_pop_push_close). Pick / cancel come from the
      * list's HandleEvent, whose message OpenMUI has already replied, so they close at once. */
-    DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, MUIV_Notify_Application, 6, MUIM_Application_PushMethod, (ULONG)d->popup, 3, MUIM_Set,
-             MUIA_Window_Open, FALSE);
+    DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, obj, 1, UPM_Cycle_Deactivated);
+    DoMethod(d->popup, MUIM_Notify, MUIA_Window_Open, FALSE, obj, 1, UPM_Cycle_Closed);
+    mui_aa_pop_opened(&d->pop);
     set(d->popup, MUIA_Window_Open, TRUE);
     aa_pop_fit(obj, d->popup);
 }
@@ -283,6 +288,8 @@ static ULONG aacycle_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
     }
     if (im->Class == IDCMP_MOUSEBUTTONS) {
         if (im->Code == SELECTDOWN && in && !dis) {
+            /* decided at the press: the press itself deactivates an open popup, whose close then must not reopen it at the release */
+            d->act = mui_aa_pop_click(&d->pop, aa_pop_now());
             d->down = 1;
             aa_redraw(obj, MADF_DRAWOBJECT);
             return MUI_EventHandlerRC_Eat;
@@ -290,7 +297,9 @@ static ULONG aacycle_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
         if (im->Code == SELECTUP && d->down) {
             d->down = 0;
             aa_redraw(obj, MADF_DRAWOBJECT);
-            if (in && !dis) {
+            if (in && !dis && d->act == MUI_AA_POP_CLOSE && d->popup != NULL) {
+                set(d->popup, MUIA_Window_Open, FALSE); /* the Open notify runs UPM_Cycle_Closed */
+            } else if (in && !dis && d->act != MUI_AA_POP_NONE && d->act != MUI_AA_POP_CLOSE) {
                 aacycle_open_popup(obj, d);
             }
             return MUI_EventHandlerRC_Eat;
@@ -372,6 +381,20 @@ static ULONG __attribute__((used)) aacycle_dispatch_c(struct IClass* cl, Object*
         return aacycle_draw(cl, obj, (struct MUIP_Draw*)msg);
     case MUIM_HandleEvent:
         return aacycle_handle(cl, obj, (struct MUIP_HandleEvent*)msg);
+    case UPM_Cycle_Deactivated: {
+        aacycle_data* d = INST_DATA(cl, obj);
+        if (d->pop.open) { /* queued: never closed inside the popup's own Activate notify (aa_pop_push_close) */
+            d->deact = 1;
+            aa_pop_push_close(obj, d->popup);
+        }
+        return 0;
+    }
+    case UPM_Cycle_Closed: {
+        aacycle_data* d = INST_DATA(cl, obj);
+        mui_aa_pop_closed(&d->pop, d->deact, aa_pop_now());
+        d->deact = 0;
+        return 0;
+    }
     }
     return DoSuperMethodA(cl, obj, msg);
 }

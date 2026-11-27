@@ -82,6 +82,12 @@ void aa_pop_unpush(Object* obj, Object* popup) {
     }
 }
 
+uint32_t aa_pop_now(void) {
+    ULONG s = 0, m = 0;
+    CurrentTime(&s, &m);
+    return (uint32_t)(s * 1000UL + m / 1000UL);
+}
+
 void aa_pop_reopen(Object* obj, Object* popup, int activate) {
     aa_pop_unpush(obj, popup);
     if (popup != NULL) {

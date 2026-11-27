@@ -43,6 +43,7 @@ typedef struct aapop_data {
     struct Hook *open_hook, *close_hook;
     struct Hook row_hook; /* UPA_List_RowHook of the Poplist popup: the entry text (h_Data is this data) */
     struct MUI_EventHandlerNode ehn; /* owner window IDCMP_INACTIVEWINDOW: closes a NoActivate popup, which never gets its own Deactivated */
+    struct MUI_EventHandlerNode phn; /* popup window IDCMP_MOUSEBUTTONS: the right button cancels any popup like Esc (a list popup's UP-List also does) */
     mui_aa_pop_t pop;
 } aapop_data;
 
@@ -89,12 +90,6 @@ static void aapop_read_tags(struct aapop_data* d, struct TagItem* tags) {
     }
 }
 
-static uint32_t aapop_now(void) {
-    ULONG s = 0, m = 0;
-    CurrentTime(&s, &m);
-    return (uint32_t)(s * 1000UL + m / 1000UL);
-}
-
 static ULONG aapop_hook(struct Hook* h, Object* obj, Object* msg) {
     return h != NULL ? CallHookPkt(h, obj, msg) : TRUE;
 }
@@ -108,6 +103,7 @@ static void aapop_drop(Object* obj, aapop_data* d) {
     if (aa_live(obj)) {
         GetAttr(MUIA_ApplicationObject, _win(obj), (ULONG*)&app);
     }
+    DoMethod(d->popup, MUIM_Window_RemEventHandler, (ULONG)&d->phn); /* before the close, as UP-Menustrip's bar handler */
     set(d->popup, MUIA_Window_Open, FALSE);
     aa_pop_unpush(obj, d->popup); /* a queued close must not reach the disposed popup */
     if (app != NULL) {
@@ -186,7 +182,8 @@ static void aapop_open(Object* obj, aapop_data* d, int act) {
     }
     if (act == MUI_AA_POP_OPEN_NEW) {
         d->popup = MUI_NewObject((char*)MUIC_Window, MUIA_Window_Screen, (ULONG)_screen(obj), MUIA_Window_Borderless, TRUE, MUIA_Window_DragBar, FALSE, MUIA_Window_CloseGadget, FALSE,
-                                 MUIA_Window_SizeGadget, FALSE, MUIA_Window_DepthGadget, FALSE, MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)),
+                                 MUIA_Window_SizeGadget, FALSE, MUIA_Window_DepthGadget, FALSE, MUIA_Window_NoMenus, TRUE, /* RMBTRAP: MENUDOWN reaches phn */
+                                 MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)),
                                  MUIA_Window_TopEdge, (ULONG)(win->TopEdge + _bottom(obj) + 2), MUIA_Window_Width, (ULONG)_width(obj),
                                  MUIA_Window_Activate, (ULONG)!d->no_activate, MUIA_Window_RootObject, (ULONG)d->root, TAG_DONE);
         if (d->popup == NULL) {
@@ -195,6 +192,9 @@ static void aapop_open(Object* obj, aapop_data* d, int act) {
             return;
         }
         DoMethod(app, OM_ADDMEMBER, (ULONG)d->popup);
+        d->phn.ehn_Priority = 0, d->phn.ehn_Flags = 0, d->phn.ehn_Object = obj, d->phn.ehn_Class = d->ehn.ehn_Class;
+        d->phn.ehn_Events = IDCMP_MOUSEBUTTONS;
+        DoMethod(d->popup, MUIM_Window_AddEventHandler, (ULONG)&d->phn);
         if (d->list != NULL) {
             DoMethod(d->list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, obj, 3, MUIM_Set, UPA_Poplist_Active, MUIV_TriggerValue);
             DoMethod(d->list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
@@ -221,7 +221,7 @@ static void aapop_close(aapop_data* d) {
 
 static void aapop_closed(Object* obj, aapop_data* d) {
     int was = d->pop.open;
-    mui_aa_pop_closed(&d->pop, d->deact, aapop_now());
+    mui_aa_pop_closed(&d->pop, d->deact, aa_pop_now());
     d->deact = 0;
     if (was) {
         if (d->ok) {
@@ -267,6 +267,13 @@ static ULONG aapop_cleanup(struct IClass* cl, Object* obj, Msg msg) {
 static ULONG aapop_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* msg) {
     aapop_data* d = INST_DATA(cl, obj);
     struct Window* pw = NULL;
+    if (msg->imsg != NULL && msg->imsg->Class == IDCMP_MOUSEBUTTONS) { /* only phn asks for buttons: a press in the popup window */
+        if (msg->imsg->Code == MENUDOWN && d->pop.open) {
+            aapop_close(d); /* a cancel: d->ok stays 0, no ObjStrHook */
+            return MUI_EventHandlerRC_Eat;
+        }
+        return 0;
+    }
     if (msg->imsg == NULL || msg->imsg->Class != IDCMP_INACTIVEWINDOW || !d->no_activate || !d->pop.open || d->popup == NULL) {
         return 0;
     }
@@ -451,7 +458,7 @@ static ULONG aapop_dispatch_c(struct IClass* cl, Object* obj, Msg msg, int kind)
     case UPM_Popstring_Click:
         d = INST_DATA(cl, obj);
         {
-            int act = mui_aa_pop_click(&d->pop, aapop_now());
+            int act = mui_aa_pop_click(&d->pop, aa_pop_now());
             if (act == MUI_AA_POP_CLOSE) {
                 aapop_close(d);
             } else if (act != MUI_AA_POP_NONE) {

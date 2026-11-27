@@ -75,6 +75,8 @@ void aa_pop_unpush(Object* obj, Object* popup);
  * attribute FALSE, and MUI opens the window with it, so a reopen without this comes up inactive and an outside click never closes it.
  * Set with MUIA_NoNotify: the Activate FALSE notify (the popup's Deactivated / close) must not run for a window that is not open. */
 void aa_pop_reopen(Object* obj, Object* popup, int activate);
+/* Milliseconds from Intuition CurrentTime, the clock of mui_aa_pop_click / mui_aa_pop_closed. */
+uint32_t aa_pop_now(void);
 /* True when the mouse of im lies in obj AND obj is on screen. A Setup object on a hidden PageMode page keeps its event handler and its
  * old box, so a bare box test lets a click on the visible page open the hidden page's popups. Every HandleEvent hit test goes here. */
 struct IntuiMessage;
