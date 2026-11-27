@@ -71,6 +71,10 @@ void aa_pop_fit(Object* obj, Object* popup);
 void aa_pop_push_close(Object* obj, Object* popup);
 /* Drop closes queued by aa_pop_push_close: before popup is disposed and before it opens again. MUI 3.8 ignores UnpushMethod. */
 void aa_pop_unpush(Object* obj, Object* popup);
+/* Before a kept popup window opens again: aa_pop_unpush, then MUIA_Window_Activate = activate. The lost-activation close leaves the
+ * attribute FALSE, and MUI opens the window with it, so a reopen without this comes up inactive and an outside click never closes it.
+ * Set with MUIA_NoNotify: the Activate FALSE notify (the popup's Deactivated / close) must not run for a window that is not open. */
+void aa_pop_reopen(Object* obj, Object* popup, int activate);
 /* True when the mouse of im lies in obj AND obj is on screen. A Setup object on a hidden PageMode page keeps its event handler and its
  * old box, so a bare box test lets a click on the visible page open the hidden page's popups. Every HandleEvent hit test goes here. */
 struct IntuiMessage;

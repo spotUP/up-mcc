@@ -195,11 +195,8 @@ static void aapop_open(Object* obj, aapop_data* d, int act) {
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, obj, 1, UPM_Popstring_Deactivated);
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Open, FALSE, obj, 1, UPM_Popstring_Closed);
     } else {
-        aa_pop_unpush(obj, d->popup); /* a close queued for the last open must not shut this one */
+        aa_pop_reopen(obj, d->popup, !d->no_activate); /* drop a queued close; active again like the first open */
         aapop_place(obj, d);
-        if (d->no_activate) {
-            SetAttrs(d->popup, MUIA_NoNotify, TRUE, MUIA_Window_Activate, FALSE, TAG_DONE); /* no Deactivated notify: the window is not open yet */
-        }
         if (d->list != NULL) {
             set(d->list, UPA_List_Active, (ULONG)d->active);
         }

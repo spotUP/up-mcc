@@ -334,7 +334,7 @@ static void pp_open(Object* obj, aapendisplay_data* d, int act) {
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, (ULONG)obj, 1, UPM_Poppen_Deactivated);
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Open, FALSE, (ULONG)obj, 1, UPM_Poppen_Closed);
     } else {
-        aa_pop_unpush(obj, d->popup); /* a close queued for the last open must not shut this one */
+        aa_pop_reopen(obj, d->popup, TRUE); /* drop a queued close; active again like the first open */
         set(d->popup, MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)));
         set(d->popup, MUIA_Window_TopEdge, (ULONG)(win->TopEdge + _bottom(obj) + 2));
     }

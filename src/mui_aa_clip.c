@@ -81,3 +81,10 @@ void aa_pop_unpush(Object* obj, Object* popup) {
         DoMethod(app, MUIM_Application_UnpushMethod, (ULONG)popup, 0, 0);
     }
 }
+
+void aa_pop_reopen(Object* obj, Object* popup, int activate) {
+    aa_pop_unpush(obj, popup);
+    if (popup != NULL) {
+        SetAttrs(popup, MUIA_NoNotify, TRUE, MUIA_Window_Activate, (ULONG)(activate != 0), TAG_DONE);
+    }
+}
