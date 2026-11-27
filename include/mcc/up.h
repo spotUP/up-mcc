@@ -250,7 +250,9 @@ typedef struct UP_MenuItem {
 #define UPM_Menu_Track UP_TAG(UP_CLS_MENU, 0x13) /* method (struct IntuiMessage* of another window): a mouse move hovers the item under the pointer, a button event picks it. Internal (UP-Menustrip drag) */
 #define UPM_Menu_PushClose UP_TAG(UP_CLS_MENU, 0x14) /* method: queue the close of the popup window (a pick or Esc in it). Internal */
 #define UPA_Menu_Step UP_TAG(UP_CLS_MENU, 0x09)   /* ..G LONG: -1 Left, +1 Right pressed in the open popup (notifies every time); UP-Menustrip moves to the next menu */
-#define UPA_Menu_Cancelled UP_TAG(UP_CLS_MENU, 0x0A) /* ..N BOOL: Esc in the open popup closed it (notifies TRUE every time); UP-Menustrip closes the bar */
+#define UPM_Menu_Cancel UP_TAG(UP_CLS_MENU, 0x15) /* method: Esc in the open popup: records the cancel (UPA_Menu_Cancelled) and queues the popup close. Internal */
+#define UPM_Menu_Bar UP_TAG(UP_CLS_MENU, 0x16) /* method (LONG height): the menu sits in the UP-Menustrip screen bar: a slim flat title of that height, lit while open, the popup below the bar; also clears UPA_Menu_Cancelled. Only while the menu is not set up. Internal */
+#define UPA_Menu_Cancelled UP_TAG(UP_CLS_MENU, 0x0A) /* ..GN BOOL: Esc closed the popup since its last open (notifies TRUE every time); UP-Menustrip reads it and closes the bar */
 /* MUIM_Family_AddHead / AddTail / Insert / Remove on a UPA_Menu_Entries menu act on its items (MUIC_Menu with MUIC_Menuitem children):
  * the argument is a UP_MenuItem* (copied; its strings must outlive the object), Insert's predecessor too (NULL = head); an item is found by
  * its title pointer. Checked and Disabled bits move with the items; exclude masks are positions and do not. */

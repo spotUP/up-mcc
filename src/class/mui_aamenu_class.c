@@ -15,7 +15,11 @@
  * disposed and before it opens again.
  * shortcut: MUI 3.8 ignores UnpushMethod, so there a close still queued when the popup is disposed hits a dead object; the pick close
  * is queued before the UPA_Menu_Chosen notify so that UP-Menustrip's own queued bar close (which disposes the popup) runs after it.
- * Upgrade: keep closed popups alive until OM_DISPOSE if MUI 3.8 becomes a target again. */
+ * Upgrade: keep closed popups alive until OM_DISPOSE if MUI 3.8 becomes a target again.
+ * Esc is a state, not a notify chain: the list's Cancelled notify and Esc in the popup's own key handler run UPM_Menu_Cancel, which sets
+ * d->cancelled (UPA_Menu_Cancelled, cleared at the next open) and queues the close; UP-Menustrip reads it in its Open FALSE check.
+ * In UP-Menustrip's screen bar (UPM_Menu_Bar) the title is a slim flat UP-Button of the bar height, lit (UPA_Button_On) while the popup is
+ * open, and the popup drops right below the bar window. */
 #include "mui_aamenu_class.h"
 #include "mui_aa_class.h"
 
@@ -43,6 +47,9 @@ struct Library* KeymapBase;
 typedef struct aamenu_data {
     Object *btn, *popup, *root, *list;
     int n, chosen, deact;
+    int cancelled;                    /* UPA_Menu_Cancelled: Esc closed the popup since its last open */
+    LONG bar_h;                       /* UPM_Menu_Bar height, 0 = a plain title button */
+    const char* title;                /* UPA_Menu_Title, kept for the UPM_Menu_Bar title rebuild */
     const char* const* items;
     const UP_MenuItem* ent;           /* own (UPA_Menu_Entries given), NULL = plain UPA_Menu_Items */
     UP_MenuItem own[UP_MENU_MAXITEMS]; /* the items; their strings are the application's */
@@ -134,10 +141,16 @@ static int aamenu_build(aamenu_data* d) {
     return 1;
 }
 
+/* The popup top: right below the bar window in the strip's screen bar, else 2 px below the title. */
+static LONG aamenu_top(Object* obj, const aamenu_data* d) {
+    struct Window* win = _window(obj);
+    return d->bar_h > 0 ? win->TopEdge + win->Height : win->TopEdge + _bottom(obj) + 2;
+}
+
 static void aamenu_place(Object* obj, aamenu_data* d) {
     struct Window* win = _window(obj);
     set(d->popup, MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)));
-    set(d->popup, MUIA_Window_TopEdge, (ULONG)(win->TopEdge + _bottom(obj) + 2));
+    set(d->popup, MUIA_Window_TopEdge, (ULONG)aamenu_top(obj, d));
 }
 
 /* keys: the cursor keys opened it (UPV_Menu_Open_Keys), the popup takes the activation. */
@@ -161,7 +174,7 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act, int keys) {
         }
         d->popup = MUI_NewObject((char*)MUIC_Window, MUIA_Window_Screen, (ULONG)_screen(obj), MUIA_Window_Borderless, TRUE, MUIA_Window_DragBar, FALSE, MUIA_Window_CloseGadget, FALSE,
                                  MUIA_Window_SizeGadget, FALSE, MUIA_Window_DepthGadget, FALSE, MUIA_Window_NoMenus, TRUE, MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)),
-                                 MUIA_Window_TopEdge, (ULONG)(win->TopEdge + _bottom(obj) + 2), MUIA_Window_RootObject, (ULONG)d->root, TAG_DONE);
+                                 MUIA_Window_TopEdge, (ULONG)aamenu_top(obj, d), MUIA_Window_RootObject, (ULONG)d->root, TAG_DONE);
         if (d->popup == NULL) {
             MUI_DisposeObject(d->root); /* the window never took it */
             d->root = d->list = NULL;
@@ -174,10 +187,8 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act, int keys) {
         /* the close first: it must be queued ahead of whatever the UPA_Menu_Chosen notify queues (see the header) */
         DoMethod(d->list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, obj, 1, UPM_Menu_PushClose);
         DoMethod(d->list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, obj, 3, MUIM_Set, UPA_Menu_Chosen, MUIV_TriggerValue);
-        DoMethod(d->list, MUIM_Notify, UPA_List_Cancelled, TRUE, obj, 1, UPM_Menu_PushClose);
-        /* Esc ends the whole menu (Intuition: a cancel leaves menu mode). Said explicitly: once the popup is gone the bar may be the
-         * active window, which UP-Menustrip's check reads as "the user went to another title" and keeps it open */
-        DoMethod(d->list, MUIM_Notify, UPA_List_Cancelled, TRUE, obj, 3, MUIM_Set, UPA_Menu_Cancelled, TRUE);
+        /* Esc ends the whole menu (Intuition: a cancel leaves menu mode): recorded as state, read by UP-Menustrip's check */
+        DoMethod(d->list, MUIM_Notify, UPA_List_Cancelled, TRUE, obj, 1, UPM_Menu_Cancel);
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, obj, 1, UPM_Menu_Deactivated);
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Open, FALSE, obj, 1, UPM_Menu_Closed);
     } else {
@@ -189,9 +200,13 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act, int keys) {
     /* only from an active window: during a UP-Menustrip drag the application window keeps the input (pointer and button release) */
     set(d->popup, MUIA_Window_Activate, keys || (win->Flags & WFLG_WINDOWACTIVE) != 0);
     d->deact = 0; /* the Activate FALSE notify above is no loss of activation */
+    d->cancelled = 0;
     mui_aa_pop_opened(&d->pop);
     set(d->popup, MUIA_Window_Open, TRUE);
     aa_pop_fit(obj, d->popup);
+    if (d->bar_h > 0) {
+        set(d->btn, UPA_Button_On, TRUE); /* the open title in the theme's selected colours */
+    }
     set(obj, UPA_Menu_Open, TRUE);
 }
 
@@ -213,6 +228,9 @@ static void aamenu_closed(Object* obj, aamenu_data* d) {
     int was = d->pop.open;
     mui_aa_pop_closed(&d->pop, d->deact, aamenu_now());
     d->deact = 0;
+    if (was && d->bar_h > 0) {
+        set(d->btn, UPA_Button_On, FALSE);
+    }
     if (was) {
         set(obj, UPA_Menu_Open, FALSE);
     }
@@ -245,6 +263,10 @@ static ULONG aamenu_key(Object* obj, aamenu_data* d, struct IntuiMessage* im) {
     if (pw != NULL && im->IDCMPWindow == pw) {
         if (im->Class == IDCMP_RAWKEY && (im->Code == 0x4E || im->Code == 0x4F)) { /* cursor Right, Left */
             set(obj, UPA_Menu_Step, im->Code == 0x4E ? 1UL : (ULONG)-1L);
+            return MUI_EventHandlerRC_Eat;
+        }
+        if (im->Class == IDCMP_RAWKEY && im->Code == 0x45) { /* Esc: also when UP-List did not take it */
+            DoMethod(obj, UPM_Menu_Cancel);
             return MUI_EventHandlerRC_Eat;
         }
         return 0;
@@ -380,6 +402,7 @@ static ULONG aamenu_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     d = INST_DATA(cl, obj);
     memset(d, 0, sizeof *d);
     d->btn = btn;
+    d->title = title != NULL ? title : "";
     d->items = items;
     d->n = n;
     d->chosen = -1;
@@ -461,6 +484,10 @@ static ULONG aamenu_get(struct IClass* cl, Object* obj, struct opGet* msg) {
         *msg->opg_Storage = (ULONG)d->step;
         return TRUE;
     }
+    if (msg->opg_AttrID == UPA_Menu_Cancelled) {
+        *msg->opg_Storage = (ULONG)d->cancelled;
+        return TRUE;
+    }
     if (msg->opg_AttrID == UPA_Menu_Open) {
         *msg->opg_Storage = (ULONG)(d->pop.open != 0);
         return TRUE;
@@ -522,6 +549,33 @@ static ULONG __attribute__((used)) aamenu_dispatch_c(struct IClass* cl, Object* 
         return 0;
     case UPM_Menu_Closed:
         aamenu_closed(obj, INST_DATA(cl, obj));
+        return 0;
+    case UPM_Menu_Cancel: /* from the list's notify or the popup's key handler: queued close, never a close here */
+        d = INST_DATA(cl, obj);
+        if (d->pop.open) {
+            d->cancelled = 1;
+            aamenu_push_close(obj, d);
+            set(obj, UPA_Menu_Cancelled, TRUE); /* for application listeners; UP-Menustrip reads the state */
+        }
+        return 0;
+    case UPM_Menu_Bar: /* ((LONG*)msg)[1] the bar height; the menu is not set up (the strip's bar is closed) */
+        d = INST_DATA(cl, obj);
+        d->cancelled = 0;
+        {
+            LONG h = (LONG)((ULONG*)msg)[1];
+            Object* nb;
+            if (h > 0 && h != d->bar_h &&
+                (nb = MUI_NewObject((char*)"UP-Button.mcc", UPA_Button_Caption, (ULONG)d->title, UPA_Button_Flat, (ULONG)TRUE, UPA_Button_FixedHeight, (ULONG)h, TAG_DONE)) != NULL) {
+                DoMethod(obj, MUIM_Group_InitChange);
+                DoMethod(obj, OM_REMMEMBER, (ULONG)d->btn);
+                MUI_DisposeObject(d->btn); /* its Pressed notify goes with it */
+                DoMethod(obj, OM_ADDMEMBER, (ULONG)nb);
+                DoMethod(obj, MUIM_Group_ExitChange);
+                d->btn = nb;
+                d->bar_h = h;
+                DoMethod(nb, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, UPM_Menu_Click);
+            }
+        }
         return 0;
     case UPM_Menu_Track: /* the IntuiMessage of the strip's window, moved into the popup's coordinates; a button event is a click */
         d = INST_DATA(cl, obj);
