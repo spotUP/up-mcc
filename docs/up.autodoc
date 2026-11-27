@@ -3700,7 +3700,7 @@
 *       MUIA_Imagedisplay_Spec -- attribute of UP-Imagedisplay.mcc
 *
 *   FUNCTION
-*       char*: the image spec "<d>:<value>": 0 pattern, 1 vector image, 2 pen spec (r<8 hex>,<8 hex>,<8 hex> / pN / mN), 3 image class, 4 brush file, 5 picture file, 6 preset (MUII_ number). A value 0xFFFF or less is taken as an MUII_ number. UP-Popimage and UP-Imageadjust take it too, and notify it on a change. The preview shows the colour of a pen spec, a raised fill for a pattern or preset, and the file or class name for the rest (the image itself is not drawn).
+*       char*: the image spec "<d>:<value>": 0 pattern, 1 vector image, 2 pen spec (r<8 hex>,<8 hex>,<8 hex> / pN / mN), 3 image class, 4 brush file, 5 picture file, 6 preset (MUII_ number). A value 0xFFFF or less is taken as an MUII_ number. UP-Popimage and UP-Imageadjust take it too, and notify it on a change. The preview draws a pattern, vector image, image class, brush, picture or preset through muimaster's own MUIC_Image in the normal state (as MUI's Imagedisplay does), so "0:128" and most background presets show the plain background pen and an unselected checkmark ("1:4") shows no glyph; a pen spec shows its colour and a gradient or bad spec a themed fill.
 *
 *   INPUTS
 *       MUIA_Imagedisplay_Spec - access ISG. Tag value from <mcc/up.h> (the MUI id; MUI 3.8's mui.h keeps the class private).

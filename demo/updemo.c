@@ -351,9 +351,11 @@ static int demo_body(int argc, char** argv) {
                 Object* e = NULL;
                 Object* f = NULL;
                 if (mode == 2) {
-                    a = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "6:3", TAG_DONE);
-                    b = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "0:128", TAG_DONE);
-                    c = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "1:4", TAG_DONE);
+                    /* Specs that draw something visible in IDS_NORMAL: "6:3" (ListBack), "0:128" (MUII_BACKGROUND) and "1:4" (an
+                     * unselected checkmark, no glyph) all paint the plain background pen in MUI and Zune, which read as a fault. */
+                    a = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "6:23", TAG_DONE); /* MUII_HardDisk */
+                    b = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "0:132", TAG_DONE); /* MUII_SHADOWBACK dither */
+                    c = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "1:0", TAG_DONE); /* arrow up vector */
                     d = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "5:RAM:pic.iff", TAG_DONE);
                     e = MUI_NewObject((char*)"UP-Imagedisplay.mcc", MUIA_Imagedisplay_Spec, (ULONG) "2:r3E3E3E3E,63636363,DDDDDDDD", TAG_DONE);
                     f = obj[33];
