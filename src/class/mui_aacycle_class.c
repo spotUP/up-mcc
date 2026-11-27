@@ -95,6 +95,7 @@ static ULONG aacycle_setup(struct IClass* cl, Object* obj, Msg msg) {
 static ULONG aacycle_cleanup(struct IClass* cl, Object* obj, Msg msg) {
     aacycle_data* d = INST_DATA(cl, obj);
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (ULONG)&d->ehn);
+    DoMethod(_app(obj), MUIM_Application_UnpushMethod, (ULONG)obj, 0, UPM_Cycle_Open); /* a pushed open must not run on a cleaned-up cycle */
     aacycle_drop_popup(obj, d);
     d->hover = d->down = 0;
     aa_cleanup(&d->aa);
@@ -247,7 +248,7 @@ static void aacycle_open_popup(Object* obj, aacycle_data* d) {
     /* The popup opens on the cycle's own screen; without MUIA_Window_Screen MUI opens it on the default public screen and brings
      * that screen to the front, hiding Selecta's screen (Johan rig 2 2026-10-29). */
     d->popup = MUI_NewObject((char*)MUIC_Window, MUIA_Window_Screen, (ULONG)_screen(obj), MUIA_Window_Borderless, TRUE, MUIA_Window_DragBar, FALSE, MUIA_Window_CloseGadget, FALSE,
-                             MUIA_Window_SizeGadget, FALSE, MUIA_Window_DepthGadget, FALSE, MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)),
+                             MUIA_Window_SizeGadget, FALSE, MUIA_Window_DepthGadget, FALSE, MUIA_Window_NoMenus, TRUE, MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)),
                              MUIA_Window_TopEdge, (ULONG)(win->TopEdge + _bottom(obj) + 2), MUIA_Window_Width, (ULONG)_width(obj),
                              MUIA_Window_RootObject, (ULONG)group, TAG_DONE);
     if (d->popup == NULL) {
@@ -258,14 +259,16 @@ static void aacycle_open_popup(Object* obj, aacycle_data* d) {
     DoMethod(app, OM_ADDMEMBER, (ULONG)d->popup);
     /* A pick sets UPA_Cycle_Active on the cycle and closes the popup; the active row set above fired before these notifications exist. */
     DoMethod(list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, obj, 3, MUIM_Set, UPA_Cycle_Active, MUIV_TriggerValue);
-    DoMethod(list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
-    DoMethod(list, MUIM_Notify, UPA_List_Cancelled, TRUE, d->popup, 3, MUIM_Set, MUIA_Window_Open, FALSE);
-    /* lost activation: queued, never closed inside the popup's own Activate notify (aa_pop_push_close). Pick / cancel come from the
-     * list's HandleEvent, whose message OpenMUI has already replied, so they close at once. */
+    DoMethod(list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, obj, 1, UPM_Cycle_PushClose);
+    DoMethod(list, MUIM_Notify, UPA_List_Cancelled, TRUE, obj, 1, UPM_Cycle_PushClose);
+    /* Every close is queued (aa_pop_push_close), as UP-Menu does: lost activation runs inside the popup's own Activate notify while
+     * OpenMUI still holds the IntuiMessage unreplied, and a pick / Esc runs inside the list's own event dispatch. */
     DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, obj, 1, UPM_Cycle_Deactivated);
     DoMethod(d->popup, MUIM_Notify, MUIA_Window_Open, FALSE, obj, 1, UPM_Cycle_Closed);
+    set(d->popup, MUIA_Window_Activate, TRUE);
     mui_aa_pop_opened(&d->pop);
     set(d->popup, MUIA_Window_Open, TRUE);
+    d->deact = 0; /* an Activate FALSE from the open itself is not a lost activation (UP-Menu does the same) */
     aa_pop_fit(obj, d->popup);
 }
 
@@ -300,7 +303,10 @@ static ULONG aacycle_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
             if (in && !dis && d->act == MUI_AA_POP_CLOSE && d->popup != NULL) {
                 set(d->popup, MUIA_Window_Open, FALSE); /* the Open notify runs UPM_Cycle_Closed */
             } else if (in && !dis && d->act != MUI_AA_POP_NONE && d->act != MUI_AA_POP_CLOSE) {
-                aacycle_open_popup(obj, d);
+                /* pushed: the reopen disposes the closed popup and opens a new window, never from inside the parent window's event
+                 * dispatch (the second open wedged the guest, rig 5 case 1) */
+                DoMethod(_app(obj), MUIM_Application_UnpushMethod, (ULONG)obj, 0, UPM_Cycle_Open);
+                DoMethod(_app(obj), MUIM_Application_PushMethod, (ULONG)obj, 1, UPM_Cycle_Open);
             }
             return MUI_EventHandlerRC_Eat;
         }
@@ -386,6 +392,20 @@ static ULONG __attribute__((used)) aacycle_dispatch_c(struct IClass* cl, Object*
         if (d->pop.open) { /* queued: never closed inside the popup's own Activate notify (aa_pop_push_close) */
             d->deact = 1;
             aa_pop_push_close(obj, d->popup);
+        }
+        return 0;
+    }
+    case UPM_Cycle_PushClose: {
+        aacycle_data* d = INST_DATA(cl, obj);
+        if (d->pop.open) {
+            aa_pop_push_close(obj, d->popup);
+        }
+        return 0;
+    }
+    case UPM_Cycle_Open: {
+        aacycle_data* d = INST_DATA(cl, obj);
+        if (aa_live(obj) && !d->pop.open) {
+            aacycle_open_popup(obj, d);
         }
         return 0;
     }
