@@ -6,7 +6,7 @@
 #define MUI_AA_TRACE_H
 
 #ifndef UPMS_TRACE
-#define UPMS_TRACE 1
+#define UPMS_TRACE 0
 #endif
 
 #if UPMS_TRACE
