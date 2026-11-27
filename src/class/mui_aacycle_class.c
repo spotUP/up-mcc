@@ -249,7 +249,7 @@ static void aacycle_open_popup(Object* obj, aacycle_data* d) {
     d->popup = MUI_NewObject((char*)MUIC_Window, MUIA_Window_Screen, (ULONG)_screen(obj), MUIA_Window_Borderless, TRUE, MUIA_Window_DragBar, FALSE, MUIA_Window_CloseGadget, FALSE,
                              MUIA_Window_SizeGadget, FALSE, MUIA_Window_DepthGadget, FALSE, MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)),
                              MUIA_Window_TopEdge, (ULONG)(win->TopEdge + _bottom(obj) + 2), MUIA_Window_Width, (ULONG)_width(obj),
-                             MUIA_Window_RootObject, (ULONG)group, TAG_DONE);
+                             MUIA_Window_RootObject, (ULONG)group, MUIA_UserData, (ULONG)_win(obj), TAG_DONE); /* owner: aa_pop_holds_active */
     if (d->popup == NULL) {
         MUI_DisposeObject(group);
         return;
@@ -383,7 +383,7 @@ static ULONG __attribute__((used)) aacycle_dispatch_c(struct IClass* cl, Object*
         return aacycle_handle(cl, obj, (struct MUIP_HandleEvent*)msg);
     case UPM_Cycle_Deactivated: {
         aacycle_data* d = INST_DATA(cl, obj);
-        if (d->pop.open) { /* queued: never closed inside the popup's own Activate notify (aa_pop_push_close) */
+        if (d->pop.open && !aa_pop_holds_active(obj, d->popup)) { /* queued (aa_pop_push_close); a nested popup is inside */
             d->deact = 1;
             aa_pop_push_close(obj, d->popup);
         }
@@ -391,6 +391,7 @@ static ULONG __attribute__((used)) aacycle_dispatch_c(struct IClass* cl, Object*
     }
     case UPM_Cycle_Closed: {
         aacycle_data* d = INST_DATA(cl, obj);
+        aa_pop_child_closed(obj, d->deact);
         mui_aa_pop_closed(&d->pop, d->deact, aa_pop_now());
         d->deact = 0;
         return 0;

@@ -221,7 +221,7 @@ static void aanum_open(Object* obj, aanumeric_data* d, int act) {
         d->popup = MUI_NewObject((char*)MUIC_Window, MUIA_Window_Screen, (ULONG)_screen(obj), MUIA_Window_Borderless, TRUE, MUIA_Window_DragBar, FALSE,
                                  MUIA_Window_CloseGadget, FALSE, MUIA_Window_SizeGadget, FALSE, MUIA_Window_DepthGadget, FALSE,
                                  MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)), MUIA_Window_TopEdge, (ULONG)(win->TopEdge + _bottom(obj) + 2),
-                                 MUIA_Window_Width, (ULONG)(_width(obj) * 3), MUIA_Window_RootObject, (ULONG)root, TAG_DONE);
+                                 MUIA_Window_Width, (ULONG)(_width(obj) * 3), MUIA_Window_RootObject, (ULONG)root, MUIA_UserData, (ULONG)_win(obj), TAG_DONE); /* owner: aa_pop_holds_active */
         if (d->popup == NULL) {
             MUI_DisposeObject(root); /* the root is still ours: the window never took it */
             d->slider = NULL;
@@ -417,6 +417,9 @@ static ULONG __attribute__((used)) aanumeric_dispatch_c(struct IClass* cl, Objec
         return aanum_handle(cl, obj, (struct MUIP_HandleEvent*)msg);
     case UPM_Numeric_Deactivated:
         d = INST_DATA(cl, obj);
+        if (aa_pop_holds_active(obj, d->popup)) { /* a popup opened from inside this one took the activation: still inside */
+            return 0;
+        }
         d->deact = 1;
         if (d->pop.open) { /* queued: never closed inside the popup's own Activate notify (aa_pop_push_close) */
             aa_pop_push_close(obj, d->popup);
@@ -424,6 +427,7 @@ static ULONG __attribute__((used)) aanumeric_dispatch_c(struct IClass* cl, Objec
         return 0;
     case UPM_Numeric_Closed:
         d = INST_DATA(cl, obj);
+        aa_pop_child_closed(obj, d->deact);
         mui_aa_pop_closed(&d->pop, d->deact, aanum_now());
         d->deact = 0;
         return 0;
