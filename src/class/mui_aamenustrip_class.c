@@ -318,6 +318,9 @@ static ULONG aamenustrip_event(Object* obj, aamenustrip_data* d, struct IntuiMes
     if (im == NULL || w == NULL) {
         return 0;
     }
+    if (im->Class != IDCMP_MOUSEMOVE || !(w->Flags & WFLG_RMBTRAP)) {
+        UPMS("ev class=%lx code=%lx win=%lx trap=%ld", (ULONG)im->Class, (ULONG)im->Code, (ULONG)im->IDCMPWindow, (ULONG)((w->Flags & WFLG_RMBTRAP) != 0));
+    }
     if (!(w->Flags & WFLG_RMBTRAP)) { /* without it Intuition keeps the right button for its own menus */
         Forbid();
         w->Flags |= WFLG_RMBTRAP;
