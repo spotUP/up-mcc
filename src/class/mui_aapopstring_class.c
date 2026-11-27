@@ -185,7 +185,8 @@ static void aapop_open(Object* obj, aapop_data* d, int act) {
                                  MUIA_Window_SizeGadget, FALSE, MUIA_Window_DepthGadget, FALSE, MUIA_Window_NoMenus, TRUE, /* RMBTRAP: MENUDOWN reaches phn */
                                  MUIA_Window_LeftEdge, (ULONG)(win->LeftEdge + _left(obj)),
                                  MUIA_Window_TopEdge, (ULONG)(win->TopEdge + _bottom(obj) + 2), MUIA_Window_Width, (ULONG)_width(obj),
-                                 MUIA_Window_Activate, (ULONG)!d->no_activate, MUIA_Window_RootObject, (ULONG)d->root, TAG_DONE);
+                                 MUIA_Window_Activate, (ULONG)!d->no_activate, MUIA_Window_RootObject, (ULONG)d->root,
+                                 MUIA_UserData, (ULONG)_win(obj), TAG_DONE); /* the owner window: aa_pop_holds_active */
         if (d->popup == NULL) {
             MUI_DisposeObject(d->root); /* the root is still ours: the window never took it */
             d->root = d->list = NULL;
@@ -266,7 +267,6 @@ static ULONG aapop_cleanup(struct IClass* cl, Object* obj, Msg msg) {
  * Intuition sets WFLG_WINDOWACTIVE before either window's message is read, so the flag is already right here. */
 static ULONG aapop_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* msg) {
     aapop_data* d = INST_DATA(cl, obj);
-    struct Window* pw = NULL;
     if (msg->imsg != NULL && msg->imsg->Class == IDCMP_MOUSEBUTTONS) { /* only phn asks for buttons: a press in the popup window */
         if (msg->imsg->Code == MENUDOWN && d->pop.open) {
             aapop_close(d); /* a cancel: d->ok stays 0, no ObjStrHook */
@@ -277,8 +277,7 @@ static ULONG aapop_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEven
     if (msg->imsg == NULL || msg->imsg->Class != IDCMP_INACTIVEWINDOW || !d->no_activate || !d->pop.open || d->popup == NULL) {
         return 0;
     }
-    GetAttr(MUIA_Window_Window, d->popup, (ULONG*)&pw);
-    if (pw != NULL && (pw->Flags & WFLG_WINDOWACTIVE)) {
+    if (aa_pop_holds_active(obj, d->popup)) { /* the popup or a popup opened from inside it took the activation */
         return 0;
     }
     d->deact = 1;
@@ -481,13 +480,18 @@ static ULONG aapop_dispatch_c(struct IClass* cl, Object* obj, Msg msg, int kind)
         return 0;
     case UPM_Popstring_Deactivated:
         d = INST_DATA(cl, obj);
+        if (aa_pop_holds_active(obj, d->popup)) { /* a nested popup (a Cycle in the Popimage popup) took it: still inside */
+            return 0;
+        }
         d->deact = 1;
         if (d->pop.open) { /* queued: never closed inside the popup's own Activate notify (aa_pop_push_close) */
             aa_pop_push_close(obj, d->popup);
         }
         return 0;
     case UPM_Popstring_Closed:
-        aapop_closed(obj, INST_DATA(cl, obj));
+        d = INST_DATA(cl, obj);
+        aa_pop_child_closed(obj, d->deact); /* before aapop_closed clears deact */
+        aapop_closed(obj, d);
         return 0;
     }
     return DoSuperMethodA(cl, obj, msg);

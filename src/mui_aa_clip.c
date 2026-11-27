@@ -5,6 +5,7 @@
 #include "class/mui_aa_class.h" /* MUIM_Application_UnpushMethod */
 
 #include <clib/alib_protos.h>
+#include <intuition/intuitionbase.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
@@ -92,5 +93,55 @@ void aa_pop_reopen(Object* obj, Object* popup, int activate) {
     aa_pop_unpush(obj, popup);
     if (popup != NULL) {
         SetAttrs(popup, MUIA_NoNotify, TRUE, MUIA_Window_Activate, (ULONG)(activate != 0), TAG_DONE);
+    }
+}
+
+static struct Window* aa_pop_active(void) {
+    return ((struct IntuitionBase*)(void*)IntuitionBase)->ActiveWindow; /* a pointer compare only: no LockIBase */
+}
+
+/* True when act is the Intuition window of a popup opened from inside popup (MUIA_UserData = popup), or of one nested in that. Only
+ * pointers are compared: the UserData of an application's own window is never followed. */
+static int aa_pop_tree_has(Object* app, Object* popup, struct Window* act, int depth) {
+    struct List* wl = NULL;
+    Object *st, *w;
+    ULONG u, iw;
+    GetAttr(MUIA_Application_WindowList, app, (ULONG*)&wl);
+    st = wl != NULL ? (Object*)wl->lh_Head : NULL;
+    while (st != NULL && (w = NextObject((APTR)&st)) != NULL) {
+        u = 0, iw = 0;
+        GetAttr(MUIA_UserData, w, &u);
+        if ((Object*)u != popup || w == popup) {
+            continue;
+        }
+        GetAttr(MUIA_Window_Window, w, &iw);
+        if ((struct Window*)iw == act || (depth < 4 && aa_pop_tree_has(app, w, act, depth + 1))) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int aa_pop_holds_active(Object* obj, Object* popup) {
+    Object* app = popup != NULL ? aa_pop_app(obj) : NULL;
+    struct Window *act = aa_pop_active(), *pw = NULL;
+    if (app == NULL || act == NULL) {
+        return 0;
+    }
+    GetAttr(MUIA_Window_Window, popup, (ULONG*)&pw);
+    return act == pw || aa_pop_tree_has(app, popup, act, 0);
+}
+
+void aa_pop_child_closed(Object* obj, int deact) {
+    Object* owner = aa_live(obj) ? _win(obj) : NULL;
+    struct Window* act = aa_pop_active();
+    ULONG u = 0;
+    if (owner == NULL || _window(obj) == NULL || !(_window(obj)->Flags & WFLG_BORDERLESS) || !GetAttr(MUIA_UserData, owner, &u) || u == 0) {
+        return; /* obj's window is no popup */
+    }
+    if (!deact && (act == NULL || act == _window(obj))) {
+        set(owner, MUIA_Window_Activate, TRUE);
+    } else if (deact && !aa_pop_holds_active(obj, owner)) {
+        set(owner, MUIA_Window_Activate, FALSE); /* runs the owner popup's own Deactivated: it closes as if it had lost the click itself */
     }
 }

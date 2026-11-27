@@ -75,6 +75,13 @@ void aa_pop_unpush(Object* obj, Object* popup);
  * attribute FALSE, and MUI opens the window with it, so a reopen without this comes up inactive and an outside click never closes it.
  * Set with MUIA_NoNotify: the Activate FALSE notify (the popup's Deactivated / close) must not run for a window that is not open. */
 void aa_pop_reopen(Object* obj, Object* popup, int activate);
+/* A popup window opened from inside another popup is inside it, not outside: its window carries MUIA_UserData = the window it was
+ * opened from (each UP popup sets it), and aa_pop_holds_active is TRUE when the active window is popup itself or such a nested popup.
+ * Every lost-activation (Deactivated) close checks it first: else opening the Colour cycle of the Popimage popup closed the Popimage. */
+int aa_pop_holds_active(Object* obj, Object* popup);
+/* From a popup's Closed notify: when obj sits in a popup window, a pick / cancel (deact 0) that left no window active gives the activation
+ * back to that popup, so an outside click still closes it; a lost activation (deact 1) to a window outside that popup closes it too. */
+void aa_pop_child_closed(Object* obj, int deact);
 /* Milliseconds from Intuition CurrentTime, the clock of mui_aa_pop_click / mui_aa_pop_closed. */
 uint32_t aa_pop_now(void);
 /* True when the mouse of im lies in obj AND obj is on screen. A Setup object on a hidden PageMode page keeps its event handler and its
