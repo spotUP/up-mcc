@@ -20,7 +20,7 @@
  * (UPM_Menu_Track). The decision is mui_aa_strip_track (host test mui-menu-check).
  * Keyboard: a tap of the Right Amiga key (down and up with no key between) in the application window opens the bar with its first enabled
  * menu's popup active (UPV_Menu_Open_Keys); a second tap closes it. In the popup UP-List takes Up, Down, Return (pick) and Esc (close; the
- * bar follows by the check below); Left and Right set UPA_Menu_Step and the strip opens the next enabled menu (mui_aa_strip_step, host
+ * menu sets UPA_Menu_Cancelled and the bar closes with it); Left and Right set UPA_Menu_Step and the strip opens the next enabled menu (mui_aa_strip_step, host
  * test mui-menu-check), the new one first as in the drag.
  * shortcut: Right Amiga again while a popup is active does not close the bar (the key goes to the popup); Esc does. */
 #include "mui_aamenustrip_class.h"
@@ -220,6 +220,7 @@ static void aamenustrip_add(Object* obj, aamenustrip_data* d, Object* menu) {
     DoMethod(menu, MUIM_Notify, UPA_Menu_Chosen, MUIV_EveryTime, (ULONG)obj, 3, UPM_Menustrip_Picked, (ULONG)menu, MUIV_TriggerValue);
     DoMethod(menu, MUIM_Notify, UPA_Menu_Open, FALSE, (ULONG)obj, 1, UPM_Menustrip_Check);
     DoMethod(menu, MUIM_Notify, UPA_Menu_Step, MUIV_EveryTime, (ULONG)obj, 3, UPM_Menustrip_Step, (ULONG)menu, MUIV_TriggerValue);
+    DoMethod(menu, MUIM_Notify, UPA_Menu_Cancelled, TRUE, (ULONG)obj, 3, UPM_Menustrip_Picked, (ULONG)menu, (ULONG)-1L); /* Esc: no pick */
 }
 
 /* MUIM_Family_AddHead / AddTail / Insert / Remove on the menus. m[1] the menu, m[2] the predecessor of Insert (NULL = head). */
@@ -233,6 +234,7 @@ static ULONG aamenustrip_family(Object* obj, aamenustrip_data* d, ULONG* m) {
         DoMethod(menu, MUIM_KillNotifyObj, UPA_Menu_Chosen, (ULONG)obj);
         DoMethod(menu, MUIM_KillNotifyObj, UPA_Menu_Open, (ULONG)obj);
         DoMethod(menu, MUIM_KillNotifyObj, UPA_Menu_Step, (ULONG)obj);
+        DoMethod(menu, MUIM_KillNotifyObj, UPA_Menu_Cancelled, (ULONG)obj);
         DoMethod(d->row, OM_REMMEMBER, (ULONG)menu);
     } else {
         aamenustrip_add(obj, d, menu); /* now the last child */
@@ -449,7 +451,7 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
     case MUIM_Family_Insert:
     case MUIM_Family_Remove:
         return aamenustrip_family(obj, INST_DATA(cl, obj), m);
-    case UPM_Menustrip_Picked: /* m[1] the menu, m[2] its UPA_Menu_Chosen */
+    case UPM_Menustrip_Picked: /* m[1] the menu, m[2] its UPA_Menu_Chosen, -1 Esc (UPA_Menu_Cancelled) */
         d = INST_DATA(cl, obj);
         if ((LONG)m[2] >= 0) {
             Object *st = aamenustrip_head(d), *o;
@@ -464,8 +466,8 @@ static ULONG __attribute__((used)) aamenustrip_dispatch_c(struct IClass* cl, Obj
             } else {
                 SetAttrs(obj, UPA_Menustrip_Trigger, (i << 8) | m[2], TAG_DONE); /* notifies */
             }
-            aamenustrip_close(obj, d); /* the bar's Open FALSE notify gives the activation back */
         }
+        aamenustrip_close(obj, d); /* a pick or Esc (-1) ends the menu; the bar's Open FALSE notify gives the activation back */
         return 0;
     case UPM_Menustrip_Check:
         aamenustrip_check(obj, INST_DATA(cl, obj));

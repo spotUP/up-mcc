@@ -3254,6 +3254,44 @@
 *
 ******/
 
+/****** UP-Menu.mcc/UPA_Menu_Cancelled ******
+*
+*   NAME
+*       UPA_Menu_Cancelled -- attribute of UP-Menu.mcc
+*
+*   FUNCTION
+*       BOOL: set TRUE when Esc closes the open popup; notifies on every press. UP-Menustrip listens and closes the bar without a pick (UPM_Menustrip_Picked with -1).
+*
+*   INPUTS
+*       UPA_Menu_Cancelled - access ..N. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Read with GetAttr/get(), set with SetAttrs/set() or in the MUI_NewObject tag list, as the access letters allow (I = initial, S = set, G = get).
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc, UP-Menustrip.mcc, UPA_Menu_Step
+*
+******/
+
+/****** UP-Menu.mcc/UPM_Menu_PushClose ******
+*
+*   NAME
+*       UPM_Menu_PushClose -- method of UP-Menu.mcc
+*
+*   FUNCTION
+*       queue the close of the popup window through PushMethod (a pick or Esc in it), so the window is not closed from inside its own notification; internal.
+*
+*   INPUTS
+*       UPM_Menu_PushClose - method id. Tag value from <mcc/up.h>.
+*
+*   RESULT
+*       Send with DoMethod(); the class handles it.
+*
+*   SEE ALSO
+*       <mcc/up.h>, UP-Menu.mcc, UPA_Menu_Cancelled
+*
+******/
+
 /****** UP-Menu.mcc/UPA_Menu_Entries ******
 *
 *   NAME
@@ -4030,7 +4068,7 @@
 *       UPM_Menustrip_Picked -- method of UP-Menustrip.mcc
 *
 *   FUNCTION
-*       a menu chose an item (menu object, item index); internal
+*       a menu chose an item (menu object, item index); internal. Esc closes the bar (-1 = no pick). Any Picked value closes the bar.
 *
 *   INPUTS
 *       UPM_Menustrip_Picked - method id. Tag value from <mcc/up.h>.

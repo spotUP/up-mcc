@@ -175,6 +175,9 @@ static void aamenu_open(Object* obj, aamenu_data* d, int act, int keys) {
         DoMethod(d->list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, obj, 1, UPM_Menu_PushClose);
         DoMethod(d->list, MUIM_Notify, UPA_List_Picked, MUIV_EveryTime, obj, 3, MUIM_Set, UPA_Menu_Chosen, MUIV_TriggerValue);
         DoMethod(d->list, MUIM_Notify, UPA_List_Cancelled, TRUE, obj, 1, UPM_Menu_PushClose);
+        /* Esc ends the whole menu (Intuition: a cancel leaves menu mode). Said explicitly: once the popup is gone the bar may be the
+         * active window, which UP-Menustrip's check reads as "the user went to another title" and keeps it open */
+        DoMethod(d->list, MUIM_Notify, UPA_List_Cancelled, TRUE, obj, 3, MUIM_Set, UPA_Menu_Cancelled, TRUE);
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Activate, FALSE, obj, 1, UPM_Menu_Deactivated);
         DoMethod(d->popup, MUIM_Notify, MUIA_Window_Open, FALSE, obj, 1, UPM_Menu_Closed);
     } else {
