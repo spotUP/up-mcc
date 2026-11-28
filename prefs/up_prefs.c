@@ -76,10 +76,13 @@ static Object* label(const char* text) {
     return (Object*)MUI_MakeObject(MUIO_Label, (ULONG)text, (ULONG)MUIO_Label_DoubleFrame);
 }
 
+static long prefs_theme_read(const char* path, char* buf, size_t cap);
+
 static ULONG prefs_new(struct IClass* cl, Object* obj, struct opSet* msg) {
     Object *file, *pop, *accent, *surface, *text, *background, *radius, *reset, *page;
     struct TagItem tags[3];
     prefs_data* d;
+    mui_theme_set_reader(prefs_theme_read);
     file = MUI_NewObject((char*)MUIC_String, MUIA_Frame, (ULONG)MUIV_Frame_String, MUIA_String_MaxLen, 255UL, TAG_DONE);
     pop = MUI_NewObject((char*)MUIC_Popasl, MUIA_Popasl_Type, (ULONG)ASL_FileRequest, MUIA_Popstring_String, (ULONG)file,
                         MUIA_Popstring_Button, (ULONG)MUI_MakeObject(MUIO_PopButton, (ULONG)MUII_PopFile), TAG_DONE);
@@ -190,6 +193,11 @@ static LONG read_small_file(const char* path, char* buf, LONG cap) {
     n = Read(fh, (APTR)buf, cap);
     Close(fh);
     return (n < 0 || n >= cap) ? -1 : n;
+}
+/* The theme reader for mui_theme_load/resolve in this library: its default stdio reader (fopen) mallocs through libnix's __memsema,
+ * which a class library never sets up (no constructors run), and ObtainSemaphore on it hung the prefs page in MUI 5 and OpenMUI. */
+static long prefs_theme_read(const char* path, char* buf, size_t cap) {
+    return read_small_file(path, buf, (LONG)cap);
 }
 
 /* The theme name of a theme file path: its base name without ".theme" (any case), into dst. 0 when the path names no .theme file. */

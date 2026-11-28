@@ -29,13 +29,15 @@
 #ifdef UP_PREFS_LIBRARY
 /* I685j: the same skeleton builds UP-MCC.mcp. UP_CLASS_NAME is "MCC"; MCC_Query(1) returns the prefs class. */
 #define LIB_NAME "UP-" UP_CLASS_NAME ".mcp"
+#define LIB_VERSTR "11.0 (28.11.2026)" /* UP_RT_VERSION (CMake MCC_PREFS_VERSION): prefs programs list a .mcp from version 11 */
 extern const struct aa_class_desc up_prefs_class_desc; /* prefs/up_prefs.c */
 #else
 #define LIB_NAME "UP-" UP_CLASS_NAME ".mcc"
+#define LIB_VERSTR "1.0 (07.11.2026)"
 #endif
-#define LIB_VER UP_LIB_VERSION
+#define LIB_VER UP_RT_VERSION
 #define LIB_REV 0
-#define LIB_ID "$VER: " LIB_NAME " 1.0 (07.11.2026) UP- MUI class " UP_CLASS_NAME
+#define LIB_ID "$VER: " LIB_NAME " " LIB_VERSTR " UP- MUI class " UP_CLASS_NAME
 
 const UWORD LibVersion = LIB_VER;
 const UWORD LibRevision = LIB_REV;

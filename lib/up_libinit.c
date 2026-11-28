@@ -16,8 +16,11 @@
 #ifndef UP_LIB_VERSION
 #error "UP_LIB_VERSION missing: CMake sets it from MCC_LIB_VERSION"
 #endif
-#if UP_LIB_VERSION < 1 || UP_LIB_VERSION > 255
-#error "UP_LIB_VERSION must fit rt_Version (1..255)"
+#ifndef UP_RT_VERSION
+#define UP_RT_VERSION UP_LIB_VERSION /* this library's own version; only UP-MCC.mcp differs (CMake MCC_PREFS_VERSION) */
+#endif
+#if UP_RT_VERSION < 1 || UP_RT_VERSION > 255
+#error "UP_RT_VERSION must fit rt_Version (1..255)"
 #endif
 
 #define UP_STR2(x) #x
@@ -123,7 +126,7 @@ __asm__(
     "\t.long _up_RomTag\n"
     "\t.long _up_RomTagEnd\n"
     "\t.byte 0x80\n"
-    "\t.byte " UP_STR(UP_LIB_VERSION) "\n"
+    "\t.byte " UP_STR(UP_RT_VERSION) "\n"
     "\t.byte 9\n"
     "\t.byte 0\n"
     "\t.long _LibName\n"

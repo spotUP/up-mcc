@@ -158,14 +158,22 @@ endif()
 # OpenLibrary(name, n) for a disk library whose Resident version is below n (I685p). MCC_LIB_VERSION is the one version
 # source: the Resident (UP_LIB_VERSION in up_libinit.c) and LibVersion in each header file. Post-build check: cmake/mcc_check_romtag.cmake.
 set(MCC_LIB_VERSION 3)
+# UP-MCC.mcp's own version (UP_RT_VERSION): MUI 3.8, MUI 5 and OpenMUI prefs list a settings class only from version 11 on.
+set(MCC_PREFS_VERSION 11)
 set(MCC_LIBINIT_SRC lib/up_libinit.c)
 set_source_files_properties(${MCC_LIBINIT_SRC} PROPERTIES COMPILE_OPTIONS "-fasm")
+# up_mcc_lib_skeleton(tgt [own_version]): UP_LIB_VERSION is the up-mcc.library version the target opens; UP_RT_VERSION its own
+# Resident/LibVersion (default MCC_LIB_VERSION).
 function(up_mcc_lib_skeleton tgt)
-  target_compile_definitions(${tgt} PRIVATE "UP_LIB_VERSION=${MCC_LIB_VERSION}")
+  set(rt ${MCC_LIB_VERSION})
+  if(ARGC GREATER 1)
+    set(rt ${ARGV1})
+  endif()
+  target_compile_definitions(${tgt} PRIVATE "UP_LIB_VERSION=${MCC_LIB_VERSION}" "UP_RT_VERSION=${rt}")
   add_custom_command(TARGET ${tgt} POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" "-DBINARY=$<TARGET_FILE:${tgt}>" "-DVERSION=${MCC_LIB_VERSION}"
+    COMMAND "${CMAKE_COMMAND}" "-DBINARY=$<TARGET_FILE:${tgt}>" "-DVERSION=${rt}"
       -P "${PROJECT_SOURCE_DIR}/cmake/mcc_check_romtag.cmake"
-    VERBATIM COMMENT "${tgt}: Resident version ${MCC_LIB_VERSION}")
+    VERBATIM COMMENT "${tgt}: Resident version ${rt}")
 endfunction()
 # up_libinit.c first: the Resident must be in the first hunk, with its -1 returning code ahead of it
 add_executable(up_spike_mcc ${MCC_LIBINIT_SRC} lib/libheader.c lib/spike_class.c)
@@ -267,7 +275,7 @@ target_include_directories(up_mcc_prefs PRIVATE "${AMIGA_GCC_ROOT}/m68k-amigaos/
 target_compile_definitions(up_mcc_prefs PRIVATE "UP_CLASS_NAME=\"MCC\"" UP_CLASS_DESC=up_prefs_class_desc UP_MCC_LIBRARY UP_PREFS_LIBRARY UP_CLASS_LIBRARY)
 target_link_libraries(up_mcc_prefs PRIVATE sel_mcc_static)
 target_link_options(up_mcc_prefs PRIVATE -nostartfiles)
-up_mcc_lib_skeleton(up_mcc_prefs)
+up_mcc_lib_skeleton(up_mcc_prefs ${MCC_PREFS_VERSION})
 up_check_no_store(up_mcc_prefs)
 add_custom_target(up_mcc_classes DEPENDS up_mcc_Button up_mcc_Text up_mcc_Panel up_mcc_Tabs up_mcc_Balance up_mcc_Slider up_mcc_Progress
   up_mcc_Cycle up_mcc_Field up_mcc_Scroller up_mcc_List up_mcc_Checkmark up_mcc_Radio up_mcc_Popstring up_mcc_Poplist up_mcc_Numericbutton up_mcc_Scale up_mcc_Colorfield up_mcc_Palette up_mcc_Image up_mcc_Menu up_mcc_Virtgroup up_mcc_Scrollgroup up_mcc_Textarea up_mcc_Dirlist up_mcc_Volumelist up_mcc_Scrmodelist up_mcc_Rectangle up_mcc_Floattext up_mcc_Knob up_mcc_Levelmeter up_mcc_Popobject up_mcc_Popasl up_mcc_Popscreen up_mcc_prefs)
