@@ -456,6 +456,7 @@ static ULONG aafield_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
             aafield_key(obj, d, code);
             return 0;
         case 0x45: /* Esc as a raw key (no vanilla code was asked for) */
+            code = 0x1B;
             break;
         case 0x4E: /* right: without Shift a selection collapses to its end */
             aafield_moved(obj, d, !shift && has_sel ? hi : d->caret < d->len ? d->caret + 1 : d->caret, shift);
@@ -469,12 +470,16 @@ static ULONG aafield_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEv
         case 0x71: /* End */
             aafield_moved(obj, d, d->len, shift);
             return MUI_EventHandlerRC_Eat;
-        default:
-            return 0;
+        default: /* a character key: under OpenMUI it never comes as VANILLAKEY (aaedit_map_key), so map it and go the vanilla way */
+            if ((code = aaedit_map_key(im)) < 0) {
+                return 0;
+            }
+            break;
         }
     } else if (im->Class != IDCMP_VANILLAKEY) {
         return 0;
-    } else if (code != 0x1B) {
+    }
+    if (code != 0x1B) {
         char c = (char)code;
         if (aafield_clipboard_key(obj, d, code, im->Qualifier)) {
             return MUI_EventHandlerRC_Eat;

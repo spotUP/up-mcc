@@ -3,7 +3,7 @@
  * at the first open and reused, disposed only in cleanup. A pick sets UPA_Menu_Chosen (notifies) and closes the popup.
  * MUIC_Menuitem model (UPA_Menu_Entries): per item Checkit / Toggle / Exclude (mui_aa_menu_pick), Checked and Disabled bitmasks, and a
  * shortcut. The list then has three columns: "*" for a checked item, the title, the shortcut text. A one-character shortcut is
- * Amiga+key through an IDCMP_RAWKEY handler mapped with keymap.library (opened per use); it picks the item like a click.
+ * Amiga+key through an IDCMP_RAWKEY handler mapped by aaedit_map_key (keymap.library, opened per use); it picks the item like a click.
  * The items are a copy of the Entries array, so MUIM_Family_AddHead / AddTail / Insert / Remove can change them (MUIC_Menuitem children);
  * the popup is built again at the next open, since UP-List takes its row count limit at creation.
  * Left and Right in the open popup set UPA_Menu_Step (a second RAWKEY handler, on the popup window); UP-Menustrip moves to the next menu.
@@ -35,15 +35,13 @@
 #include <proto/muimaster.h>
 #include <proto/utility.h>
 #include <devices/inputevent.h>
-#define KeymapBase up_mcc_menu_KeymapBase /* own base symbol: the library is opened per use, not by libnix */
-#include <proto/keymap.h>
 
 #include "map/mui_aa.h"
 #include "mui_aa_draw.h"
 #include "mui_aa_trace.h"
+#include "mui_aaedit.h"
 
 extern struct Library* MUIMasterBase;
-struct Library* KeymapBase;
 
 typedef struct aamenu_data {
     Object *btn, *popup, *root, *list;
@@ -253,8 +251,6 @@ static ULONG aamenu_setup(struct IClass* cl, Object* obj, Msg msg) {
 /* Amiga+key of a one-character shortcut picks that item; Left / Right in the open popup set UPA_Menu_Step. Every other key goes on to MUI
  * (the popup's UP-List takes Up, Down, Return and Esc). */
 static ULONG aamenu_key(Object* obj, aamenu_data* d, struct IntuiMessage* im) {
-    struct InputEvent ie;
-    char c[4];
     int i;
     ULONG dis = 0;
     struct Window* pw = NULL;
@@ -276,17 +272,8 @@ static ULONG aamenu_key(Object* obj, aamenu_data* d, struct IntuiMessage* im) {
     if (im == NULL || im->Class != IDCMP_RAWKEY || (im->Code & IECODE_UP_PREFIX) || !(im->Qualifier & IEQUALIFIER_RCOMMAND) || dis) {
         return 0;
     }
-    if ((KeymapBase = OpenLibrary((CONST_STRPTR) "keymap.library", 37)) == NULL) {
-        return 0;
-    }
-    memset(&ie, 0, sizeof ie);
-    ie.ie_Class = IECLASS_RAWKEY, ie.ie_Code = im->Code, ie.ie_Qualifier = im->Qualifier & ~IEQUALIFIER_RCOMMAND;
-    ie.ie_EventAddress = (APTR)*((ULONG*)im->IAddress); /* dead-key context */
-    i = (int)MapRawKey(&ie, (STRPTR)c, sizeof c, NULL);
-    CloseLibrary(KeymapBase);
-    KeymapBase = NULL;
     /* d->ent may be NULL here: UP-Menustrip sends MUIM_HandleEvent to every menu, also to one without Entries */
-    if (i == 1 && (i = mui_aa_menu_shortcut(d->ent, d->n, d->disabled, (UBYTE)c[0])) >= 0) {
+    if ((i = aaedit_map_key(im)) >= 0 && (i = mui_aa_menu_shortcut(d->ent, d->n, d->disabled, (UBYTE)i)) >= 0) {
         set(obj, UPA_Menu_Chosen, (ULONG)i);
         return MUI_EventHandlerRC_Eat;
     }

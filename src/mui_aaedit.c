@@ -5,10 +5,36 @@
 #include <string.h>
 
 #include <devices/clipboard.h>
+#include <devices/inputevent.h>
+#include <intuition/intuition.h>
 #include <proto/exec.h>
 #include "mui_gfxbase.h"
+#define KeymapBase up_mcc_aaedit_KeymapBase /* own base symbol: the library is opened per use, not by libnix */
+#include <proto/keymap.h>
 
 #include "mui_ftxt.h"
+
+struct Library* KeymapBase;
+
+int aaedit_map_key(const struct IntuiMessage* im) {
+    struct InputEvent ie;
+    UBYTE c[4];
+    int n;
+    if (im->Class != IDCMP_RAWKEY || (im->Code & IECODE_UP_PREFIX)) {
+        return -1;
+    }
+    if ((KeymapBase = OpenLibrary((CONST_STRPTR) "keymap.library", 37)) == NULL) {
+        return -1;
+    }
+    memset(&ie, 0, sizeof ie);
+    ie.ie_Class = IECLASS_RAWKEY, ie.ie_Code = im->Code;
+    ie.ie_Qualifier = im->Qualifier & ~(IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND);
+    ie.ie_EventAddress = (APTR)*((ULONG*)im->IAddress); /* dead-key context, as Intuition and betterstring pass it */
+    n = (int)MapRawKey(&ie, (STRPTR)c, sizeof c, NULL);
+    CloseLibrary(KeymapBase);
+    KeymapBase = NULL;
+    return n == 1 ? (int)c[0] : -1;
+}
 
 /* One request on a private port per call. */
 static struct IOClipReq* aaedit_clip_open(struct MsgPort** port) {

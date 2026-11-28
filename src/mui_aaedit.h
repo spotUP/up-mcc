@@ -14,4 +14,13 @@ int aaedit_clip_get(char* out, int cap);
  * low-colour outline. Every pixel of the box is painted, nothing outside it. */
 void aaedit_frame(aa_ctx* aa, struct RastPort* rp, int l, int t, int w, int h, const mui_aa_check_op_t* ops, int n);
 
+/* The one character a key-down IDCMP_RAWKEY maps to through the default keymap (keymap.library, opened per call), or -1 for a key
+ * up, a key that maps to none or several characters, or no keymap.library. The Amiga keys are left out of the mapping; the caller
+ * still sees them in im->Qualifier. Why the editors need it: OpenMUI strips IDCMP_VANILLAKEY from the window mask (its window.c
+ * ChangeEvents), so every key reaches the handlers as RAWKEY. Real MUI keeps VANILLAKEY, and with both classes set Intuition sends
+ * each key that maps to exactly one character as VANILLAKEY and only the rest as RAWKEY, so there a RAWKEY never maps here and no
+ * key is handled twice. */
+struct IntuiMessage;
+int aaedit_map_key(const struct IntuiMessage* im);
+
 #endif

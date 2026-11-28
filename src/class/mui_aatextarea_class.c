@@ -1,7 +1,7 @@
 /* UP-TextArea: a minimal multi-line text editor. Area subclass; the look is UP-Field's (face, outline, placeholder, tooltip from
  * map/mui_aa.c and mui_aatip.c). All line, caret and edit maths is mui_text_lines.c (mtl_*): this file is glue between those helpers,
  * the aa_* draw calls and the MUI events. Keys: the arrows, Home, End and the wheel come as RAWKEY; characters, Backspace, Delete and
- * Return come as IDCMP_VANILLAKEY, so no keymap library is needed. Selection is anchor..caret (empty when equal); the clipboard is
+ * Return come as IDCMP_VANILLAKEY on real MUI and as RAWKEY on OpenMUI (no VANILLAKEY there), mapped by aaedit_map_key. Selection is anchor..caret (empty when equal); the clipboard is
  * clipboard.device unit 0 holding FORM FTXT (mui_ftxt.c does the IFF bytes). */
 #include "mui_aatextarea_class.h"
 #include "mui_aa_class.h"
@@ -509,13 +509,21 @@ static ULONG ta_handle(struct IClass* cl, Object* obj, struct MUIP_HandleEvent* 
         case 0x71: /* End */
             off = mtl_line_end(d->buf, d->len, d->lines, d->nlines, d->caret);
             break;
-        default:
+        case 0x42: /* raw Tab and Shift+Tab: the window cycles */
             return 0;
+        default: /* a character key: under OpenMUI it never comes as VANILLAKEY (aaedit_map_key), so map it and go the vanilla way */
+            if ((code = aaedit_map_key(im)) < 0) {
+                return 0;
+            }
+            off = -1;
+            break;
         }
-        ta_moved(obj, d, off, keep, shift);
-        return MUI_EventHandlerRC_Eat;
+        if (off >= 0) {
+            ta_moved(obj, d, off, keep, shift);
+            return MUI_EventHandlerRC_Eat;
+        }
     }
-    if (im->Class == IDCMP_VANILLAKEY && ta_focus(obj)) {
+    if ((im->Class == IDCMP_VANILLAKEY || im->Class == IDCMP_RAWKEY) && ta_focus(obj)) { /* RAWKEY here is a mapped character */
         char c = (char)code;
         if (ta_clipboard_key(obj, d, code, im->Qualifier)) {
             return MUI_EventHandlerRC_Eat;
